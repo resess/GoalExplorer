@@ -1,0 +1,6 @@
+4@click(className='android.widget.Button',instance='1'):android.widget.Button@"OK"
+14@click(className='android.widget.Button',instance='0'):android.widget.Button@"MORE"
+8@click(className='android.widget.TextView',instance='3'):android.widget.TextView@"Quiz"
+7@click(className='android.widget.Button',instance='0'):android.widget.Button@"Start quiz"
+3@click(content-desc='More options'):android.widget.ImageView@""
+1@click(className='android.widget.TextView',instance='0'):android.widget.TextView@"Paint"

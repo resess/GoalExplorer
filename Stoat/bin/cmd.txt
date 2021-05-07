@@ -1,0 +1,7 @@
+ruby run_stoat_testing.rb --apps_dir /Users/dulinglai/Documents/Study/ResearchProjects/login/emmaApps/ --apps_list /Users/dulinglai/Documents/Study/ResearchProjects/login/subject_apps_1.txt --avd_name api19_0 --avd_port 5554 --stoat_port 2000 --model_time 40m --mcmc_time 80m --force_restart --project_type ant
+
+ruby run_stoat_testing.rb --apps_dir /Users/dulinglai/Documents/Study/ResearchProjects/login/emmaApps/ --apps_list /Users/dulinglai/Documents/Study/ResearchProjects/login/subject_apps_2.txt --avd_name api19_1 --avd_port 5556 --stoat_port 2001 --model_time 40m --mcmc_time 80m --force_restart --project_type ant
+
+ruby run_stoat_testing.rb --apps_dir /Users/dulinglai/Documents/Study/ResearchProjects/login/emmaApps/ --apps_list /Users/dulinglai/Documents/Study/ResearchProjects/login/subject_apps_3.txt --avd_name api19_2 --avd_port 5558 --stoat_port 2002 --model_time 40m --mcmc_time 80m --force_restart --project_type ant
+
+ruby run_stoat_testing.rb --app_dir /Users/dulinglai/Documents/Study/ResearchProjects/2019_android_targeted_exploration/testApps/googleplay/ --real_device_serial ZX1D322N92 --stoat_port 2000 --model_time 120m --mcmc_time 80m

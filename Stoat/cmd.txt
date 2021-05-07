@@ -1,0 +1,5 @@
+ruby run_stoat_testing.rb --apps_dir /Users/dulinglai/Documents/Study/ResearchProjects/login/emmaApps/ --apps_list /Users/dulinglai/Documents/Study/ResearchProjects/login/subject_apps_1.txt --avd_name api19_0 --avd_port 5554 --stoat_port 2000 --model_time 40m --mcmc_time 80m --force_restart --project_type ant
+
+ruby run_stoat_testing.rb --app_dir /Volumes/WD_drive/50_TestApps/login-after/com.mediagrif.lespac.app.apk --avd_name api19_0 --avd_port 5554 --stoat_port 2000 --model_time 20m --mcmc_time 10m --force_restart
+
+ruby run_stoat_testing.rb --apps_dir /Volumes/WD_drive/50_TestApps/login-after/ --apps_list /Users/dulinglai/Documents/Study/ResearchProjects/login/login_test_apps_1.txt --avd_name api19_0 --avd_port 5554 --stoat_port 2000 --model_time 20m --mcmc_time 10m --force_restart --project_type apk
