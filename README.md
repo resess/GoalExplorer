@@ -7,6 +7,10 @@ Then GoalExplorer uses the STG to guide the dynamic exploration of the applicati
 This repository contains the source code for the application to produce STGs for android applications along with the tool 
 used to dynamically explore to find the target of interest. 
 
+### Compatibility
+Currently, the tool supports API levels 26 and under. The Android Applications should also not use androidx libraries. 
+This is due to a dependency on Backstage which fails to analyze components of these applications. 
+
 ## Table of Contents
 1. [Pre-requisites](#pre-requisites)
 2. [Building The Tool](#Building-The-Tool)
@@ -32,9 +36,10 @@ The tool is only support to run on a Linux environment
 
 
 ## Building The Tool
-The application to build a STG uses modified versions of [Backstage](https://github.com/uds-se/backstage) and 
-[FlowDroid](https://github.com/secure-software-engineering/FlowDroid). You need to first build these modules before 
-building GoalExplorer. 
+To build an STG, the application uses modified versions of [Backstage](https://github.com/uds-se/backstage) and 
+[FlowDroid](https://github.com/secure-software-engineering/FlowDroid). 
+The modified version are provided in the respective `Backstage/` and `FlowDroid/` directories. 
+You need to first build these modules before building GoalExplorer. 
 
 ### Example Commands
 ```
@@ -86,7 +91,8 @@ java -jar {JAR_PATH} ge [OPTIONS] [-cb <arg>] [-d] [-h] -i <arg>
 An STG for the android application will be generated in the output directory. 
 
 ## Using the Dynamic Explorer 
-The dynamic explorer is a modifier version of [Stoat](https://github.com/tingsu/Stoat).
+The dynamic explorer is a modified version of [Stoat](https://github.com/tingsu/Stoat).
+The modified source code is located in `Stoat/`
 
 ### Setup 
 Open avdmanager through Android Studios and create a new emulator.
