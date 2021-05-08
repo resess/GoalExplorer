@@ -55,7 +55,7 @@ mvn -DskipTests clean package
 ---
 
 
-## Using The Tool 
+## Using the Static Analyzer (STG Builder)
 To build a STG run the generated `.jar` file which should be located at 
 `GoalExplorer/target/`. 
 
@@ -84,3 +84,18 @@ java -jar {JAR_PATH} ge [OPTIONS] [-cb <arg>] [-d] [-h] -i <arg>
 ```
 
 An STG for the android application will be generated in the output directory. 
+
+## Using the Dynamic Explorer 
+The dynamic explorer is a modifier version of [Stoat](https://github.com/tingsu/Stoat).
+
+### Setup 
+Open avdmanager through Android Studios and create a new emulator.
+Note down the name of this emulator. 
+
+Then the command to start the dynamic exploration 
+```
+ruby Stoat/bin/run_stoat_testing.rb \
+    --avd_name={emulator name} \
+    --apk_path={path to apk}
+    --stg={path to apk stg}
+```
