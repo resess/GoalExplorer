@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import android.model.Screen;
 import org.pmw.tinylog.Logger;
 
 public class STG {
