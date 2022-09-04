@@ -17,14 +17,17 @@ public class AnalyzeIntents implements Runnable {
     private final SootMethod startMethod;
     private final Unit unitOfStartMethod;
     private final MHGDominatorsFinder<Unit> dominatorFinder;
+    private final String elementId;
     private Value registerOfIntent;
 
-    public AnalyzeIntents(SootMethod startMethod, Unit unitOfInvoke, SootMethod methodOfInvoke){
+
+    public AnalyzeIntents(SootMethod startMethod, Unit unitOfInvoke, SootMethod methodOfInvoke, String elementId){
         intentInfo = new IntentInfo();
         this.startMethod = startMethod;
         this.unitOfStartMethod = unitOfInvoke;
         this.currentSootMethod = methodOfInvoke;
         this.dominatorFinder = new MHGDominatorsFinder<>(new ExceptionalUnitGraph(currentSootMethod.getActiveBody()));
+        this.elementId = elementId;
     }
 
     public IntentInfo getIntentInfo(){
@@ -43,7 +46,7 @@ public class AnalyzeIntents implements Runnable {
                 break;
             }
         }
-        AnalyseIntentSwitch intentsSwitch = new AnalyseIntentSwitch(registerOfIntent, currentSootMethod, intentInfo);
+        AnalyseIntentSwitch intentsSwitch = new AnalyseIntentSwitch(registerOfIntent, currentSootMethod, intentInfo, elementId);
         while(workingUnit != null && !intentsSwitch.isDone()){
             workingUnit.apply(intentsSwitch);
             workingUnit = dominatorFinder.getImmediateDominator(workingUnit);

@@ -16,21 +16,26 @@ import java.util.Set;
 public class DynDecStringInfo extends Info{
 	protected String uiEID = "";
 	protected String uiEIDReg = "";
+	protected int interProcIndex = -1;
+	//protected String
 //	protected String adapterReg;
 	protected final Logger logger =  LoggerFactory.getLogger(Thread.currentThread().getName());
 	private StmtSwitchForArrayAdapter arraySwitch;
 	private StmtSwitchForStringBuilder stringBuilderSwitch;
-	private boolean processedStmtInStringBuilder;
+	private boolean processedStmtInStringBuilder, mutable;
 	// TODO extend StringBuilders to more than 1 at a time
 	private List<String> notJoinedText;
 	private Set<String> searchedPlaceHolders;
 	private String declaredSootClass;
+	private String sootMethod;
 	
 	public DynDecStringInfo(String uiElementReg, SootMethod currentSootMethod){
 		super(uiElementReg);
 		stringBuilderSwitch = new StmtSwitchForStringBuilder(currentSootMethod);
 		notJoinedText = new ArrayList<String>();
 		declaredSootClass = currentSootMethod.getDeclaringClass().getName();
+		sootMethod = currentSootMethod.getSignature();
+		mutable = true;
 	}
 
 	public boolean isProcessedStmtInStringBuilder() {
@@ -116,15 +121,29 @@ public class DynDecStringInfo extends Info{
 	}
 
 	public void setUiEID(String uiEID) {
-		this.uiEID = uiEID;
+			this.uiEID = uiEID;
 	}
+
 	
 	public String getUiEIDReg() {
 		return uiEIDReg;
 	}
 
 	public void setUiEIDReg(String uiEID) {
-		this.uiEIDReg = uiEID;
+		if(mutable)
+			this.uiEIDReg = uiEID;
+	}
+
+	public void setInterProcIndex(int interProcIndex) {
+		this.interProcIndex = interProcIndex;
+	}
+
+	public int getInterProcIndex() {
+		return interProcIndex;
+	}
+
+	public void setUiEIDRegMutable(boolean mutable){
+		this.mutable = mutable;
 	}
 
 	public StmtSwitchForArrayAdapter getArraySwitch() {
@@ -186,6 +205,7 @@ public class DynDecStringInfo extends Info{
 		newInfo.setTextReg(textReg);
 		newInfo.setUiEID(uiEID);
 		newInfo.setUiEIDReg(uiEIDReg);
+		newInfo.setUiEIDRegMutable(mutable);
 		newInfo.setDeclaringSootClass(declaredSootClass);
 		if (arraySwitch != null)
 			newInfo.setArraySwitch(arraySwitch);

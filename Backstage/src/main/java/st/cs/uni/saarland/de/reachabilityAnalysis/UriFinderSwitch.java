@@ -6,6 +6,7 @@ import soot.jimple.toolkits.callgraph.Edge;
 import soot.toolkits.graph.ExceptionalUnitGraph;
 import soot.toolkits.graph.MHGDominatorsFinder;
 import st.cs.uni.saarland.de.helpClasses.Helper;
+import st.cs.uni.saarland.de.helpMethods.StmtSwitch.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -100,7 +101,7 @@ public class UriFinderSwitch extends AbstractStmtSwitch {
                 }
                 else if(expr.getMethod().getSignature().equals(STRING_BUILDER_CONSTANTS.TO_STRING)){
                     //we deal with a string builder
-                    Value registerToTrack = stmt.getInvokeExpr().getUseBoxes().get(stmt.getInvokeExpr().getUseBoxes().size() - 1).getValue();
+                    Value registerToTrack = stmt.getInvokeExpr().getUseBoxes().get(0).getValue();
                     StringBuilderPropagator stringBuilderPropagator = new StringBuilderPropagator(currentSootMethod, stmt, registerToTrack);
                     stringBuilderPropagator.run();
                     String res = stringBuilderPropagator.getResult();

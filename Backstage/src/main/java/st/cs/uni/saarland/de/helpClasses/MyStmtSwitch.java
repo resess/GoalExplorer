@@ -9,11 +9,13 @@ import st.cs.uni.saarland.de.helpMethods.CheckIfMethodsExisting;
 import st.cs.uni.saarland.de.helpMethods.InterprocAnalysis2;
 import st.cs.uni.saarland.de.helpMethods.IterateOverUnitsHelper;
 import st.cs.uni.saarland.de.helpMethods.StmtSwitch;
+import st.cs.uni.saarland.de.searchDynDecStrings.DynDecStringInfo;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public abstract class MyStmtSwitch extends AbstractStmtSwitch{
@@ -28,6 +30,8 @@ public abstract class MyStmtSwitch extends AbstractStmtSwitch{
 	protected final Logger logger;
 	protected Set<SootField> previousFields = new CopyOnWriteArraySet<>();
 	protected Set<SootField> previousFieldsForCurrentStmtSwitch = new CopyOnWriteArraySet<>();
+	protected Map<String, String> dynStrings, elementIds;
+	protected Set<DynDecStringInfo> adapterInfo;
 
 	public String getCallerSootClass() {
 		return callerSootClass;
@@ -58,6 +62,8 @@ public abstract class MyStmtSwitch extends AbstractStmtSwitch{
 	public void addAllToResultInfo(Set<Info> toAdd){
 		resultInfos.addAll(toAdd);
 	}
+
+	public void removeFromResultInfo(Info toRemove) { resultInfos.remove(toRemove);}
 
 	public void removeAllFromResultInfos(Set<Info> toRemove){
 		resultInfos.removeAll(toRemove);
@@ -93,6 +99,23 @@ public abstract class MyStmtSwitch extends AbstractStmtSwitch{
 		resultInfos.add(info);
 		this.logger = LoggerFactory.getLogger(this.getClass());
 		setCurrentSootMethod(currentSootMethod);
+	}
+	public MyStmtSwitch(SootMethod currentSootMethod, Map<String, String> dynStrings){
+		this(currentSootMethod);
+		this.dynStrings = dynStrings;
+	}
+
+
+	public MyStmtSwitch(SootMethod currentSootMethod, Set<DynDecStringInfo> adapterInfo){
+		this(currentSootMethod);
+		this.adapterInfo = adapterInfo;
+		this.elementIds = elementIds;
+	}
+
+	public MyStmtSwitch(SootMethod currentSootMethod, Map<String, String> dynStrings, Map<String, String> elementIds){
+		this(currentSootMethod);
+		this.dynStrings = dynStrings;
+		this.elementIds = elementIds;
 	}
 
 	public boolean run(){

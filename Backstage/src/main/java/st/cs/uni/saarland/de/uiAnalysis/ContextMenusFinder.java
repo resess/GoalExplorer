@@ -6,6 +6,7 @@ import st.cs.uni.saarland.de.searchMenus.MenuInfo;
 import st.cs.uni.saarland.de.searchMenus.StmtSwitchForOptionMenus;
 
 import java.util.Set;
+import java.util.Map;
 
 /**
  * Created by avdiienko on 11/05/16.
@@ -18,9 +19,14 @@ public class ContextMenusFinder implements Runnable {
         specMethodsForwardWalker = new SpecMethodsForwardWalker(StmtSwitchForOptionMenus.class, currentSootMethod, "onCreateContextMenu");
     }
 
+    public ContextMenusFinder(SootMethod currentSootMethod, Map<String, String> dynStrings){
+        specMethodsForwardWalker = new SpecMethodsForwardWalker(StmtSwitchForOptionMenus.class, currentSootMethod, "onCreateContextMenu", dynStrings);
+    }
+
     @Override
     public void run() {
         specMethodsForwardWalker.run();
+        
         contextMenus = CastInfoHelper.getInstance().getResultsInMenuInfo(specMethodsForwardWalker.getResults());
     }
 

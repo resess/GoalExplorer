@@ -1,8 +1,6 @@
 package st.cs.uni.saarland.de.helpMethods;
 
-import st.cs.uni.saarland.de.dissolveSpecXMLTags.FragmentDynInfo;
-import st.cs.uni.saarland.de.dissolveSpecXMLTags.FragmentTagInfo;
-import st.cs.uni.saarland.de.dissolveSpecXMLTags.TabViewInfo;
+import st.cs.uni.saarland.de.dissolveSpecXMLTags.*;
 import st.cs.uni.saarland.de.helpClasses.Info;
 import st.cs.uni.saarland.de.searchDialogs.DialogInfo;
 import st.cs.uni.saarland.de.searchDynDecStrings.DynDecStringInfo;
@@ -12,6 +10,7 @@ import st.cs.uni.saarland.de.searchMenus.DropDownNavMenuInfo;
 import st.cs.uni.saarland.de.searchMenus.MenuInfo;
 import st.cs.uni.saarland.de.searchMenus.PopupMenuInfo;
 import st.cs.uni.saarland.de.searchScreens.LayoutInfo;
+import st.cs.uni.saarland.de.searchPreferences.PreferenceInfo;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -60,6 +59,10 @@ public class CastInfoHelper {
 	public Set<LayoutInfo> getResultsInLayoutInfos(Set<Info> resultList) {
 		return resultList.stream().map(i -> (LayoutInfo) i).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
+
+	public Set<PreferenceInfo> getResultsInPreferenceInfo(Set<Info> resultList) {
+		return resultList.stream().map(i -> (PreferenceInfo) i).collect(Collectors.toCollection(LinkedHashSet::new));
+	}
 	
 	public Set<FragmentDynInfo> getResultsInFragmentDynInfos(Set<Info> resultList) {
 		return resultList.stream().map(i -> (FragmentDynInfo) i).collect(Collectors.toCollection(LinkedHashSet::new));
@@ -67,6 +70,14 @@ public class CastInfoHelper {
 	
 	public Set<TabViewInfo> getResultsInTabViewInfos(Set<Info> resultList) {
 		return resultList.stream().map(i -> (TabViewInfo) i).collect(Collectors.toCollection(LinkedHashSet::new));
+	}
+
+	public Set<ListViewInfo> getResultsInListViewInfos(Set<Info> resultList) {
+		return resultList.stream().map(i -> (ListViewInfo)i ).collect(Collectors.toCollection(LinkedHashSet::new));
+	}
+
+	public Set<AdapterViewInfo> getResultsInAdapterViewInfos(Set<Info> resultList) {
+		return resultList.stream().map(i -> (AdapterViewInfo)i).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 }

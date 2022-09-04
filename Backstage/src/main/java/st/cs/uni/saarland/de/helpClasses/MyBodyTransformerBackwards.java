@@ -4,12 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import soot.Body;
 import soot.BodyTransformer;
-import soot.SootClass;
 import soot.SootMethod;
 import st.cs.uni.saarland.de.dissolveSpecXMLTags.TabViewInfo;
 import st.cs.uni.saarland.de.helpMethods.IterateOverUnitsHelper;
 import st.cs.uni.saarland.de.searchScreens.LayoutInfo;
-import st.cs.uni.saarland.de.searchScreens.StmtSwitchForLayoutInflater;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -44,7 +42,7 @@ public class MyBodyTransformerBackwards extends BodyTransformer{
 	
 	@Override
 	protected void internalTransform(Body body, String phase, Map options) {
-		if(!Helper.processMethod(body.getUnits().size()) || !body.getMethod().getDeclaringClass().getName().startsWith(Helper.getPackageName())){
+		if(!Helper.processMethod(body.getUnits().size()) || !Helper.isClassInAppNameSpace(body.getMethod().getDeclaringClass().getName())){
 			return;
 		}
 
@@ -100,7 +98,7 @@ public class MyBodyTransformerBackwards extends BodyTransformer{
 			}
 
 
-			Set<TabViewInfo> resT = stmtSwitch.getResultedTabs();
+			Set<TabViewInfo> resT = stmtSwitch.getResultedTabsViews();
 			Map<Integer, LayoutInfo> resL = stmtSwitch.getResultLayoutInfos();
 
 			if (resT != null)

@@ -2,13 +2,14 @@
 ##  Ting Su <tsuletgo@gmail.com>
 ## All rights reserved.
 
-# parse an action string
+# parse an action string 
+# e.g 4@click(resource-id='com.android.systemui:id/back'):android.widget.ImageView@""
 # @return action_id, action_cmd, view_type
 def parseActionString(action_string)
     loc = action_string.index("@")
     loc_type=action_string.rindex(":")
-    loc_scope=action_string.rindex(")")    
-    action_id = action_string[0..loc-1]
+    loc_scope=action_string.rindex(")") 
+    action_id = action_string[0..(loc-1)]
     if loc_type!=nil && loc_scope!=nil && loc_scope<loc_type
         action_cmd = action_string[loc+1..loc_type-1]
         view_string = action_string[loc_type+1..action_string.length]
@@ -189,13 +190,17 @@ class ActionPicker # < Test::Unit::TestCase
     # @param $action_strings actions in the string format
     #        $action_activity the activity which the action belongs to
     def putActions(action_strings, action_activity)
-        action_strings.each { |act_string|
-                putAction(act_string, action_activity)
-        }
+        unless action_strings.nil?
+            action_strings.each { |act_string|
+                unless act_string.nil? || act_string.strip.empty?
+                    putAction(act_string, action_activity)
+                end
+            }
+        end 
         puts "the current number of actions: #{@@actions.length}."
     end
     
-    # get the action by id
+    # get the action by id<
     def getActionById(action_id)
         @@actions[action_id]
     end
@@ -369,6 +374,16 @@ class ActionPicker # < Test::Unit::TestCase
         return act
     end
 
+    def resetActionsWeight()
+        #===========================================
+        # reset all the weights to initial
+        puts "[D] reset actions weight"
+        @@actions.each { |key, act|
+            act.set_execution_time(0)
+            act.set_action_weight(act.get_view_type.downcase=="textview"?1:2)
+        }
+    end
+
 
     # update actions weight, used in advanced bias random
     def updateActionsWeight()
@@ -440,6 +455,8 @@ class ActionPicker # < Test::Unit::TestCase
         end
         #=================================================        
         # get all the weights in actions
+        # @todo give lower weights to system actions (like back and stuff)
+        #todo lower weights for recent as well?
         act_ids = Array.new
         act_execution_weights = Array.new
 

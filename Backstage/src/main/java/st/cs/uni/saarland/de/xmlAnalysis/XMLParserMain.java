@@ -94,7 +94,10 @@ public class XMLParserMain {
             // all files of app get searched/analyzed (by the xmlparser)
             try {
                 searchXMLFilesInDir(Paths.get(appOutFolder.toString(), "res", "layout"));
+                searchXMLFilesInDir(Paths.get(appOutFolder.toString(), "res", "xml"));
                 searchXMLFilesInDir(Paths.get(appOutFolder.toString(), "res", "menu"));
+                searchXMLFilesInDir(Paths.get(appOutFolder.toString(), "res", "navigation"));
+                //TODO: Here search in res, navigation as well
             } catch (Exception e) {
                 logger.error(appOutFolder.getFileName().toString() + ": " + e);
                 Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
@@ -132,7 +135,7 @@ public class XMLParserMain {
         }
         try (Stream<Path> stream = Files.walk(dir, 999)) {
             stream.map(Path::toString)// TODO use parallel()
-                    .filter(path -> path.endsWith("xml") && !path.equals("AndroidManifest.xml"))
+                    .filter(path -> path.endsWith(".xml") && !path.equals("AndroidManifest.xml"))
                     .forEach(fName -> {
                         try {
                             app = runLayoutParser(fName, app);

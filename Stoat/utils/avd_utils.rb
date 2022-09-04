@@ -37,8 +37,8 @@ def start_avd(avd_name, avd_serial, avd_port)
     # -swipe-data: clean up the emulator
     emulator = execute_shell_cmd('which emulator').strip
     # puts "#{emulator} -avd #{avd_name} -port #{avd_port} -wipe-data -writable-system &"
-    # exec "#{emulator} -avd #{avd_name} -port #{avd_port} -no-skin -no-window -wipe-data -writable-system &"
-    exec "#{emulator} -avd #{avd_name} -port #{avd_port} -wipe-data -writable-system &"
+    exec "#{emulator} -avd #{avd_name} -port #{avd_port} -no-window -wipe-data -writable-system -no-snapshot &"
+    #exec "#{emulator} -avd #{avd_name} -port #{avd_port} -gpu guest -wipe-data -writable-system -no-snapshot &"
   end
   Process.detach(job1)
 
@@ -67,7 +67,7 @@ def prepare_avd(avd_serial)
   end
 
   puts 'naturalize the screen to avoid side-effect from previous testing...'
-  execute_shell_cmd("python #{STOAT_DIR}/a3e/bin/events/rotation_natural.py #{avd_serial}")
+  execute_shell_cmd("python3 #{STOAT_DIR}/a3e/bin/events/rotation_natural.py #{avd_serial}")
 end
 
 # Stops any emulator running on the provided port

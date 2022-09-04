@@ -18,6 +18,7 @@ public class ListenerInfo extends Info {
 	
 	private String searchedEID = "";
 	private String searchedEIDReg = "";
+	private String lastRegister = "";
 	private Set<String> listenerMethods;
 	private Set<String> listenerClasses = new HashSet<String>();
 //	private Set<Listener> listeners = new HashSet<Listener>();
@@ -30,6 +31,7 @@ public class ListenerInfo extends Info {
 
 	public ListenerInfo(Set<String> callBackMethod, String buttonRegister, String listenerRegister,String whichActionPerformed, String decaringSootClass){
 		super(buttonRegister);
+		this.lastRegister = buttonRegister;
 		listenerMethods = new HashSet<String>();
 		if(callBackMethod != null){
 			listenerMethods.addAll(callBackMethod);
@@ -79,6 +81,10 @@ public class ListenerInfo extends Info {
 //	public boolean allValueWereFoundOrStopAnalysis(){
 //		return  (stop || (listenerMethods.size() > 0) && (!listenerClass.equals("")) && (!searchedEID.equals("")) && (!whichAction.equals("")) );
 //	}
+
+	public String getLastRegister(){
+		return lastRegister;
+	}
 
 	public String getWhichAction() {
 		return whichAction;

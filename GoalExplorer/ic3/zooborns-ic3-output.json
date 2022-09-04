@@ -1,0 +1,13 @@
+{
+    "transitions": [
+        {
+            "handler": "org.smerty.zooborns.ZooBorns$1/void onItemClick(android.widget.AdapterView,android.view.View,int,long)",
+            "sources": [
+                "org.smerty.zooborns.ZooBorns"
+            ],
+            "targets": [
+                "org.smerty.zooborns.FullscreenImage"
+            ]
+        }
+    ]
+}

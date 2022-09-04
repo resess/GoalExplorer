@@ -14,7 +14,8 @@ public class START_ACTIVITY_CONSTANTS {
     public static final String INTENT_CLASS = "android.content.Intent";
     public static final String SET_DATA_METHOD="<android.content.Intent: android.content.Intent setData(android.net.Uri)>";
     public static final String SET_ACTION="<android.content.Intent: android.content.Intent setAction(java.lang.String)>";
-    public static final String SET_CLASS="<android.content.Intent: android.content.Intent setClassName(android.content.Context,java.lang.String)>";
+    public static final String SET_CLASS_NAME="<android.content.Intent: android.content.Intent setClassName(android.content.Context,java.lang.String)>";
+    public static final String SET_CLASS="<android.content.Intent: android.content.Intent setClass(android.content.Context,java.lang.Class)>";
     public static final String PUT_EXTRA="<android.content.Intent: android.content.Intent putExtra(java.lang.String,java.lang.String[])>";
     public static final String PUT_EXTRA2="<android.content.Intent: android.content.Intent putExtra(java.lang.String,java.lang.String)>";
     public static final String INIT_DEFAULT="<android.content.Intent: void <init>()>";
@@ -29,6 +30,7 @@ public class START_ACTIVITY_CONSTANTS {
     public static final String SET_COMPONENT="<android.content.Intent: android.content.Intent setComponent(android.content.ComponentName)>";
     public static final String COMPONENT_INIT="<android.content.ComponentName: void <init>(java.lang.String,java.lang.String)>";
     public static final String COMPONENT_INIT_CLASS="<android.content.ComponentName: void <init>(java.lang.String,java.lang.Class)>";
+    public static final String COMPONENT_INIT_CONTEXT_CLASS="<android.content.ComponentName: void <init>(android.content.Context,java.lang.Class)>";
 
 
     public static final String ANDROID_APP_SERVICE = "android.app.Service";

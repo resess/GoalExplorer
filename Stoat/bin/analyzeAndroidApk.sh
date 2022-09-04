@@ -3,7 +3,7 @@
 ANDROID_JARS_PATH="./libs/android-platforms"
 JAVA_CLASSPATH="./soot-github/lib/soot-develop.jar:\
 ./soot-github/libs/AXMLPrinter2.jar:\
-./server/Server.jar:"
+./server/ServerNew.jar:"
 
 OPTION=$1
 APP_SOURCE_DIR=$2

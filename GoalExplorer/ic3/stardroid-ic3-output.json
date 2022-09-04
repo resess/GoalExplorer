@@ -1,0 +1,76 @@
+{
+    "transitions": [
+        {
+            "handler": "com.google.android.stardroid.activities.DynamicStarMapActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "com.google.android.stardroid.activities.DynamicStarMapActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.CompassCalibrationActivity"
+            ]
+        },
+        {
+            "handler": "com.google.android.stardroid.activities.DynamicStarMapActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "com.google.android.stardroid.activities.DynamicStarMapActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.DiagnosticActivity"
+            ]
+        },
+        {
+            "handler": "com.google.android.stardroid.activities.DynamicStarMapActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "com.google.android.stardroid.activities.DynamicStarMapActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.EditSettingsActivity"
+            ]
+        },
+        {
+            "handler": "com.google.android.stardroid.activities.DynamicStarMapActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "com.google.android.stardroid.activities.DynamicStarMapActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.ImageGalleryActivity"
+            ]
+        },
+        {
+            "handler": "com.google.android.stardroid.activities.ImageDisplayActivity/void doSearch(android.view.View)",
+            "sources": [
+                "com.google.android.stardroid.activities.ImageDisplayActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.DynamicStarMapActivity"
+            ]
+        },
+        {
+            "handler": "com.google.android.stardroid.activities.ImageGalleryActivity/void showImage(int)",
+            "sources": [
+                "com.google.android.stardroid.activities.ImageGalleryActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.ImageDisplayActivity"
+            ]
+        },
+        {
+            "handler": "com.google.android.stardroid.activities.SplashScreenActivity/void launchSkyMap()",
+            "sources": [
+                "com.google.android.stardroid.activities.SplashScreenActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.DynamicStarMapActivity"
+            ]
+        },
+        {
+            "handler": "com.google.android.stardroid.util.SensorAccuracyMonitor/void onAccuracyChanged(android.hardware.Sensor,int)",
+            "sources": [
+                "com.google.android.stardroid.activities.DynamicStarMapActivity"
+            ],
+            "targets": [
+                "com.google.android.stardroid.activities.CompassCalibrationActivity"
+            ]
+        }
+    ]
+}

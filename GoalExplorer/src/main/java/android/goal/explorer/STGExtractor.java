@@ -1,5 +1,7 @@
 package android.goal.explorer;
 
+import android.goal.explorer.analysis.CallbackWidgetProvider;
+
 import android.goal.explorer.analysis.value.AnalysisParameters;
 import android.goal.explorer.analysis.value.PropagationIcfg;
 import android.goal.explorer.analysis.value.managers.ArgumentValueManager;
@@ -14,33 +16,32 @@ import android.goal.explorer.model.component.Activity;
 import android.goal.explorer.model.component.Fragment;
 import android.goal.explorer.model.stg.STG;
 import android.goal.explorer.topology.TopologyExtractor;
+import android.goal.explorer.utils.CustomSecurityManager;
 import org.pmw.tinylog.Logger;
 import soot.PackManager;
 import soot.Scene;
 import soot.SootClass;
+import soot.SootMethod;
 import soot.jimple.infoflow.android.SetupApplication;
 import soot.jimple.infoflow.android.callbacks.filters.AlienHostComponentFilter;
 import soot.jimple.infoflow.android.callbacks.filters.ApplicationCallbackFilter;
 import soot.jimple.infoflow.android.callbacks.filters.UnreachableConstructorFilter;
 import soot.jimple.infoflow.util.SystemClassHandler;
-import st.cs.uni.saarland.de.entities.Application;
-import st.cs.uni.saarland.de.entities.Dialog;
-import st.cs.uni.saarland.de.entities.Menu;
-import st.cs.uni.saarland.de.entities.XMLLayoutFile;
+import soot.jimple.toolkits.callgraph.Edge;
+import st.cs.uni.saarland.de.entities.*;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.reachabilityAnalysis.UiElement;
 import st.cs.uni.saarland.de.testApps.AppController;
 import st.cs.uni.saarland.de.testApps.Settings;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static st.cs.uni.saarland.de.testApps.TestApp.initializeSootForUiAnalysis;
 import static st.cs.uni.saarland.de.testApps.TestApp.performUiAnalysis;
 import static st.cs.uni.saarland.de.testApps.TestApp.runReachabilityAnalysis;
+
+
 
 public class STGExtractor {
     // Logging tags
@@ -83,30 +84,53 @@ public class STGExtractor {
         return stg;
     }
 
+    //Callback widget provider
+    private CallbackWidgetProvider callbackWidgetProvider;
+
     /**
      * Default constructor
      * @param config The configuration file
      */
     public STGExtractor(GlobalConfig config, Settings settings) {
-        // run backstage and merge the app object
-        backstageApp = runBackstage(settings);
+
 
         // Setup analysis config
         this.config = config;
 
+        this.flowDroidApp = new SetupApplication(config.getFlowdroidConfig());
+
         // Setup the app using FlowDroid
         Logger.debug("Creating app model using FlowDroid");
-        flowDroidApp = new SetupApplication(config.getFlowdroidConfig());
-
         // Initializes the app to proper state
         initialize(flowDroidApp);
 
         this.entrypoints = flowDroidApp.getEntrypointClasses();
 
-        // initialize backstage
-        Helper.loadNotAnalyzedLibs();
-        Helper.loadBundlesAndParsable();
-        Helper.deleteLogFileIfExist();
+
+        CustomSecurityManager securityManager = new CustomSecurityManager();
+        System.setSecurityManager(securityManager);
+
+        try{
+            // initialize backstage
+            Helper.loadNotAnalyzedLibs();
+            Helper.loadBundlesAndParsable();
+            Helper.deleteLogFileIfExist();
+
+            // run backstage and merge the app object
+            backstageApp = runBackstage(settings);
+
+        }
+        catch(SecurityException e){
+            Logger.error("Backstage exited the system, recovering ...");
+            Logger.debug("Moving on without backstage after recovering from exit caused by Backstage");
+        }
+        catch(Exception e){
+            Logger.error("Backstage threw an exception: {}", e);
+            Logger.debug("Moving on without backstage");
+        }
+        Logger.debug("Done with UI Analysis with Backstage");
+
+        
     }
 
 
@@ -117,20 +141,25 @@ public class STGExtractor {
         // initialize the STG with services and broadcast receivers
         stg = new STG(app);
 
-        // topology - (1) construct callgraph (2) collect lifecycle and callback methods for each component
-        Logger.debug("Starting Topology collection");
-        collectTopology(config.getTimeout(), config.getNumThread());
+        //if(this.entrypoints != null){//flowdroid analysis succeeded
+            // topology - (1) construct callgraph (2) collect lifecycle and callback methods for each component
+            Logger.debug("Starting Topology collection");
+            collectTopology(config.getTimeout(), config.getNumThread());
+            if(backstageApp != null)
+                mergeResults(app, backstageApp);
+            // register propagation analysis
+            if(entrypoints != null && entrypoints.size() > 0)
+                registerPropagationAnalysis();
+            // build the initial and transition screens
+            collectScreens();
 
-        mergeResults(app, backstageApp);
-
-        // register propagation analysis
-        registerPropagationAnalysis();
-
-        // build the initial and transition screens
-        collectScreens();
-
-        // collect transitions
-        collectTransitions();
+            // collect transitions
+            collectTransitions();
+        /*}
+        else{*/
+            //collectManifestScreens();
+      //  }
+        
     }
 
     /**
@@ -140,12 +169,15 @@ public class STGExtractor {
      */
     private void mergeResults(App app, Application backstageApp) {
 
+        Logger.debug("Here is the backstage app: "+backstageApp);
         int numDialogs = backstageApp.getDialogs().size();
         int numMenus = backstageApp.getMenus().size();
         int numUiElementsWithListeners = backstageApp.getUiElementsWithListeners().size();
         int numActivities = backstageApp.getActivities().size();
         int numXmlLayoutFiles = backstageApp.getXmlLayoutFiles().size();
         int numFragmentClassToLayout = backstageApp.getFragmentClassToLayout().size();
+        int numTabs = backstageApp.getTabs().size();
+
 
         String resultString = "Result of Analysis\n"
                 .concat(String.format("\t numDialogs: %d\n", numDialogs))
@@ -153,7 +185,8 @@ public class STGExtractor {
                 .concat(String.format("\t numUiElementsWithListeners: %d\n", numUiElementsWithListeners))
                 .concat(String.format("\t numActivities: %d\n", numActivities))
                 .concat(String.format("\t numXmlLayoutFiles: %d\n", numXmlLayoutFiles))
-                .concat(String.format("\t numFragmentClassToLayout: %d\n", numFragmentClassToLayout));
+                .concat(String.format("\t numFragmentClassToLayout: %d\n", numFragmentClassToLayout))
+                .concat(String.format("\t numTabs: %d\n", numTabs));
 
         Logger.debug(resultString);
 
@@ -162,52 +195,111 @@ public class STGExtractor {
         Map<Integer, Dialog> dialogMap = backstageApp.getDialogs();
         Map<Integer, Menu> menuMap = backstageApp.getMenus();
 
-        for (UiElement uiElement : backstageApp.getUiElementsWithListeners()) {
+        Logger.debug("Backstage identified menus {} and dialogs {}", menuMap, dialogMap);
+
+        for (UiElement uiElement : backstageApp.getAllUiElementsWithListeners()) {
+            Logger.debug("Backstage found {} as a ui element with listener and target {}", uiElement, (uiElement != null)?uiElement.targetSootClass: "none");
             String declaringClass = uiElement.declaringSootClass;
-            Activity curActivity = app.getActivityByName(declaringClass);
-            if (curActivity != null) {
-                curActivity.addUiElement(uiElement.globalId, uiElement);
-            } else {
-                Logger.warn("[WARN] cannot find activity {}", declaringClass);
+            Logger.debug("The declaring soot class of the ui element is: {}", declaringClass);
+            if(uiElement != null && uiElement.handlerMethod != null){
+                if(uiElement.declaringSootClass == null || uiElement.declaringSootClass.equals("default_value")){ //TODO: Investigate why
+                    String listener = uiElement.signature;
+                    uiElement.declaringSootClass = listener.split(":")[0].split("<")[1];
+                }
+                if(uiElement.declaringSootClass != null && uiElement.declaringSootClass.contains("$"))
+                    uiElement.declaringSootClass = uiElement.declaringSootClass.split("\\$",2)[0];
+                declaringClass = uiElement.declaringSootClass;
+                Logger.debug("The updated declaring soot class of the ui element is: {}", declaringClass);
             }
+            //TODO deal with ui elements with same id, i.e dialogs
+            //For now assume, two elements can't have the same id (static id) in the same activity?
+            //Hmm about list views lol
+            //We need to find all activites that extends that class
+            //TODO should we have different UI elements or only one for the base class, then deal with extending here?
+            //We plan to parse the callback for all extending classes, so maybe we should have a UI element associated as well then?
+            //Or just a different listener?
+            if(declaringClass != null && !declaringClass.isEmpty() && !declaringClass.equals("null"))  {
+                Activity curActivity = app.getActivityByName(declaringClass);
+                if (curActivity != null) { //TODO, for all extending classes where the callback is not defined, add the ui element (otherwise it would have been already parsed)
+                    Logger.debug("Adding UI element from backstage {} to activity {}", uiElement, curActivity);
+                    curActivity.addUiElement(uiElement.globalId, uiElement);
+                } else {
+                    Logger.warn("[WARN] cannot find activity {}", declaringClass);
+                    Logger.warn("Checking activities extending class");
+                    Scene.v().getActiveHierarchy().getSubclassesOf(Scene.v().getSootClassUnsafe(declaringClass, false)).forEach(subClass -> {
+                        String name = subClass.getName();
+                        Activity curAct = app.getActivityByName(name);
+                        if (curAct != null) {
+                            Logger.debug("Adding UI element from backstage {} to activity {}", uiElement, curAct);
+                            curAct.addUiElement(uiElement.globalId, uiElement);
+                        } else {
+                            Logger.warn("[WARN] cannot find activity {}", name);
+                        }
+                    });
+                    Logger.debug("Also found activities extending {} {}", declaringClass, app.getActivitiesExtending(declaringClass));
+                    //Logger.debug("Checking activities extending class");
+                }
+             }
         }
 
         // add UI elements & layouts to activities
         for (Activity activity : app.getActivities()) {
             st.cs.uni.saarland.de.entities.Activity backActivity = backstageApp.getActivityByName(activity.getName());
-            if (backActivity == null) {
-                continue;
-            }
-            for (Integer layoutId : backActivity.getXmlLayouts()) {
-                // check if the layout id maps to a layout file
-                XMLLayoutFile layout = backstageApp.getXmlLayoutFile(layoutId);
-                if (layout != null) {
-                    activity.addLayout(layoutId, layout);
-                }
+            updateActivity(activity,backActivity,dialogMap, menuMap);
 
-                // add UI element if the resource id maps to an UI element
-                UiElement uiElement = backstageApp.getUiElementWithListenerById(layoutId);
-                if (uiElement != null) {
-                    activity.addUiElement(layoutId, uiElement);
-                }
-
-                // check if the XML file is a menu
-                Dialog dialog = dialogMap.get(layoutId);
-                Menu menu = menuMap.get(layoutId);
-                if (dialog != null) {
-                    activity.addDialog(dialog);
-                }
-                if (menu != null) {
-                    activity.setMenu(menu);
-                }
-            }
-            Logger.info("Updated Activity:" + activity.toString());
         }
 
         // add UI elements to fragments
+        //TODO add ui elements for all static fragments as well
+        //Necessary to obtain res ids
+        //TODO add the callbacks to the topologu
         for (Map.Entry<String, Set<Integer>> fragmentEntry : backstageApp.getFragmentClassToLayout().entrySet()) {
-            app.addFragment(new Fragment(Scene.v().getSootClassUnsafe(fragmentEntry.getKey()), fragmentEntry.getValue()));
+            Fragment newFragment = new Fragment(Scene.v().getSootClassUnsafe(fragmentEntry.getKey(),false), fragmentEntry.getValue());
+            backstageApp.getAllUiElementsWithListeners().stream()
+                    .filter(uiElement -> newFragment.getName().equals(uiElement.declaringSootClass))
+                    .forEach(uiElement -> newFragment.addUiElement(uiElement));
+            app.addFragment(newFragment);
         }
+    }
+
+    private void updateActivity(Activity activity,  st.cs.uni.saarland.de.entities.Activity backActivity, Map<Integer, Dialog> dialogMap, Map<Integer, Menu> menuMap ) {
+        if(backActivity == null)
+            return;
+        Logger.debug("For activity {}, checking backstage activity {}", activity, backActivity.getName());
+        for (Integer layoutId : backActivity.getXmlLayouts()) {
+            // check if the layout id maps to a layout file
+            XMLLayoutFile layout = backstageApp.getXmlLayoutFile(layoutId);
+            if (layout != null) {
+                activity.addLayout(layoutId, layout);
+            }
+
+            // add UI element if the resource id maps to an UI element
+            UiElement uiElement = backstageApp.getUiElementWithListenerById(layoutId, activity.getName());
+            if (uiElement != null) {
+                activity.addUiElement(layoutId, uiElement);
+            }
+
+            // check if the XML file is a menu
+            Dialog dialog = dialogMap.get(layoutId);
+            Menu menu = menuMap.get(layoutId);
+            if (dialog != null) {
+                activity.addDialog(dialog);
+                Logger.debug("Added dialog {} to activity {}", dialog, activity);
+            }
+            if (menu != null) {
+                if(menu.getKindOfMenu().equals("Contextual"))
+                    activity.addBackstageContextMenu(menu);
+                else activity.setBackstageMenu(menu);
+                Logger.debug("Added menu {} to activity {}", menu, activity);
+            }
+        }
+
+        for (Tab tab : backstageApp.getTabs()) {
+            if(tab.getParentActivityName().equals(activity.getName())) {
+                activity.addTab(tab);
+            }
+        }
+        Logger.info("Updated Activity:" + activity.toString());
     }
 
     /**
@@ -215,19 +307,20 @@ public class STGExtractor {
      */
     private Application runBackstage(Settings settings) {
         long beforeRun = System.nanoTime();
-        initializeSootForUiAnalysis(settings.apkPath, settings.androidJar, settings.saveJimple, false);
-        AppController appResults = performUiAnalysis(settings);
+        //initializeSootForUiAnalysis(settings.apkPath, settings.androidJar, settings.saveJimple, false);
+        AppController appResults = performUiAnalysis(settings, flowDroidApp);
         if(appResults == null){
             return null;
         }
         Helper.saveToStatisticalFile("UI Analysis has run for " + (System.nanoTime() - beforeRun) / 1E9 + " seconds");
-        PackManager.v().writeOutput();
+        //PackManager.v().writeOutput();
 
         List<UiElement> uiElementObjectsForReachabilityAnalysis =
                 appResults.getUIElementObjectsForReachabilityAnalysis(true);
         List<UiElement> distinctUiElements = uiElementObjectsForReachabilityAnalysis
                 .stream().distinct().collect(Collectors.toList());
-        runReachabilityAnalysis(distinctUiElements, appResults.getActivityNames(), settings);
+        Logger.debug(distinctUiElements.toString());
+        runReachabilityAnalysis(distinctUiElements, appResults.getActivityNames(), settings,flowDroidApp);
         return AppController.getInstance().getApp();
     }
 
@@ -245,15 +338,17 @@ public class STGExtractor {
      * Collects the screens
      */
     private void collectScreens() {
+        Logger.debug("Starting screens collection");
         ScreenBuilder screenBuilder = new ScreenBuilder(app, stg, backstageApp, config);
-        screenBuilder.addCallbackFilter(new AlienHostComponentFilter(entrypoints));
-        screenBuilder.addCallbackFilter(new ApplicationCallbackFilter(entrypoints));
-        screenBuilder.addCallbackFilter(new UnreachableConstructorFilter());
-        if (app.getApplication() == null)
-            screenBuilder.addCallbackFilter(new LifecycleCallbackFilter((String) null));
-        else
-            screenBuilder.addCallbackFilter(new LifecycleCallbackFilter(app.getApplication().getMainClass()));
-
+        if(this.entrypoints != null){
+            screenBuilder.addCallbackFilter(new AlienHostComponentFilter(entrypoints));
+            screenBuilder.addCallbackFilter(new ApplicationCallbackFilter(entrypoints));
+            screenBuilder.addCallbackFilter(new UnreachableConstructorFilter());
+            if (app.getApplication() == null)
+                screenBuilder.addCallbackFilter(new LifecycleCallbackFilter((String) null));
+            else
+                screenBuilder.addCallbackFilter(new LifecycleCallbackFilter(app.getApplication().getMainClass()));
+        }
         screenBuilder.constructScreens();
     }
 
@@ -261,7 +356,9 @@ public class STGExtractor {
      * Collects all transitions in the app
      */
     public void collectTransitions() {
-        TransitionBuilder transitionBuilder = new TransitionBuilder(stg);
+        Logger.debug("Starting transitions collection");
+        TransitionBuilder transitionBuilder = new TransitionBuilder(stg, app, config);
+        //TODO add path to the options of the algo I guess
         transitionBuilder.collectTransitions();
         stg = transitionBuilder.stg;
     }
@@ -274,8 +371,9 @@ public class STGExtractor {
         // Construct the callgraph
         setupApplication.constructCallgraph();
 
+        Logger.debug("Initializing app model");
         // initialize the model
-        app = new App();
+        app = App.v();
         app.initializeAppModel(setupApplication);
     }
 
@@ -298,7 +396,8 @@ public class STGExtractor {
         Set<String> analysisClasses = new HashSet<>();
         Scene.v().getApplicationClasses().snapshotIterator().forEachRemaining(x -> {
             String className = x.getName();
-            if (!SystemClassHandler.isClassInSystemPackage(className)) {
+            if (!SystemClassHandler.v().isClassInSystemPackage(className)){
+                    //isClassInSystemPackageExcludingAppPackageName(className, app.getPackageName())) {
                 analysisClasses.add(className);
             }
         });

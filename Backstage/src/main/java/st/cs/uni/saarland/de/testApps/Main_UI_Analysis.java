@@ -4,7 +4,7 @@ import com.thoughtworks.xstream.XStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import soot.PackManager;
-import soot.Transform;
+import soot.jimple.infoflow.android.SetupApplication;
 import st.cs.uni.saarland.de.dissolveSpecXMLTags.DissolveXMLTagsMain;
 import st.cs.uni.saarland.de.entities.*;
 import st.cs.uni.saarland.de.helpClasses.Helper;
@@ -14,7 +14,10 @@ import st.cs.uni.saarland.de.searchDynDecStrings.SearchDynDecMain;
 import st.cs.uni.saarland.de.searchListener.SearchListener;
 import st.cs.uni.saarland.de.searchMenus.SearchMenusMain;
 import st.cs.uni.saarland.de.searchScreens.SearchActivityScreens;
-import st.cs.uni.saarland.de.uiAnalysis.UiAnalysisPack;
+import st.cs.uni.saarland.de.searchPreferences.SearchPreferencesMain;
+import st.cs.uni.saarland.de.searchTabs.SearchTabMain;
+import st.cs.uni.saarland.de.uiAnalysis.ExtraUIAnalyzer;
+import st.cs.uni.saarland.de.uiAnalysis.LifecycleUIAnalyzer;
 import st.cs.uni.saarland.de.xmlAnalysis.XMLParserMain;
 
 import java.io.*;
@@ -75,8 +78,9 @@ public class Main_UI_Analysis {
 		this.maxDepthMethodLevel = maxDepthMethodLebel;
 	}
 
+
 	// args:
-	public boolean runAnalysisForOneApp(File outputDir, boolean processImages) {
+	public boolean runAnalysisForOneApp(File outputDir, boolean processImages, SetupApplication setupApplication) {
 
 
 		String logText = String.format("Running UI analysis with timeout for entrypoint class: %s %s", this.tTimeoutValue, this.tTimeoutUnit);
@@ -140,15 +144,25 @@ public class Main_UI_Analysis {
 					if (countOfXMlLayouts / (double) (countOfActivities) < 0.7) {
 						String message = "App has less than 70% of XML Layouts.";
 						logger.error(message);
+						logger.warn("Update: Analyzing app nonetheless");
 						Helper.saveToStatisticalFile(message);
-						return false;
+						//return false;
 					}
 				}
 			}
 
-			UiAnalysisPack uiAnalysisPack = new UiAnalysisPack(tTimeoutUnit, tTimeoutValue, numThreads, processMenus, maxDepthMethodLevel, app);
-			PackManager.v().getPack("wjtp").add(new Transform("wjtp.UiAnalysis", uiAnalysisPack));
-			PackManager.v().runPacks();
+			/*UiAnalysisPack uiAnalyzer = new UiAnalysisPack(tTimeoutUnit, tTimeoutValue, numThreads, processMenus, maxDepthMethodLevel, app);
+			PackManager.v().getPack("wjtp").add(new Transform("wjtp.UiAnalysis", uiAnalyzer));
+			//SetupApplication setupApplication = new SetupApplication(flowdroidConfig);
+			//setupApplication.
+			//setupApplication.constructCallgraph();
+			PackManager.v().runPacks();*/
+			//SetupApplication setupApp = new SetupApplication(setupApplication.getConfig());
+			//setupApplication.addPreprocessor(uiAnalyzer);
+			//setupApplication.constructCallgraph();
+			//PackManager.v().runPacks();
+			LifecycleUIAnalyzer uiAnalyzer = new LifecycleUIAnalyzer(tTimeoutUnit, tTimeoutValue, numThreads, processMenus, maxDepthMethodLevel, app);
+			uiAnalyzer.run();
 			logger.info("UI Analysis Pack is done");
 
 			if (app == null) {
@@ -161,7 +175,7 @@ public class Main_UI_Analysis {
 				logger.info("Resolving XML dependencies");
 //				 ressolve XMLTag dependencies
 				DissolveXMLTagsMain dissolveXMLTags = new DissolveXMLTagsMain();
-				dissolveXMLTags.dissolveXMLTags(uiAnalysisPack.getFragments(), uiAnalysisPack.getTabViews());
+				dissolveXMLTags.dissolveXMLTags(uiAnalyzer.getFragments(), uiAnalyzer.getTabViews(), uiAnalyzer.getAdapterViews());
 			} catch (Exception e) {
 				logger.error(app.getName() + ": " + e.getMessage());
 				e.printStackTrace();
@@ -172,7 +186,7 @@ public class Main_UI_Analysis {
 				// get the dynamical declared texts
 				logger.info("Searching for dynamically declared text");
 				SearchDynDecMain searchDynDec = new SearchDynDecMain();
-				searchDynDec.searchDynDeclaredStrings(uiAnalysisPack.getStrings());
+				searchDynDec.searchDynDeclaredStrings(uiAnalyzer.getStrings());
 			} catch (Exception e) {
 				logger.error(app.getName() + ": " + e);
 				e.printStackTrace();
@@ -184,8 +198,19 @@ public class Main_UI_Analysis {
 				// get all the UIElements, located at the one screen, together ~ grouping
 				logger.info("Grouping UI elements");
 				SearchActivityScreens screenMain = new SearchActivityScreens();
-				screenMain.runSearchActivityScreens(uiAnalysisPack.getLayouts());
+				screenMain.runSearchActivityScreens(uiAnalyzer.getLayouts());
 			} catch (Exception e) {
+				logger.error(app.getName() + ": " + e);
+				Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
+			}
+
+			try {
+				//get all preferences
+				logger.info("Resolving preferences screens");
+				SearchPreferencesMain prefMain = new SearchPreferencesMain();
+				prefMain.processPreferences(uiAnalyzer.getPreferences());
+			} catch (Exception e) {
+				//TODO: handle exception
 				logger.error(app.getName() + ": " + e);
 				Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
 			}
@@ -194,8 +219,21 @@ public class Main_UI_Analysis {
 			try {
 				logger.info("Processing menus");
 				SearchMenusMain searchMenus = new SearchMenusMain();
-				searchMenus.getMenusInApp(uiAnalysisPack.getOptionMenus(), uiAnalysisPack.getContextMenus(),
-						uiAnalysisPack.getContextOnCreateMenus(), uiAnalysisPack.getPopupMenus(), uiAnalysisPack.getNavigationMenus());
+				searchMenus.getMenusInApp(uiAnalyzer.getOptionMenus(), uiAnalyzer.getContextMenus(),
+						uiAnalyzer.getContextOnCreateMenus(), uiAnalyzer.getPopupMenus(), uiAnalyzer.getNavigationMenus());
+				//here we can retry the dynamic string parsing for those with the same declaring method
+				//we can pass the dynamic string as input and then try again
+			} catch (Exception e) {
+				logger.error(app.getName() + ": " + e);
+				e.printStackTrace();
+				Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
+			}
+
+			try {
+				logger.info("Processing tabs");
+				SearchTabMain searchTabs = new SearchTabMain();
+				logger.info("num tabsinfos: " + uiAnalyzer.getTabs().size());
+				searchTabs.getTabsInApp(uiAnalyzer.getTabs());
 			} catch (Exception e) {
 				logger.error(app.getName() + ": " + e);
 				e.printStackTrace();
@@ -207,7 +245,7 @@ public class Main_UI_Analysis {
 				logger.info("Processing dialogs");
 				// search dynamical build Dialogs
 				SearchDialogMain diaMain = new SearchDialogMain();
-				diaMain.getDialogsOfApp(uiAnalysisPack.getDialogResults());
+				diaMain.getDialogsOfApp(uiAnalyzer.getDialogResults());
 			} catch (Exception e) {
 				logger.error(app.getName() + ": " + e.getMessage());
 				e.printStackTrace();
@@ -218,12 +256,58 @@ public class Main_UI_Analysis {
 				logger.info("Processing listeners");
 				// search for listener
 				SearchListener sl = new SearchListener();
-				sl.runSearchListener(uiAnalysisPack.getListeners());
+				sl.runSearchListener(uiAnalyzer.getListeners());
 			} catch (Exception e) {
 				logger.error(app.getName() + ": " + e);
 				e.printStackTrace();
 				Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
 			}
+
+			//TODO: Perform additional analysis for dialogs registration
+			 //Here perform additional callback analysis for dialogs
+			 logger.info("Running additional callback analysis for dynamic dialogs registration");
+			ExtraUIAnalyzer extraUIAnalyzer = new ExtraUIAnalyzer(tTimeoutUnit, tTimeoutValue, numThreads, maxDepthMethodLevel, app);
+			extraUIAnalyzer.run();
+			logger.info("Extra Ui(dialog) analysis is done");
+
+			try{
+				logger.info("Processing dialogs defined in callbacks {}", extraUIAnalyzer.getDialogResults());
+				// search dynamical build Dialogs
+				SearchDialogMain diaMain = new SearchDialogMain();
+				diaMain.getDialogsOfApp(extraUIAnalyzer.getDialogResults());
+			} catch (Exception e) {
+				logger.error(app.getName() + ": " + e.getMessage());
+				e.printStackTrace();
+				Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
+			}
+			/**
+
+			  for all listeners in the app
+			  map a map from soot class to set of methods I guess
+			  * new AnalysisPack with dialogs only
+			  Search dialogs main 
+
+
+			  */
+
+			/*ExtraDialogAnalysisPack extraAnalysisPack = new ExtraDialogAnalysisPack(tTimeoutUnit, tTimeoutValue, numThreads, maxDepthMethodLevel, app);
+			PackManager.v().getPack("wjap").add(new Transform("wjap.ExtraDialogAnalysis", extraAnalysisPack));
+			PackManager.v().getPack("wjap").apply();
+			logger.info("Extra Dialog Analysis Pack is done");
+
+			//TODO -UPDATE DATA WITHIN THE PHASE ?
+			//get all info from 
+
+			try {
+				logger.info("Processing dialogs defined in callbacks {}", extraAnalysisPack.getDialogResults());
+				// search dynamical build Dialogs
+				SearchDialogMain diaMain = new SearchDialogMain();
+				diaMain.getDialogsOfApp(extraAnalysisPack.getDialogResults());
+			} catch (Exception e) {
+				logger.error(app.getName() + ": " + e.getMessage());
+				e.printStackTrace();
+				Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
+			}*/
 
 			// TODO: needed for get menus
 			//Mapping activities to layouts

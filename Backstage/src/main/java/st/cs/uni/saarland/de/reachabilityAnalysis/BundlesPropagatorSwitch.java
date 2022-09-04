@@ -43,10 +43,10 @@ public class BundlesPropagatorSwitch extends AbstractStmtSwitch {
 
             return;
         }
-        Value registerToCopmare = stmt.getInvokeExpr().getUseBoxes().get(stmt.getInvokeExpr().getUseBoxes().size() - 1).getValue();
+        Value registerToCopmare = stmt.getInvokeExpr().getUseBoxes().get(0).getValue();
         if(registerToCopmare.equals(register) && stmt.getInvokeExpr().getMethod().getSignature().equals(START_ACTIVITY_CONSTANTS.PUT_STRING_TO_BUNDLE)){
             MHGDominatorsFinder<Unit> dominatorsFinder = new MHGDominatorsFinder<>(new ExceptionalUnitGraph(sootMethod.getActiveBody()));
-            StringPropagatorSwitch stringPropagatorSwitch = new StringPropagatorSwitch(stmt.getInvokeExpr().getArg(0), sootMethod, new HashSet<>());
+            StringPropagatorSwitch stringPropagatorSwitch = new StringPropagatorSwitch(stmt.getInvokeExpr().getArg(0), sootMethod, new HashSet<>(),"");
             Unit currentUnit = dominatorsFinder.getImmediateDominator(stmt);
             while (currentUnit != null && !stringPropagatorSwitch.isDone()){
                 currentUnit.apply(stringPropagatorSwitch);

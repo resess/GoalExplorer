@@ -7,12 +7,16 @@ import org.slf4j.LoggerFactory;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
+import st.cs.uni.saarland.de.dissolveSpecXMLTags.AdapterViewInfo;
+import st.cs.uni.saarland.de.dissolveSpecXMLTags.ListViewInfo;
 import st.cs.uni.saarland.de.entities.*;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.reachabilityAnalysis.ApiInfoForForward;
 import st.cs.uni.saarland.de.reachabilityAnalysis.UiElement;
+import st.cs.uni.saarland.de.reachabilityAnalysis.PreferenceResolver;
 import st.cs.uni.saarland.de.saveData.Label;
 import st.cs.uni.saarland.de.searchListener.XMLDefinedListenerIterator;
+import st.cs.uni.saarland.de.searchMenus.MenuInfo;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,6 +56,40 @@ public class AppController {
         return appController;
     }
 
+    public void addDataToAdapterViewObject(int adapterViewId,  Collection<Listener> listeners, String assignedActivity){
+        AdapterView adapterView = null;
+        try {
+            Set<AppsUIElement> allPotentialAdapterViews = app.getAllUIElementsForId(adapterViewId);
+            if(allPotentialAdapterViews.size() == 1)
+                adapterView = (AdapterView)allPotentialAdapterViews.stream().findFirst().get();
+            else adapterView = (AdapterView) allPotentialAdapterViews.stream().filter(elem -> elem instanceof AdapterView && assignedActivity.equals(((AdapterView)elem).getAssignedActivity())).findFirst().orElse(null);
+            if(adapterView.getItemIDs() == null || adapterView.getItemIDs().isEmpty()){
+                for (Listener l : listeners) {
+                    //logger.debug("Adding listener {} for element {}", l, adapterView);
+                    adapterView.addListener(l);
+                }
+            }
+            else for (int eId: adapterView.getItemIDs()) {
+                AppsUIElement uiE = null;
+                try {
+                    uiE = app.getUiElement(eId);
+                    for (Listener l : listeners) {
+                        //logger.debug("Adding listener {} for element {}", l, uiE);
+                        uiE.addListener(l);
+                    }
+                }
+                catch(NullPointerException e) {
+                    logger.error("AppController:addDataToListViewObject: AppsUIElement not found with id: " + eId);
+                    Helper.saveToStatisticalFile("AppController:addDataToListViewObject: AppsUIElement not found with id: " + eId);
+
+                }
+            }
+        }
+        catch(NullPointerException e){
+            logger.error("AppController:addDataToListViewObject: AppsUIElement not found with id: "+adapterViewId);
+        }
+    }
+
     public void addDataToMenuObject(int menuID, String kindOfMenu, Collection<Listener> layoutListener) {
         Menu menu = null;
         try {
@@ -64,8 +102,8 @@ public class AppController {
                 try {
                     uiE = app.getUiElement(eID);
                 } catch (NullPointerException e) {
-                    logger.error("AppController:addDataToMenuObject: AppsUIElement not found with id: " + uiE.getId());
-                    Helper.saveToStatisticalFile("AppController:addDataToMenuObject: AppsUIElement not found with id: " + uiE.getId());
+                    logger.error("AppController:addDataToMenuObject: AppsUIElement not found with id: " + eID);
+                    Helper.saveToStatisticalFile("AppController:addDataToMenuObject: AppsUIElement not found with id: " + eID);
                 }
                 for (Listener l : layoutListener) {
                     uiE.addListener(l);
@@ -107,6 +145,15 @@ public class AppController {
         }
     }
 
+    public void addTab(Tab tab) {
+        if (tab != null) {
+            app.addTab(tab);
+        } else {
+            logger.error("Null Tab was tryied to be added in AppController");
+            Helper.saveToStatisticalFile("Null Tab was tryied to be added in AppController");
+        }
+    }
+
     public void addFragmentClassToItsViewIDs(String fragmentName, Set<Integer> viewIDs) {
         app.addFragmentClassToViewIDs(fragmentName, viewIDs);
     }
@@ -114,9 +161,28 @@ public class AppController {
     // adds a listener to the specified element with the id elementID
     public void addListener(int elementID, Listener listener) {
         try {
-            app.getUiElement(elementID).addListener(listener);
+            //filter by listener declaring class
+            AppsUIElement element = app.getUiElement(elementID);
+            //TODO listeners are overriden since same listener class, need to have multiple element somehow ?
+            //maybe should make a copy of the element with the declaring class?
+            /*if(StringUtils.isBlank(element.getDeclaringClass())){
+                //element.
+                element.setDeclaringClass(listener.getDeclaringClass());
+            }*/
+            //TODO check for multiple ui elements with same ids besides (adapterview)
+            if(element instanceof AdapterView){
+                Collection<Listener> listeners = new HashSet<Listener>();
+                listeners.add(listener);
+                if(!StringUtils.isBlank(listener.getDeclaringClass()))
+                    appController.addDataToAdapterViewObject(elementID, listeners, listener.getDeclaringClass());//((AdapterView) element).getAssignedActivity());
+                else //Needed ?
+                    appController.addDataToAdapterViewObject(elementID, listeners, ((AdapterView) element).getAssignedActivity());
+            }
+            else
+                element.addListener(listener);
+
         } catch (NullPointerException e) {
-            logger.error("AppsUIElement not found with id: " + elementID);
+            logger.error("Couldn't add listener, AppsUIElement not found with id: " + elementID);
             Helper.saveToStatisticalFile("AppsUIElement not found with id: " + elementID);
         }
     }
@@ -148,7 +214,7 @@ public class AppController {
         if (null != uiE)
             uiE.addText(text, declaringSootClass);
         else {
-            logger.error("AppController:addText: elementID not found for adding text: elementID: " + elementID);
+            logger.error("AppController:addText: elementID not found for adding text {} in class {} : elementID: " + elementID, text, declaringSootClass);
             Helper.saveToStatisticalFile("AppController:addText: elementID not found for adding text: elementID: " + elementID);
         }
     }
@@ -159,6 +225,10 @@ public class AppController {
 
     public void addXMLLayoutFileToActivity(String activityClassName, int layoutID) {
         app.addXMLLayoutFileToActivity(activityClassName, layoutID);
+    }
+
+    public void addPreferenceToActivity(String activityClassName, String layoutID) {
+        app.addXMLPreferenceToActivity(activityClassName, layoutID);
     }
 
     public void addXMLLayoutFileToSpecialXMLTag(int specXMLTagID, Collection<Integer> addedXMLLayoutFileIDs) {
@@ -176,18 +246,23 @@ public class AppController {
     }
 
     public void addXMLLayoutFileToSpecialXMLTag(int specXMLTagID, int addedXMLLayoutFileID) {
+        AppsUIElement element = app.getUIElementByType(specXMLTagID, "");
         try {
-            SpecialXMLTag specTag = (SpecialXMLTag) app.getUiElement(specXMLTagID);
-            specTag.addXmlFile(addedXMLLayoutFileID);
+            SpecialXMLTag specTag = (SpecialXMLTag)element;
+                    specTag.addXmlFile(addedXMLLayoutFileID);
 
             // add parents and children accordingly
             XMLLayoutFile xmlFadded = app.getXmlLayoutFile(addedXMLLayoutFileID);
-            AppsUIElement rootOfAddedLayout = app.getUiElement(xmlFadded.getRootElementID());
-            specTag.addChildIDDyn(
-                    rootOfAddedLayout.getId());
-            rootOfAddedLayout.addParentDyn(specXMLTagID);
-        } catch (NullPointerException e) {
-            logger.error("AppController:addXMLLayoutFileToSpecialXMLTag: SpecXMLTag or XMLLayoutFile not found with id: " + specXMLTagID);
+            if(xmlFadded.getRootElementID() == 0)
+                xmlFadded.setRootElementID(specXMLTagID);
+            else {
+                AppsUIElement rootOfAddedLayout = app.getUiElement(xmlFadded.getRootElementID());
+                specTag.addChildIDDyn(
+                        rootOfAddedLayout.getId());
+                rootOfAddedLayout.addParentDyn(specXMLTagID);
+            }
+        } catch (NullPointerException | ClassCastException e ) { //catch castexception?
+            logger.error("AppController:addXMLLayoutFileToSpecialXMLTag: SpecXMLTag or XMLLayoutFile not found with id: {} {}",specXMLTagID, element);
             Helper.saveToStatisticalFile("SpecXMLTag not found with id: " + specXMLTagID);
         }
     }
@@ -206,6 +281,14 @@ public class AppController {
     // and replaces the XMLLayoutFile object with the Menu object in the list of all XMLLayoutFiles in this class
     public void extendXMLLayoutFileToMenu(int xmlLayoutFileID) {
         app.expandXMLLayoutFileWithMenu(xmlLayoutFileID);
+    }
+
+    public void extendPhantomXMLFileForDynMenu(int xmlLayoutFileID, MenuInfo info){
+        app.addPhantomXMLLayoutForDynMenu(xmlLayoutFileID, info);
+    }
+
+    public void extendAdapterViewWithDynItems(int id, AdapterViewInfo adapterViewInfo) {
+        app.extendAdapterViewWithDynItems(id, adapterViewInfo);
     }
 
     // used for tests
@@ -227,7 +310,7 @@ public class AppController {
     // throws exception of fragTagID is not an XMLFragment
     public String getFragmentClassFromTag(int fragTagID) {
         try {
-            XMLFragment fragE = (XMLFragment) app.getUiElement(fragTagID);
+            XMLFragment fragE = (XMLFragment) app.getUIElementByType(fragTagID, "fragment");
             return fragE.getClassName();
         } catch (NullPointerException e) {
             logger.error("XMLFragment not found with id: " + fragTagID);
@@ -287,14 +370,39 @@ public class AppController {
         List<UiElement> reachabilityElements = new ArrayList<UiElement>();
         // iter through all ui elements which were found in the ui analysis
         for (AppsUIElement uiE : app.getAllUIElements()) {
+            //if (uiE.getKindOfUiElement().equals("listviewitem") || uiE.getKindOfUiElement().equals("spinneritem"))
+                //logger.debug("Found a list/spinner view item for with listener reachability {}", uiE);
+            if(uiE.getKindOfUiElement().equals("listview")){
+                ListView listView = (ListView)uiE;
+                if(listView.getItemIDs().size() == 0){
+                    //logger.debug("Found an empty list view for reachability analysis");
+                }
+                else continue;
+            }
+            if(uiE.getKindOfUiElement().equalsIgnoreCase("spinner")){ //what about what extends Spinner
+                logger.debug("Found a spinner {}", uiE);
+                continue;
+            }
+            if (uiE.getKindOfUiElement().equalsIgnoreCase("PreferenceScreen")) {
+                logger.debug("Found a preference screen FOR REACHABILITY {}",uiE);
+                PreferenceResolver.v().storePreference(uiE);
+            }
             // check if element has a listener attached
             // if with layout listeners change to uiE.hasListenersOfElementsAndLayout(..)
-            if (withListener && !uiE.hasElementListener())
+            if (withListener && !uiE.hasElementListener()){
+                if(!uiE.getIntent().isEmpty())
+                    //We do not add this for reachability analysis
+                    createUiElementWithIntent(uiE.getId(), uiE.getTextFromElement(), uiE.getKindOfUiElement(), uiE.getDeclaringClass(), uiE.getIntent());
+                //need a fake listener, and to load the class I guess
                 continue;
+            }
+
             // don't analyse this tags, they have only layout listener assigned which other tags also have
+            //TODO only add a listener for the listview if elements are empty
             if (uiE.getKindOfUiElement().equals("merge") || uiE.getKindOfUiElement().equals("menu") || uiE.getKindOfUiElement().equals("include")) {
                 continue;
             }
+           
 
             Set<Integer> layoutsOfElement = new HashSet<Integer>();
             for (XMLLayoutFile xmlF : app.getAllXMLLayoutFiles()) {
@@ -305,40 +413,57 @@ public class AppController {
             // create the same set as layoutsOfElement, but with the ids as string
             final String id = String.valueOf(uiE.getId());
             if (uiE.hasElementListener()) {
+
                 Collection<Listener> listeners = uiE.getListernersFromElement();
 
-                reachabilityElements.addAll(createUiElementFromListeners(listeners, uiE.getId(), id, uiE.getTextFromElement(), uiE.getKindOfUiElement()));
-            } else {
+                Collection<UiElement> newUiElements = createUiElementFromListeners(listeners, uiE.getId(), id, uiE.getTextFromElement(), uiE.getKindOfUiElement());
+                reachabilityElements.addAll(newUiElements);
+            } else { //Throws an exception (cause no signature), shouldn't go in this branch?
                 reachabilityElements.add(createUiElementWithoutListener(uiE.getId(), uiE.getTextFromElement(), uiE.getKindOfUiElement()));
             }
         }
+
+        //for preference screen
+        //we want a uielement for each preference object with id, text, 
+
 
         // iter through all XMLLayoutFiles (Menus) to catch all layout listeners:
         for (XMLLayoutFile menu : app.getAllXMLLayoutFiles()) {
             if (menu.hasLayoutListeners()) {
                 final String id = String.valueOf(menu.getId());
-                reachabilityElements.addAll(createUiElementFromListeners(menu.getLayoutListeners(), menu.getId(), id, new HashMap<>(), ""));
+                Collection<UiElement> newUiElements = createUiElementFromListeners(menu.getLayoutListeners(), menu.getId(), id, new HashMap<>(), "");
+                reachabilityElements.addAll(newUiElements);
             }
         }
 
-        // iter through all XMLLayoutFiles (Menus) to catch all layout listeners:
+        // iter through all dialogs to catch all layout listeners:
         for (Dialog dialog : app.getDialogsOfApp()) {
             if (!dialog.getNegativeListener().isEmpty()) {
-                reachabilityElements.addAll(createUiElementFromListeners(dialog.getNegativeListener(), dialog.getId(), String.valueOf(DialogInterface.BUTTON_NEGATIVE), new HashMap<>(), dialog.getKindOfElement()));
+                HashMap<String, String> text = new HashMap<>();
+                text.put("default_value", dialog.getNegText());
+                reachabilityElements.addAll(createUiElementFromListeners(dialog.getNegativeListener(),  Content.getNewUniqueID(), String.valueOf(DialogInterface.BUTTON_NEGATIVE), dialog.getId(), text, dialog.getKindOfElement()));
             }
             if (!dialog.getPosListener().isEmpty()) {
-                reachabilityElements.addAll(createUiElementFromListeners(dialog.getPosListener(), dialog.getId(), String.valueOf(DialogInterface.BUTTON_POSITIVE), new HashMap<>(), dialog.getKindOfElement()));
+                HashMap<String, String> text = new HashMap<>();
+                text.put("default_value", dialog.getPosText());
+                reachabilityElements.addAll(createUiElementFromListeners(dialog.getPosListener(), Content.getNewUniqueID(),  String.valueOf(DialogInterface.BUTTON_POSITIVE), dialog.getId(),text, dialog.getKindOfElement()));
             }
             if (!dialog.getNeutralListener().isEmpty()) {
-                reachabilityElements.addAll(createUiElementFromListeners(dialog.getNeutralListener(), dialog.getId(), String.valueOf(DialogInterface.BUTTON_NEUTRAL), new HashMap<>(), dialog.getKindOfElement()));
+                HashMap<String, String> text = new HashMap<>();
+                text.put("default_value", dialog.getNeutralText());
+                reachabilityElements.addAll(createUiElementFromListeners(dialog.getNeutralListener(), Content.getNewUniqueID(),  String.valueOf(DialogInterface.BUTTON_NEUTRAL), dialog.getId(), text, dialog.getKindOfElement()));
             }
             if (!dialog.getItemListener().isEmpty()) {
-                reachabilityElements.addAll(createUiElementFromListeners(dialog.getItemListener(), dialog.getId(), String.valueOf(dialog.getId()), new HashMap<>(), dialog.getKindOfElement()));
+                HashMap<String, String> text = new HashMap<>();
+                text.put("default_value", dialog.getItemTexts());
+                reachabilityElements.addAll(createUiElementFromListeners(dialog.getItemListener(), Content.getNewUniqueID(),  String.valueOf(dialog.getId()), dialog.getId(), text, dialog.getKindOfElement()));
             }
         }
 
         return reachabilityElements;
     }
+
+
 
     public Collection<Integer> getViewsOfClass(String className) {
         return app.getMergedLayoutFileIDs().get(className);
@@ -374,6 +499,8 @@ public class AppController {
         }
     }
 
+
+
     private void attachAPISignatureToListener(int elementID, Collection<Listener> possibleListeners, String listenerSignature, Collection<ApiInfoForForward> apiResults) {
         boolean checkIfListenerFound = false;
         // find the listener that was processed in this UIElement object
@@ -393,12 +520,16 @@ public class AppController {
     }
 
     //FIXME: this is CRUTCH
+    private Collection<UiElement> createUiElementFromListeners(Collection<Listener> listeners, int globalID, String elementID, Map<String, String> text, String kindOfElement) {
+        return createUiElementFromListeners(listeners, globalID, elementID, -1, text, kindOfElement);
+    }
 
     // global id is unique id, element id is Android id for element, for dialogs it reflects the kind of listener (positive, neg, neu, item)
-    private Collection<UiElement> createUiElementFromListeners(Collection<Listener> listeners, int globalID, String elementID, Map<String, String> text, String kindOfElement) {
+    private Collection<UiElement> createUiElementFromListeners(Collection<Listener> listeners, int globalID, String elementID, int parentID, Map<String, String> text, String kindOfElement) {
         List<UiElement> reachabilityElements = new ArrayList<UiElement>();
 
         for (Listener listener : listeners) {
+            //logger.debug("Checking listener for {} {} {}", globalID, kindOfElement, listener);
             //FIXME size of list is not correct
             if (listener == null) {
                 Helper.saveToStatisticalFile("found listener null: uiE id : " + elementID);
@@ -413,7 +544,9 @@ public class AppController {
                 continue;
             }
             SootClass listenerClass = Scene.v().getSootClass(listenerClassString);
+            //TODO body is null for fragments method?
             SootMethod listenerMethod = listenerClass.getMethodUnsafe(listener.getListenerMethod());
+            //logger.debug("Listener class {} AND method {} for {}", listenerClass, listenerMethod, kindOfElement);
             if (listenerMethod == null) {
                 // FIXME exmple: layoutchallenges; it was former found by Soot....
                 Helper.saveToStatisticalFile("AppController:createUIElementsFromListener: listener method was not found!!!: " + listener.getSignature());
@@ -427,12 +560,75 @@ public class AppController {
             reachabilityElement.signature = listener.getSignature();
             reachabilityElement.kindOfElement = kindOfElement;
             reachabilityElement.declaringSootClass = listener.getDeclaringClass();
+            if(parentID != -1)
+                reachabilityElement.parentId = parentID;
             reachabilityElement.text.putAll(text);
+
+            if(kindOfElement.contains("item")){
+                AppsUIElement item = app.getUiElement(globalID);
+                //logger.debug("Analyzing item {}", item);
+                if(item.hasIdInCode()){
+                    //logger.debug("Item has a different id in code  {}", item.getIdInCode());
+                    reachabilityElement.idInCode = item.getIdInCode();
+                }
+                reachabilityElement.parentId = item.getParents().stream().findFirst().orElse(-1);
+            }
+            //here for list view, need to create new ui reachable element for each POSItion
+            //with global id the list view id and idInCode the position?
 
             // add the reachabilityElement to the result list
             reachabilityElements.add(reachabilityElement);
         }
         return reachabilityElements;
+    }
+
+
+
+    private UiElement createUiElementWithIntent(int elementID,  Map<String, String> text, String kindOfElement, String declaringClass, String intent) {
+        UiElement reachabilityElement = new UiElement();
+        reachabilityElement.elementId = String.valueOf(elementID);
+        reachabilityElement.globalId = elementID;
+        reachabilityElement.kindOfElement = kindOfElement;
+        reachabilityElement.declaringSootClass = declaringClass;
+        reachabilityElement.targetSootClass = Scene.v().getSootClass(resolveClassName(intent));
+        if(!kindOfElement.contains("item")){
+            logger.warn("Found set intent for non menu element {}", kindOfElement);
+            logger.warn("Tried to add a ui element without a listener or a signature {} {}", elementID, kindOfElement);
+            return null;
+        }
+        AppsUIElement item = app.getUiElement(elementID);
+        //logger.debug("Analyzing item with intent {}", item, intent);
+        if(item.hasIdInCode()){
+            //logger.debug("Item has a different id in code  {}", item.getIdInCode());
+            reachabilityElement.idInCode = item.getIdInCode();
+        }
+        reachabilityElement.handlerMethod = new SootMethod("onItemWithIntentSelected",new ArrayList<>(), Scene.v().getTypeUnsafe("boolean"));
+        //reachabilityElement.handlerMethod = new SootMethod()
+        if(reachabilityElement.declaringSootClass != null) {
+            reachabilityElement.handlerMethod.setDeclaringClass(Scene.v().getSootClass(reachabilityElement.declaringSootClass));
+        }
+        reachabilityElement.signature = "<"+declaringClass+": boolean onItemWithIntentSelected()>";
+        reachabilityElement.parentId = item.getParents().stream().findFirst().orElse(-1);
+        reachabilityElement.text.putAll(text);
+        AppController.getInstance().updateUiElement(elementID, reachabilityElement);
+        return reachabilityElement;
+    }
+
+    private String resolveClassName(String intent){
+        String clnName = intent;
+        if(clnName.contains("#")) {
+            logger.warn("Multiple destinations for intent found, defaulting to first {}", clnName);
+            logger.error("Multiple destinations for intent found, defaulting to first {}", clnName);
+            clnName = clnName.split("#")[0];
+        }
+        clnName = clnName.replace("/" ,".");
+        if (clnName.startsWith("L")) {
+            clnName = clnName.substring(1);
+        }
+        if (clnName.endsWith(";")) {
+            clnName = clnName.substring(0, clnName.length()-1);
+        }
+        return clnName;
     }
 
     private UiElement createUiElementWithoutListener(int elementID, Map<String, String> text, String kindOfElement) {
@@ -441,6 +637,7 @@ public class AppController {
         reachabilityElement.elementId = String.valueOf(elementID);
         reachabilityElement.globalId = elementID;
         reachabilityElement.kindOfElement = kindOfElement;
+        reachabilityElement.signature = "";
         reachabilityElement.text.putAll(text);
         return reachabilityElement;
     }
@@ -508,5 +705,6 @@ public class AppController {
                 .collect(Collectors.joining("#"));
         return allText;
     }
+
 
 }

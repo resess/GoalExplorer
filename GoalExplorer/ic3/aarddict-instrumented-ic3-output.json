@@ -1,0 +1,31 @@
+{
+    "transitions": [
+        {
+            "handler": "aarddict.android.ArticleViewActivity/boolean onSearchRequested()",
+            "sources": [
+                "aarddict.android.ArticleViewActivity"
+            ],
+            "targets": [
+                "aarddict.android.LookupActivity"
+            ]
+        },
+        {
+            "handler": "aarddict.android.DictionariesActivity$DictListAdapter/void showDetail(int)",
+            "sources": [
+                "aarddict.android.DictionariesActivity"
+            ],
+            "targets": [
+                "aarddict.android.DictionaryInfoActivity"
+            ]
+        },
+        {
+            "handler": "aarddict.android.LookupActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "aarddict.android.LookupActivity"
+            ],
+            "targets": [
+                "aarddict.android.DictionariesActivity"
+            ]
+        }
+    ]
+}

@@ -14,6 +14,7 @@ public class Dialog extends XMLLayoutFile {
 	private String message = ""; // text that is shown as message or question at the top of the Dialog
 	protected String titleText = ""; // title text of the Dialog
 	protected String kindOfUiElement = ""; // always is Dialog
+	private String dialogCreationMethodSignature = "";
 	private Set<Listener> negativeListener = new HashSet<Listener>(); // set of listeners for a negative answer
 	private Set<Listener> posListener = new HashSet<Listener>(); // set of listeners for a positive answer
 	private Set<Listener> neutralListener = new HashSet<Listener>(); // set of listeners for a neutral answer
@@ -171,7 +172,7 @@ public class Dialog extends XMLLayoutFile {
 		String res = super.toString();
 		// System.out.println("inside ToStirng Dialog!2");
 		res = res + " ;activity: " + showingClass + " ;posText: " + posText + " ;negText: " + negText
-				+ " ; neutralText;: " + neutralText + " ; itemTexts: " + itemTexts + " ;message: " + message;
+				+ " ; neutralText;: " + neutralText + " ; itemTexts: " + itemTexts + " ;message: " + message + " ;created in: "+dialogCreationMethodSignature;
 		if (negativeListener != null)
 			res = res + negativeListener.toString();
 		if (posListener != null)
@@ -235,5 +236,14 @@ public class Dialog extends XMLLayoutFile {
 	public String getKindOfElement(){
 		return kindOfUiElement;
 	}
+
+	public String getDialogCreationMethodSignature(){
+		return this.dialogCreationMethodSignature;
+	}
+
+	public void setDialogCreationMethodSignature(String signature){
+		this.dialogCreationMethodSignature = signature;
+	}
+
 
 }

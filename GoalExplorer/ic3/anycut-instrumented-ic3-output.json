@@ -1,0 +1,31 @@
+{
+    "transitions": [
+        {
+            "handler": "com.example.anycut.CreateShortcutActivity/void onListItemClick(android.widget.ListView,android.view.View,int,long)",
+            "sources": [
+                "com.example.anycut.CreateShortcutActivity"
+            ],
+            "targets": [
+                "com.example.anycut.ActivityPickerActivity"
+            ]
+        },
+        {
+            "handler": "com.example.anycut.CreateShortcutActivity/void onListItemClick(android.widget.ListView,android.view.View,int,long)",
+            "sources": [
+                "com.example.anycut.CreateShortcutActivity"
+            ],
+            "targets": [
+                "com.example.anycut.CustomShortcutCreatorActivity"
+            ]
+        },
+        {
+            "handler": "com.example.anycut.FrontDoorActivity/void onClick(android.view.View)",
+            "sources": [
+                "com.example.anycut.FrontDoorActivity"
+            ],
+            "targets": [
+                "com.example.anycut.CreateShortcutActivity"
+            ]
+        }
+    ]
+}

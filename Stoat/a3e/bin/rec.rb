@@ -42,6 +42,7 @@ require 'rubygems'
 require 'optparse'
 require 'socket'
 require 'time'
+require 'logger'
 
 REC = File.dirname(__FILE__)
 PARENT = File.expand_path(File.dirname(__FILE__)) + '/../temp'
@@ -78,9 +79,10 @@ end
 # modification to stoat, we no longer cap iterations and take screenshots every iteration
 # due to the length of time that it may run (several hours)
 $default_A3E_iteration = 0
+$default_iteration_per_target = 0
 
 # instead we allow for one hour of exploration, resetting whenever a new target has been reached
-$last_target_found_time = Time.now.to_i
+$last_target_found_time = Time.now.to_i #maybe we should set it somewhere else? like at the beginning of domainjob
 
 ##################################################################
 
@@ -188,14 +190,32 @@ def report_crawler_state (crawler_state, activity)
   end
 end
 
+
+#######
+# cleanup
+def cleanup_adb_services
+  # clean up adb in the localhost only for the target device
+  puts "Cleaning up the adb running services"
+  logcat_pids = `ps -ux | grep "adb -s #{$emulator_serial} logcat" | awk '{print $2}'`
+  logcat_pids_list = logcat_pids.gsub("\n", " ")
+  puts "#{logcat_pids_list}"
+  kill_adb_cmd = "kill -9 #{logcat_pids_list}"  # kill the adb logcat process
+  puts "$ #{kill_adb_cmd}"
+  `#{kill_adb_cmd}`
+end
+
+
 #########
 # global vars
+$background_job = nil
 # record the executed action ids
 $executed_action_list = []
 # the action picker
 $picker = ActionPicker.new()
 # the coverage monitor
 $coverager = Coverage.new()
+# the type of screen matching
+$deep_screen_matching = false #should be provided as an external input
 # the maximum number of UI events to be executed
 $g_maximum_events = 0
 # the maximum line coverage
@@ -220,8 +240,10 @@ $login_attempts = 0
 
 # dump the executed $action into the $activity's history command list
 def dump_executed_actions (activity, action)
-  open($myConf.get_fsm_building_dir + '/' + activity + '_command_history.txt', 'a') do |f|
-    f.puts action
+  unless activity.nil? || activity.empty? 
+    open($myConf.get_fsm_building_dir + '/' + activity + '_command_history.txt', 'a') do |f| 
+      f.puts action
+    end
   end
 
   # dump the whole action execution history
@@ -234,22 +256,192 @@ def get_ui_dump_path
   "#{$myConf.get_ui_files_dir}/S_#{$default_A3E_iteration}.xml"
 end
 
+
+#NOTES
+# Open drawer, close drawer enough to distinguish (if content desc set), otherwise need to store items
+#More options when menu is closed, when open, nothing just the items
+
+#For now, we can do, if the current screen has "More options" (default for options menu), then the menu is closed, otherwise the menu is open
+#For drawer, we should probably add the content desc to the information
+#For now, check if there's open or close in the name
+
+def get_current_base_screen(stg)
+  activity,_ = get_activity_and_package_name($emulator_serial)
+  #get base screen with node
+  screen_nodes = stg.contains_node_with_name(activity) ? stg.base_node_by_name(activity) : nil
+  return nil if screen_nodes.nil? || screen_nodes.empty?
+
+  if screen_nodes.length() == 1
+    return screen_nodes[0]
+  end
+
+  #TODO returns all the possible matching screens and try them one by one I guess?
+  Log.print "Multiple matching base screens #{screen_nodes}, shouldn't occur, picking the first one"
+  screen_node = nil
+  if !$deep_screen_matching
+    screen_node = screen_nodes.select {|screen_node| (screen_node.dialogs.nil? || screen_node.dialogs.empty?)}[0]
+    #screen_node = screen_nodes.sort_by(:&.fragments.length)
+  else
+    stg.get_closest_match(screen_nodes, get_active_fragments($emulator_serial)) #todo: double check for dialogs
+  end
+   if screen_node.nil?
+     screen_nodes[0]
+   else
+     screen_node #todo: same for tabs
+   end
+end
+
+
+def get_current_screen_node(stg)
+  activity,_ = get_activity_and_package_name($emulator_serial)
+  screen_nodes = stg.contains_node_with_name(activity)? stg.nodes_by_name(activity) : nil
+  return nil if screen_nodes.nil? || screen_nodes.empty?
+
+  #the distinction is only necessary for the starting screen ?
+  #or at least for the screen from which paths are computed
+
+  if screen_nodes.length() == 1
+    return screen_nodes[0]
+  end
+
+  screen_node = nil
+  Log.print "Multiple matching screens #{screen_nodes}, dumping UI hierarchy"
+  ui_file_path = get_ui_dump_path
+  dump_ui($emulator_serial, ui_file_path)
+  
+  entities = UTIL.get_menu_drawer_info(ui_file_path)
+  found_open_menu = nil
+  found_open_drawer = false
+  unless entities.nil? || entities.empty?
+    #for menu, there's no indication that a menu is open, only closed
+    #TODO: differentiate between open menu and no menu at all
+    found_open_menu = entities[:menu].nil? ? nil : entities[:menu][0] #if menu icon was not found, menu is already open or there's no menu at all
+    found_open_drawer = entities[:drawer].nil? ? false : entities[:drawer][0]
+  end
+
+  #TODO deal with context menus
+  screen_nodes = screen_nodes.select {|node| (node.has_drawer() == found_open_drawer)}
+  if screen_nodes.nil? || screen_nodes.empty?
+    Log.print("Issue identifying current screen, mismatch #{screen_nodes}")
+  elsif screen_nodes.length() == 1 #only one screen with no menu at all
+    screen_node = screen_nodes[0]
+  elsif screen_nodes.length() > 1 #screen with menu (one closed, one open) or something else
+    #todo add tab and dialogs
+    screen_nodes = screen_nodes.select {|node| (!found_open_menu.nil? && !found_open_menu && !node.has_menu()) || (node.has_menu() && found_open_menu.nil?)}
+    if screen_nodes.nil?
+      Log.print "No menu for this activity, selecting any"
+      screen_node = screen_nodes[0]
+    elsif screen_nodes.length() != 1
+      Log.print("Issue identifying current screen, mismatch #{screen_nodes}")
+      screen_node = stg.get_closest_match(screen_nodes, get_active_fragments($emulator_serial))
+      Log.print("Issue identifying current screen, mismatch #{screen_nodes}")
+    else
+      screen_node = screen_nodes[0]
+    end
+  end
+  screen_node
+end
+
+def update_found_target(stg, screen_node)
+  #need to delete all targets by name
+  action = stg.target_action(screen_node)
+  if !action.nil?
+    Log.print "Need to perform final action to reach target #{action}"
+    execute_edge_action(action, $emulator_serial)
+    #need a function to perform event (should be the same for random and edges?)
+    #think about how to validate the action was acutally performed
+  end
+  screen_nodes_to_delete = []
+  if $deep_screen_matching
+    screen_nodes_to_delete << screen_node
+  else
+    screen_nodes_to_delete = stg.nodes_by_name(screen_node.name)#get all by name
+  end
+  screen_nodes_to_delete.map { |node| stg.delete_target(node, found=true) }
+    #Log.print("Adding #{screen_node} to reached targets list")
+  File.open("#{$myConf.get_fsm_building_dir}/reached_activity.txt", 'a') do |f|
+    f.puts("#{screen_node.name} #{Time.now.to_i-$last_target_found_time}")
+  end
+end
+
+
+def recover_package_under_test(current_package, package_name_under_test, force_recover=false)
+  if !still_on_package_under_test(current_package, package_name_under_test, force_recover)
+    if $recovery_keyevent_back == 0
+      $recovery_keyevent_back = $recovery_keyevent_back + 1
+      #press back button
+      #   # construct the back cmd
+      back_cmd = "python3 ./bin/events/back.py #{$emulator_serial}"
+      puts "$ #{back_cmd}"
+      `#{back_cmd}` # back two times to ensure we escape from the error location, oops...
+      `#{back_cmd}`
+    else
+      reset_app($myConf.get_instrumented_apk)
+      $recovery_keyevent_back = 0
+    end
+  else
+    $recovery_keyevent_back = 0
+  end
+end
+
+
+#todo some screen require waiting (for e.g google login stuff?)
+def still_on_package_under_test(current_package, package_name_under_test, ignore_whitelist=false)
+  whitelist = ["com.google.android.gms", "com.facebook"] #todo deal with permission screen
+  #here check for auth api and same for fb
+  if current_package == package_name_under_test
+    $recovery_keyevent_back = 0
+    true
+  elsif current_package != package_name_under_test
+
+    if !ignore_whitelist && whitelist.any? {|package| current_package.start_with?(package)}
+      Log.print("Found whitelisted package #{current_package}")
+      Log.print("Not recovering")
+      true
+    elsif $recovery_keyevent_back == 0
+      # we lost the focus of the app ?
+      Log.print 'Current package does not match the package under testing'
+      Log.print "Current package: #{current_package}"
+      Log.print "Package under testing: #{package_name_under_test}"
+      false
+    elsif $recovery_keyevent_back == 1
+      # fail to recover the app by the "back" event?
+      Log.print 'Failed to recover the app to testing state, reset the app'
+      false
+    end
+  end
+end
+    
+
+def record_activity_coverage(activity)
+  # record the activity coverage
+  Log.print "Recording activity coverage for #{activity}"
+  open("#{$myConf.get_fsm_building_dir}/explored_activity_list.txt", 'a') do |f|
+    f.puts activity
+  end
+end
+
+
 # get executable UI events from the current UI after a previous event has been executed
-def get_executable_ui_events(package_name_under_test)
+def get_executable_ui_events(package_name_under_test, current_activity = nil, stg, tgt)
   Log.print 'Started dump of the the current UI hierarchy'
   ui_file_path = get_ui_dump_path
   dump_ui($emulator_serial, ui_file_path)
 
+  #Here handle no dumped ui or empty ui file
+
   # # if screenshot is enabled, always dump the screenshot after the layout xml
   dump_screenshot if $g_enable_screenshot
+
+  # check if the ui is empty ?
 
   # A workaround to handle the failure of dumping ui xml
   unless File.exist?(ui_file_path)
 
     # Unsure how often this actually happens
-    raise RuntimeError.new("UI Dump failed")
+    raise RuntimeError.new("UI Dump failed: #{package_name_under_test}")
 
-    # # if fail to dump the ui xml
+    # # if fail to dump the ui xml 
     # current_package = get_package_name($emulator_serial)
     # if current_package == package_name_under_test
     #   # if we are under the target package, execute "back" to get back from the view which we fail to dump ui xml
@@ -259,9 +451,9 @@ def get_executable_ui_events(package_name_under_test)
     #   `#{back_cmd}` # back two times to ensure we escape from the error location, oops...
     #   `#{back_cmd}`
     #   ui_file_name = dump_ui_xml
-    #
+    
     #   dump_screenshot if $g_enable_screenshot
-    #
+    
     #   unless File.exist?(ui_file_name)
     #     Log.print '[E]: Failed to dump UI xml'
     #     Log.print '[E]: Shutting down'
@@ -271,31 +463,20 @@ def get_executable_ui_events(package_name_under_test)
   end
 
   # get the current package name to make sure we haven't transitioned to a different apk
-  current_package = get_package_name($emulator_serial)
-  current_activity = get_activity_name($emulator_serial)
-  if current_package == package_name_under_test
-    # we are on the right way
+  current_activity,current_package = get_activity_and_package_name($emulator_serial)
+  #to do: if permissions then need to interact with it I guess ?
+  Log.print("The current package: <#{current_package}> and activity : <#{current_activity}")
+
+  if still_on_package_under_test(current_package, package_name_under_test)
     $recovery_keyevent_back = 0
-
-    # record the activity coverage
-    open("#{$myConf.get_fsm_building_dir}/explored_activity_list.txt", 'a') do |f|
-      f.puts current_activity
-    end
-  elsif current_package != package_name_under_test && $recovery_keyevent_back == 0
-    # we lost the focus of the app ?
-    Log.print 'Current package does not match the package under testing'
-    Log.print "Current package: #{current_package}"
-    Log.print "Package under testing: #{package_name_under_test}"
-
+    record_activity_coverage(current_activity)
+  elsif $recovery_keyevent_back == 0
     $recovery_keyevent_back = $recovery_keyevent_back + 1
     #if $recovery_keyevent_back == 2 then # TODO Note this allows the app under test to step forward 2 steps, uncomment it when you do not need it
     ui_file_path = '/EMPTY_APP_STATE.xml'; # return an empty state
     #  $recovery_keyevent_back = 3
     #end
-
-  elsif current_package != package_name_under_test && $recovery_keyevent_back == 1
-    # fail to recover the app by the "back" event?
-    Log.print 'Failed to recover the app to testing state'
+  elsif $recovery_keyevent_back == 1
     ui_file_path = '/RESET_APP_STATE.xml'; # return a reset state
     $recovery_keyevent_back = 0
   end
@@ -312,17 +493,28 @@ def get_executable_ui_events(package_name_under_test)
   end
 
   Log.print 'Checking if a login widgets is present at current screen'
-  login_widget_hash = UTIL.get_login_info(ui_file_path, actions)
+  #here check if login_required (i.e not already logged in)
+  login_widget_hash = UTIL.get_login_info(ui_file_path, actions, $myConf.get_login_type)
 
   # explicit return the currently executable events, the current focused package and activity
   [actions, current_package, current_activity, login_widget_hash]
 end
 
+
 def reset_app(apk)
+  # Resetting the weights
   # Assume the emulator is fine, we need to re-start the app
+  #puts '[A3E] I: clear app cache'
+  #clear_app_cache(apk) #TO COMMENT OUT
+  #UTIL.execute_shell_cmd("sleep #{$g_app_start_wait_time}")
   puts '[A3E] I: restart the app'
+  start_app(apk)
+  UTIL.execute_shell_cmd("sleep #{$g_app_start_wait_time}") # Note this time is set to ensure the app can enter into a stable state
+end
+
+def start_app(apk)
   pkg = $aapt.pkg apk
-  act = $aapt.launcher apk
+  act = $aapt.launcher apk #todo replace with launchers.first
   # Here we add an additional option "-S", so that we will force stop the target app before starting the activity.
   # Without "-S", we cannot restart the app, since the app is already there, e.g., we will get this message
   # "Activity not started, its current task has been brought to the front"
@@ -331,8 +523,13 @@ def reset_app(apk)
   else
     UTIL.execute_shell_cmd('adb -s ' + $emulator_serial + ' shell monkey -p ' + pkg + ' -c android.intent.category.LAUNCHER 1')
   end
-  UTIL.execute_shell_cmd("sleep #{$g_app_start_wait_time}") # Note this time is set to ensure the app can enter into a stable state
 end
+
+def clear_app_cache(apk)
+  pkg = $aapt.pkg apk
+  UTIL.execute_shell_cmd('adb -s ' + $emulator_serial + ' shell pm clear ' + pkg)
+end
+
 
 # execute the event by parsing the cmd
 def execute_event(action_cmd)
@@ -399,10 +596,9 @@ def execute_event(action_cmd)
     Log.print "[D]: #{action_type}, #{action_param}, #{class_name} #{instance}"
 
     # construct the python cmd
-    event_cmd = "#{$timeout_cmd} 60s python3 #{__dir__}/events/#{action_type}#{action_param}.py #{$emulator_serial} #{class_name} #{instance}"
+    event_cmd = "#{$timeout_cmd} 60s python3 #{__dir__}/events/#{action_type}#{action_param}.py #{$emulator_serial} #{class_name} #{instance} >> /data/faridah/events.log"
     Log.print "$ #{event_cmd}"
     `#{event_cmd}`
-
   else
     # get the action param value
     first_quote_index = action_cmd.index("\'")  # get the first occurrence of '
@@ -418,141 +614,631 @@ def execute_event(action_cmd)
   end
 end
 
-def do_main_job(package_name, stg)
-  actions, _, activity, login_widget_hash = get_executable_ui_events(package_name)
+
+
+#todo refactor and reuse below
+
+#4@click(resource-id='com.android.systemui:id/back'):android.widget.ImageView@""
+def execute_edge_action(action, emu_serial)
+  res_name = get_res_name(emu_serial, action.resource_id)
+  content_desc = action.content_desc
+  text = action.text
+  ui_type = action.ui_type
+  handler = action.handler
+  parent_id = action.parent_id
+
+  #want to 
+  #get the handler --> map the handler to an action file
+
+  if res_name.nil?
+    if (!ui_type.nil? && ui_type.end_with?("item") && !ui_type.eql?("item"))
+      #for list view, same with res_name
+      #for spinner (for now), parent.click() then child.click
+      #we should get the parent id if available
+      Log.print("A list view item #{ui_type}")
+      
+      parent_res_name = get_res_name(emu_serial, parent_id)
+      parent_class = "android.widget.ListView"
+      parent_class = "android.widget.Spinner" if ui_type.eql?("spinneritem")
+      parent_class = "android.support.v7.widget.RecyclerView" if ui_type.eql?("recyclerviewitem")
+      if (!Python.click_by_parent_info(emu_serial, parent_res_name, parent_class, text))
+        Log.print("Cannot find action matching edge with text #{text} for parent #{parent_res_name} ... moving on")
+        # could not perform transition after max attempts
+        #try anything I guess
+        Log.print "Failed to perform transition\n #{action}"
+        false
+      else
+        Log.print("Found and executed action by parent info #{parent_class} #{parent_res_name}")
+        true
+      end
+    elsif (content_desc.nil? || content_desc.empty? || !Python.click_by_content_desc(emu_serial, content_desc, handler))
+      Log.print("Cannot find action matching edge with content desc #{content_desc}")
+      if (!ui_type.nil? && ui_type.eql?("menu"))
+        if(!content_desc.nil? && content_desc.eql?("Menu"))
+          content_desc = 'More options'
+        else
+          content_desc = 'Menu'
+        end
+        Log.print("Attempting with default content desc #{content_desc} for menu")
+        if(!Python.click_by_content_desc(emu_serial, content_desc, handler))
+          Log.print("Cannot find action matching edge with content desc #{content_desc}")
+          false
+        else
+          Log.print("Found and executed action by content desc")
+          true
+        end
+      elsif (text.nil? || text.empty? || !Python.click_by_text(emu_serial, text, handler))
+      Log.print("Cannot find action matching edge with text #{text} ... moving on")
+      # could not perform transition after max attempts
+      Log.print "Failed to perform action\n #{action}"
+      false
+      else
+        Log.print("Found and executed action by text")
+        #edge.to.name == cur_activity
+        true
+      end
+    else
+      Log.print("Found and executed action by content desc")
+      #edge.to.name == cur_activity
+      true
+    end
+  else
+    Log.print("Actuating #{res_name}")
+    if(!ui_type.nil? && (ui_type.eql?("listview") || ui_type.eql?("ListView"))) #we want to perform an action on the first child of the list view
+      Log.print("A list view #{ui_type}")
+    end
+    if Python.click_by_resource_id(emu_serial, res_name, handler) #should check if succeeded?
+      Log.print("Found and executed action by res_id #{res_name}")
+      #edge.to.name == cur_activity
+      true
+    else
+      Log.print "Failed to perform action\n #{action}"
+      false
+    end
+  end
+end
+
+
+#todo -- the path from the main screen to the target requires opening a menu
+#there should be no transition from a screen with closed menu to the target since, there can only be a menu item click (onOptionsItemsELECTED) IN THE STG
+#if the menu is already open so MainActivity --> ScreenA(closedMenu) --> ScreenA(openMENU) --onOptionsItemSelected->Target 
+#so what we need is, if we see onIconClick as the transition, if we can't find the resId, we need to try with the default com.android.ui/id:menu instead
+#and we only need precise screen matching after a random action, to figure out where we are?
+
+#how would the precise matching work? technically it's more about the available actions then the screen descriptioN
+#we could get all the next transiitons from the screen with the same name (on the path to the target) or just the current path, then check if the available actions are on the edge
+#TO THINK about
+
+
+def do_main_job(package_name_under_test, stg)
+  # pick a target
+  Log.print("All targets #{stg.targets.length}")
+  tgt = stg.get_next_target
+    
+  # if no more targets we still continue with exploration until the time is hit
+  if tgt.nil?
+    # Log.print("No targets: continuing with random exploration")
+    # perform_random_action(activity, actions, login_widget_hash)
+    Log.print("All targets have been reached, exiting")
+    #$default_iteration_per_target = 0 #measure time per target instead
+    return
+  end
+
+  Log.print("The current target #{tgt}")
+
+
+  activity,package = get_activity_and_package_name($emulator_serial)
 
   # print the screen details
   Log.print("The current starting activity: <#{activity}>")
 
-  # map the current screen to a ScreenNode if present
-  screen_node = stg.contains_node(activity) ? stg.node(activity) : nil
+  #here need to check if there is a login before recovering the app package under test
 
-  unless screen_node.nil?
-    Log.print("ScreenNode in STG found for #{activity}")
-    stg.edges(screen_node).each { |edge| Log.print("#{edge.from}->#{edge.to}:#{edge.action.resource_id}") }
-  end
+  #ensure are still within the right app
+  recover_package_under_test(package, package_name_under_test, false) 
 
-  if screen_node.nil?
-    Log.print("FAILURE: Cannot find screen_node for #{activity}")
-    perform_random_action(activity, actions, login_widget_hash)
-    return
-  end
+   #record activity coverage
+  record_activity_coverage(activity)
 
-  # if any of the targets have been reached we reset the app and continue the exploration
-  if stg.targets.include?(screen_node)
-    stg.targets.delete(screen_node)
-    File.open("#{$myConf.get_fsm_building_dir}/reached_activity.txt", 'a') do |f|
-      f.puts("#{screen_node.to_s} #{Time.now.to_i}")
-    end
+ # map the current screen to a ScreenNode if present
+  screen_node = get_current_base_screen(stg)#get_current_screen_node(stg)
+  #screen_node = stg.contains_node(activity) ? stg.node(activity) : nil
 
-    Log.print("Target node has been reached #{screen_node}, resetting apk before continuing")
+  #reset values
+  $login_attempts = 0
+
+  if $default_iteration_per_target >= $g_maximum_events.to_i
+    puts "[D] we have reached the maximum #{$g_maximum_events} UI events for the current target #{tgt}"
+    puts "[D] moving on to next target"
+
+    stg.delete_target(tgt, found=false) #should I delete all versions of this target?
     $last_target_found_time = Time.now.to_i
+    $default_iteration_per_target = 0
+    $picker.resetActionsWeight
+
+    #stg.reset_all_paths(paths_to_target)
     reset_app($myConf.get_instrumented_apk)
     return
   end
+  
 
-  # try to reach the target if possible
-  tgt = stg.targets.last
+  # need to check for targets while we run the path and only reset at the end of the path
+  unless screen_node.nil?
+    Log.print("ScreenNode in STG found  #{screen_node}")
+    Log.print "Edges: #{stg.edges(screen_node).length}"
+    #stg.edges(screen_node).each { |edge| Log.print("#{edge.from}->#{edge.to}:#{edge.action.resource_id}") }
+    if stg.is_target(screen_node)
+      Log.print("Target node has been found #{screen_node}")
 
-  # if no more targets we still continue with exploration until the time is hit
-  if tgt.nil?
-    Log.print("No targets: continuing with random exploration")
-    perform_random_action(activity, actions, login_widget_hash)
+      update_found_target(stg, screen_node)
+      $last_target_found_time = Time.now.to_i
+      $picker.resetActionsWeight
+      reset_app($myConf.get_instrumented_apk)
+
+      return
+    end
+  end
+
+  if screen_node.nil?
+    Log.print("FAILURE: Cannot find screen_node for #{activity}") #why do this if you only have on possible action from the server ?
+    #we can try to reset the app maybe?
+    #perform_random_action(activity, actions, login_widget_hash)
+    #$default_iteration_per_target = $default_iteration_per_target + 1
     return
   end
 
   Log.print("Looking for path from #{screen_node} to #{tgt}")
-  paths_to_target = screen_node.nil? ? nil : stg.all_paths(screen_node, tgt).sort_by(&:length)
+  #here need to check the type and differentiate
 
-  if paths_to_target.nil? || paths_to_target.empty?
-    # if we cannot find node or there are no paths to explore, we allow Stoat to try and transition to a different state
-    Log.print("FAILURE: No path from #{screen_node} to #{tgt} found")
-    perform_random_action(activity, actions, login_widget_hash)
-    nil
-  else
-    # otherwise we try all paths to the target until successful
-    Log.print("SUCCESS: Path from #{screen_node} to #{tgt} found")
-    Log.print(paths_to_target)
-    unless explore_paths(stg.all_paths(screen_node, stg.targets.last).sort_by(&:length))
-      Log.print("SUCCESS: Path unsuccessful trying random action")
-      perform_random_action(activity, actions, login_widget_hash)
+  #TODO sort the paths by completeness first, and then by length?
+  unless explore(screen_node, tgt, stg, package_name_under_test)
+
+    #Here we should, check if the stg is updatable, in which case we don't want to delete it, we just wanna store it away I guess?
+    # unreached_targets << tgt
+    Log.print("Attempting random")
+    perform_random_with_update(package_name_under_test, stg, screen_node, tgt)
+    $default_iteration_per_target = $default_iteration_per_target + 1
+  
+    #perform_random_action(activity, actions, login_widget_hash) #MAYBE HERE I should start with the random for now
+    Log.print "Path unsuccessful"
+    return
+  end
+  Log.print("Target node has been found #{tgt}, resetting the app and continuing")
+  # need to check we reached the taret index
+  if stg.is_target(tgt) #just in case deleted already, double check
+    update_found_target(stg, tgt)
+    $last_target_found_time = Time.now.to_i
+    $picker.resetActionsWeight
+    #stg.reset_all_paths(paths_to_target)
+    reset_app($myConf.get_instrumented_apk)
+  end
+end
+
+def perform_random_with_update(package_name_under_test, stg, screen_node, tgt)
+  Log.print "Attempting stoat random action"
+  actions, _, activity, login_widget_hash = get_executable_ui_events(package_name_under_test, stg, tgt) #to rewrite
+  action = perform_random_action(activity, actions, login_widget_hash)
+  #TODO only perform edge if we're not trying to login?
+  #TODO store node reached after performing random action for stg updates here
+  #success = perform_edge_transition(stg, tgt, $emulator_serial, edge)
+  #IF WE RETURN nil, no action was taken, we need to update the stg
+  sleep $g_event_delay #to do (should be abstracted away in execute action or smth)
+  #here add screen_node as the previous node? (if no edge action, good, if edge action but failure, then should be from screen_node to current_node with random action?? if success then from )
+  #success, screen_node = update_stg(stg, nil, nil, screen_node, action)
+  if !action.nil?
+    current_screen_node = get_current_base_screen(stg)
+    if !current_screen_node.nil?
+      Log.print "Updating stg with new edge"
+      stg.add_edge_with_action_string(screen_node, current_screen_node, action) #STOPPING CONDITION,
     end
   end
 end
 
-def explore_paths(paths)
-  paths.each do |path|
-    Log.print 'Attempting path'
-    path.each { |p| Log.print p.to_s }
+#TODO sort the
+  
 
-    success = attempt_path(path)
-    return true unless success.nil?
+  #If targets remaining
+    # Evaluate current screen
+    # Map screen to stg node
+    # If screen in targets, remove from targets
+      #log and restart
+    # Pick target
+    # Compute paths
+      # If no path, drop target
+    # Pick shortest path
+    # Attempt path
+    # If path done
+      # If target reached
+       #Record
+    # try next path
+
+    
+
+def compute_paths(screen_node, tgt, stg)
+  if tgt.class == "ScreenNodeEdge"
+    paths_to_target = screen_node.nil? ? nil : stg.all_paths(screen_node, tgt.to).select{|path| stg.filter_by_action(path, tgt.action) }.sort_by(&:length)
+  else
+    paths_to_target = screen_node.nil? ? nil : stg.all_paths(screen_node, tgt).sort_by(&:length)
+  end
+  paths_to_target
+end
+
+
+def explore(screen_node, tgt, stg, package_name_under_test)
+  paths = compute_paths(screen_node, tgt, stg)
+
+  if paths.nil? || paths.empty?
+    # if we cannot find node or there are no paths to explore, we allow Stoat to try and transition to a different state
+    Log.print("FAILURE: No path from #{screen_node} to #{tgt} found")
+=begin    Log.print("Attempting random")
+    perform_random_with_update(package_name_under_test, stg, screen_node, tgt)
+    $default_iteration_per_target = $default_iteration_per_target + 1
+=end
+    #Log.print("Moving on to next target")
+    #perform_random_with_update(package_name_under_test, stg, screen_node, tgt)
+
+    #Log.print("Attempting Stoat weighted exploration")
+    #actions, _, activity, login_widget_hash = get_executable_ui_events(package_name_under_test, stg, tgt) #to rewrite
+    #action = perform_random_action(activity, actions, login_widget_hash)
+    #TODO only perform edge if we're not trying to login?
+    #TODO store node reached after performing random action for stg updates here
+    #success = perform_edge_transition(stg, tgt, $emulator_serial, edge)
+    #IF WE RETURN nil, no action was taken, we need to update the stg
+    #sleep $g_event_delay #to do (should be abstracted away in execute action or smth)
+    #here add screen_node as the previous node? (if no edge action, good, if edge action but failure, then should be from screen_node to current_node with random action?? if success then from )
+    #success, screen_node = update_stg(stg, nil, nil, screen_node, action)
+    #if !action.nil?
+    #  current_screen_node = get_current_base_screen(stg)
+    #  if !current_screen_node.nil?
+    #    stg.add_edge_with_action_string(screen_node, current_screen_node, action) #STOPPING CONDITION,
+    #    return explore(current_screen_node, tgt, stg, package_name_under_test)
+    #  end
+    #end
+    return false
+    #perform_random_action()
+    #recurse so explore again I guess?
+    
+  else
+    # otherwise we try all paths to the target until successful
+    Log.print("SUCCESS: #{paths.length()} Paths from #{screen_node} to #{tgt} found")
+    paths.each_with_index do |path,index |
+      Log.print "Attempting path #{index}"
+      path.each { |p| Log.print p.to_s}
+
+      if stg.is_path_obsolete(path)
+        Log.print "Obsolete path, dropping ..."
+        next
+      else
+        Log.print "Not obsolete"
+      end
+
+      success = attempt_path(path, tgt, stg, package_name_under_test)
+      return true unless success.nil?
+
+      if(exploration_time_exceeded)
+        Log.print("Time exceeded for current target")
+        Log.print("Moving on to next target")
+        return false
+      end
+      activity, package = get_activity_and_package_name($emulator_serial)
+
+      Log.print 'Backtracking before next path'
+      recover_package_under_test(package, package_name_under_test)
+      backtrack()
+      return explore(screen_node, tgt, stg, package_name_under_test)
+    end
   end
   false
 end
 
-def attempt_path(path)
-  # action_history = []
+
+#Need to deal with edges as target too
+#two types of targets, screens and edges
+#if edge, then search for a path to the src screen and then try to execute the last action on the edge ?
+#maybe option argument to path, target type or smth
+#or instead when the destination screen is marked, record the previous action ?
+#NAH need to mark the entire edge as a target
+# @todo need to store all dropped targets and check again when updating the stg is anything new is happening
+
+
+def attempt_path(path, tgt, stg, package_name_under_test)
+  screen_node = nil
   path.each do |edge|
-    success = perform_edge_transition($emulator_serial, edge)
-    # transition for edge could not be made so we abandon this path
-    return nil unless success
-    # action_history.push(*actions)
+    success = perform_edge_transition(stg, tgt, $emulator_serial, edge)
+    sleep $g_event_delay
+    #we assume we can't have success.nil here
+    success,screen_node = update_stg(stg, edge, success, nil, nil)
+    #TODO, if we could successfully trigger the transition but didn't get to what we want? should still try random actions
+    while !success && (edge.attempts < $g_maximum_events.to_i) && !exploration_time_exceeded
+      actions, _, activity, login_widget_hash = get_executable_ui_events(package_name_under_test, stg, tgt) #to rewrite
+      action = perform_random_action(activity, actions, login_widget_hash)
+      #TODO only perform edge if we're not trying to login?
+      #TODO store node reached after performing random action for stg updates here
+      success = perform_edge_transition(stg, tgt, $emulator_serial, edge)
+      #IF WE RETURN nil, no action was taken, we need to update the stg
+
+      if !action.nil? #in case we are still attempting to log in, we don't want to increase the number of actions
+        #num_rand_events += 1
+        edge.inc_attempts()
+      end
+      sleep $g_event_delay #to do (should be abstracted away in execute action or smth)
+      #here add screen_node as the previous node? (if no edge action, good, if edge action but failure, then should be from screen_node to current_node with random action?? if success then from )
+      success, screen_node = update_stg(stg, edge, success, screen_node, action)
+
+      if(screen_node.nil?) #todo deal with this case, should we exit?
+        Log.print "Unexpected behavior, current screen does not map to a screen"
+        #deal specially with the permission case
+        #if is_permission_screen(current_activity)
+            #not return
+        #return nil
+      end
+      if(success)
+        Log.print "Succeeded to trigger edge and reach #{edge.to}"
+      end
+      if (!success  && !screen_node.nil? && !screen_node.name.eql?(edge.from.name)) #we moved to a different screen
+        Log.print "Reached a different screen #{screen_node.name}, computing new path to #{edge.to.name}"
+        if (stg.is_target(screen_node))
+          Log.print("Target node has been found #{screen_node}, while looking for #{tgt}")
+          update_found_target(stg, screen_node)
+        end
+        new_paths_to_target = compute_paths(screen_node, tgt, stg)
+        unless new_paths_to_target.nil? || new_paths_to_target.empty?
+          #attempt the new paths
+          # No difference between trying only the first path and attempting all_paths since backtracking takes back to the first node in any case
+          return attempt_path(new_paths_to_target[0], tgt, stg, package_name_under_test)
+        end
+        #todo here, deal with the case of permission screens separately
+        return nil
+      end
+      if !success && actions.empty?
+        print "No available random actions on current screen, skipping"
+        edge.mark_dead()
+        return nil
+      end
+    end
+    if exploration_time_exceeded
+      return nil
+    end
+    if !success #for now, we get a success even if we went to a different screen (future work, update), not success basically means we couldn't trigger the edge even after a given number of actions
+      edge.mark_dead()
+      return nil
+    end
+
+    #screen_node = get_current_base_screen(stg)
+    # todo here should be precise get_current_screen_node
+    Log.print("The current screen node <#{screen_node}>")
+    # we check if we reached a target while following a path (shallow matching)
+    # TODO do we want to mark any target we reach? even through random exploration?
+    if (!screen_node.nil? && screen_node != tgt && edge.to.same_name(screen_node) && stg.is_target(screen_node))
+      Log.print("Target node has been found #{screen_node}, while looking for #{tgt}")
+      update_found_target(stg, screen_node)
+    end
+  end
+  #Get the current node
+  cur_activity, _ = get_activity_and_package_name($emulator_serial)
+  record_activity_coverage(cur_activity)
+
+  #screen_node = get_current_base_screen(stg)
+  if screen_node.nil? || !screen_node.same_name(tgt) #should we only look by name ?
+    Log.print("Wrong path in stg, does not lead to target #{path}")
+    STDERR.puts "Wrong path in stg, does not lead to target #{path}"
+    #Log.print("Stg to be updated in future work")
+    return nil
   end
   true
-  # action_history
 end
+
+
+
+
 
 # Attempts to perform the action indicated by the edge of the stg
 # @return true if the action was successfully performed, false otherwise, nil if no action taken
-def perform_edge_transition(emu_serial, edge, attempts=3)
-  attempts.times do
-    cur_activity = get_activity_name(emu_serial)
+def perform_edge_transition(stg, tgt, emu_serial, edge, attempts=3)
+  Log.print("Performing edge transition \n")
+  #attempts.times do
+  cur_activity, package = get_activity_and_package_name(emu_serial)
+  #record activity coverage
+  record_activity_coverage(cur_activity)
 
-    # ends if we are no longer on the src activity
-    if cur_activity != edge.from.name
-      return cur_activity == edge.to.name
-    end
+  #screen_node = get_current_screen_node(stg)
+  Log.print("The current activity <#{cur_activity}>")
 
-    res_name = get_res_name(emu_serial, edge.action.resource_id)
-    if res_name.nil?
-      Log.print('Cannot find action matching edge')
-      return nil
-    else
-      Log.print("Found and executing action")
-      Python.click_by_resource_id(emu_serial, res_name)
-    end
+  if cur_activity != edge.from.name
+    Log.print("Diverged from path in stg #{cur_activity} instead of #{edge.from.name}")
+    STDERR.puts "Diverged from path in stg #{cur_activity} instead of #{edge.from.name}"
+    return nil
   end
-  # could not perform transition after max attempts
-  Log.print "Failed to perform transition\n #{edge}"
-  false
-end
 
-def attempt_login(login_widget_hash, actions, attempts)
-  attempts.times do
-    # perform the login action - username
-    unless login_widget_hash[:username].nil?
-      enterUsername(actions, login_widget_hash[:username][0], login_widget_hash[:username][1])
-    end
+  res_name = (!edge.action.res_name.nil?) ? edge.action.res_name : get_res_name(emu_serial, edge.action.resource_id)
+  content_desc = edge.action.content_desc
+  text = edge.action.text
+  ui_type = edge.action.ui_type
+  parent_id = edge.action.parent_id
+  handler = edge.action.handler
 
-    # perform the login action - password
-    unless login_widget_hash[:password].nil?
-      enterPassword(actions, login_widget_hash[:password][0], login_widget_hash[:password][1])
-    end
-
-    # perform the login action - login
-    unless login_widget_hash[:login].nil?
-      action = UTIL.find_action_by_text_resid(actions,
-                                              login_widget_hash[:login][0],
-                                              login_widget_hash[:login][1])
-      _, action_cmd = parseActionString(action)
-      unless UTIL.change_cmd_to_resid_text(action, action_cmd).nil?
-        action_cmd = UTIL.change_cmd_to_resid_text(action, action_cmd)
+  
+  if res_name.nil? 
+    Log.print("Cannot find action matching edge with resource id #{edge.action.resource_id}") #try with resource type and content desc and text instead ?
+    if (!ui_type.nil? && ui_type.end_with?("item") && !ui_type.eql?("item"))
+      #for list view, same with res_name
+      #for spinner (for now), parent.click() then child.click
+      #we should get the parent id if available
+      Log.print("A list view item #{ui_type}")
+      
+      parent_res_name = get_res_name(emu_serial, parent_id)
+      parent_class = "android.widget.ListView"
+      parent_class = "android.widget.Spinner" if ui_type.eql?("spinneritem")
+      parent_class = "android.support.v7.widget.RecyclerView" if ui_type.eql?("recyclerviewitem")
+      if (!Python.click_by_parent_info(emu_serial, parent_res_name, parent_class, text))
+        Log.print("Cannot find action matching edge with text #{text} for parent #{parent_res_name} ... moving on")
+        # could not perform transition after max attempts
+        #try anything I guess
+        Log.print "Failed to perform transition\n #{edge}"
+        false
+      else
+        Log.print("Found and executed action by parent info #{parent_class} #{parent_res_name}")
+        true
       end
-      execute_event(action_cmd)
+    elsif (content_desc.nil? || content_desc.empty? || !Python.click_by_content_desc(emu_serial, content_desc, handler))
+      Log.print("Cannot find action matching edge with content desc #{content_desc}")
+      if (!ui_type.nil? && ui_type.eql?("menu"))
+        if(!content_desc.nil? && content_desc.eql?("Menu"))
+          content_desc = 'More options'
+        else
+          content_desc = 'Menu'
+        end
+        Log.print("Attempting with default content desc #{content_desc} for menu")
+        if(!Python.click_by_content_desc(emu_serial, content_desc, handler))
+          Log.print("Cannot find action matching edge with content desc #{content_desc}")
+          false
+        else
+          Log.print("Found and executed action by content desc")
+          true
+        end
+      elsif (text.nil? || text.empty? || !Python.click_by_text(emu_serial, text, handler))
+      Log.print("Cannot find action matching edge with text #{text} ... moving on")
+      # could not perform transition after max attempts
+      Log.print "Failed to perform transition\n #{edge}"
+      false
+      else
+        Log.print("Found and executed action by text")
+        #edge.to.name == cur_activity
+        true
+      end
+    else
+      Log.print("Found and executed action by content desc")
+      #edge.to.name == cur_activity
+      true
+    end
+  else 
+    Log.print("Found res_id for action #{res_name}")
+    if(!ui_type.nil? && (ui_type.eql?("listview") || ui_type.eql?("ListView"))) #we want to perform an action on the first child of the list view
+      Log.print("A list view #{ui_type}")
+    end
+    if Python.click_by_resource_id(emu_serial, res_name, handler) #should check if succeeded?
+      Log.print("Found and executed action by res_id #{res_name}")
+      #edge.to.name == cur_activity
+      true
+    else
+      Log.print "Failed to perform transition\n #{edge}"
+      false
     end
   end
 end
+
+
+# Updates the STG with with newly uncovered transitions
+# @return current_screen_node, success to trigger edge
+def update_stg(stg, edge, success, previous_node, actionString)
+  #TODO debug get_current_screen_node
+  #current_screen_node = get_current_screen_node(stg)
+  current_screen_node = get_current_base_screen(stg) #once since we only deal with ICC for now
+  if(current_screen_node.nil?) #not part of the current package
+    [false, current_screen_node]
+  else
+    Log.print "Checking for STG updates\n"
+    if(success.nil?) #edge not exercised (not on src)
+      if(!actionString.nil? && !previous_node.nil?) #DEAL with leaving the path I guess?
+        stg.add_edge_with_action_string(edge.from, current_screen_node, actionString)
+      end
+      [edge.to.name.eql?(current_screen_node.name), current_screen_node]
+    else
+      #if trigger not exercised (so we're still on source?)
+      # todo remove edge and update, for now nothing
+      if(success) #if edge trigger was exercised
+        success =  current_screen_node.name.eql?(edge.to.name)
+        # if trigger exercise, but tgt not reached
+        if(!success && !current_screen_node.name.eql?(edge.from.name))
+          #TODO should be transition from node after random action (variation of src)
+          stg.add_edge_with_action(edge.from, current_screen_node, edge.action)
+        end
+        #todo, if trigger exercised and target reached, should be from screen after random action to here
+      end
+      [success, current_screen_node]
+    end
+  end
+end
+
+def backtrack()
+  #for now just restart the app
+  #need to make sure we end up in the same starting state
+  #go back then restart
+  reset_app($myConf.get_instrumented_apk)
+  $recovery_keyevent_back = 0
+
+end
+  
+
+
+#here need to add the login type
+#need to store the selected login type
+#need to update the weights so it doesn't try with the rest again, 
+#maybe only keep one login widget at once, if it's tried, move on to the next, but how ?
+#need to check somehow if it failed before
+#here, we shouldn't execute the action again if it's not on the screen, the weights shouldn't be updated
+
+#what about if it's not in this order?
+def attempt_login(login_widget_hash, activity, actions, attempts)
+  Log.print("Attempting login")
+  success = false
+  #why do we need to loop ?
+  #attempts.times do
+  # perform the login action - username
+  unless login_widget_hash[:username].nil?
+    Log.print("Entering the username")
+    action = UTIL.find_action_by_text_resid(actions, login_widget_hash[:username][0], login_widget_hash[:username][1])
+    _, action_cmd = parseActionString(action)
+    unless UTIL.change_cmd_to_resid_text(action, action_cmd).nil?
+      action_cmd = UTIL.change_cmd_to_resid_text(action, action_cmd)
+    end
+    Log.print("Selected Action <#{action.strip}>")
+    enterUsername(actions, login_widget_hash[:username][0], login_widget_hash[:username][1])
+    update_action_execution_state(activity, action, action_cmd)
+    # should it be set to nil afterwards ?
+    #success =  
+  end
+
+  # perform the login action - password
+  unless login_widget_hash[:password].nil?
+    Log.print("Entering the password")
+    action = UTIL.find_action_by_text_resid(actions, login_widget_hash[:password][0], login_widget_hash[:password][1])
+    _, action_cmd = parseActionString(action)
+    unless UTIL.change_cmd_to_resid_text(action, action_cmd).nil?
+      action_cmd = UTIL.change_cmd_to_resid_text(action, action_cmd)
+    end
+    Log.print("Selected Action <#{action.strip}>")
+    enterPassword(actions, login_widget_hash[:password][0], login_widget_hash[:password][1])
+    update_action_execution_state(activity, action, action_cmd)
+    #should there be a sleep ?
+    #success only if the username was set as well ?
+    success = true
+  end
+
+  # perform the login action - login
+  unless login_widget_hash[:login].nil?
+    Log.print("Clicking on the login widget ?")
+    action = UTIL.find_action_by_text_resid(actions,
+                                            login_widget_hash[:login][0],
+                                            login_widget_hash[:login][1])
+    _, action_cmd = parseActionString(action)
+    unless UTIL.change_cmd_to_resid_text(action, action_cmd).nil?
+      action_cmd = UTIL.change_cmd_to_resid_text(action, action_cmd)
+    end
+    #execute_event(action_cmd) #switch to execute action
+    Log.print("Selected Action <#{action.strip}>")
+    execute_action(activity, action) #need to only update the weights if successful tho
+    success = true #should we break here ?
+    Log.print("Adding 3s extra delay for login (network) ...")
+    sleep $g_event_delay * 9
+    Log.print("Done")
+    #break
+  end
+  #end
+  Log.print("Done attempting login")
+  success
+end
+
 
 def update_crash_reporter(action_cmd, action_view_text)
   # record the execution info.
@@ -569,16 +1255,22 @@ def update_crash_reporter(action_cmd, action_view_text)
   end
 end
 
+def update_action_execution_state(activity, action, action_cmd)
+  action_id, action_cmd, action_view_type, action_view_text = parseActionString(action)
+
+  $executed_action_list.push(action_id)
+  $picker.updateActionExecutionTimes(action)
+  $picker.updateActionsWeight
+  dump_executed_actions(activity, action)
+end
+
 def execute_action(activity, action)
   Log.print "Executing action: #{action}"
   action_id, action_cmd, action_view_type, action_view_text = parseActionString(action)
   action_cmd = UTIL.change_cmd_to_resid_text(action, action_cmd)
 
   execute_event(action_cmd)
-  $executed_action_list.push(action_id)
-  $picker.updateActionExecutionTimes(action)
-  $picker.updateActionsWeight
-  dump_executed_actions(activity, action)
+  update_action_execution_state(activity, action, action_cmd)
 
   update_crash_reporter(action_cmd, action_view_text) unless $g_disable_crash_report
   sleep $g_event_delay
@@ -586,130 +1278,51 @@ def execute_action(activity, action)
 end
 
 def perform_random_action(activity, actions, login_widget_hash)
-  Log.print("Performing random action")
+  
+  Log.print("Performing random action from #{actions.length} #{actions}")
   $picker.putActions(actions, activity)
   $picker.dumpExecutedActions # displays all executable actions
+  Log.print("Before attempting login (after dump), collected #{actions.length} actions and #{login_widget_hash}")
 
   # try logins first before choosing action
-  attempt_login(login_widget_hash, actions, 3) unless login_widget_hash.empty?
+  #try login first, otherwise pick action (screen state can change)
 
-  action = $picker.selectNextAction(actions)
-  Log.print("Selected Action <#{action.strip}>")
-  execute_action(activity, action)
-  action
-end
-
-# @deprecated
-def performAutoLogin(package_name_under_test, activityPath, activityWidgetMap)
-  puts '[ALODE] Performing login ...'
-  # If we have the login traces from previous runs, we just use them to login
-  if File.exist?($myConf.get_fsm_building_dir + '/login_command.txt')
-    puts '[ALODE] I: found login execution file from last execution...'
-    performLoginOnCommandFile($myConf.get_fsm_building_dir + '/login_command.txt')
-  else
-    performLoginLoop(package_name_under_test, acitivityPath, activityWidgetMap)
-  end
-end
-
-# @deprecated
-def performLoginLoop(package_name_under_test, acitivityPath, activityWidgetMap)
-  # puts "[ALODE] The target login activity: #{activityPath[-1]}"
-  # puts "[ALODE] Login activity sequence: #{activityPath}"
-
-  # get executable actions and current activity
-  actions, current_package, current_activity = get_executable_ui_events(package_name_under_test)
-  last_activity = ''
-
-  edit_text_actions = []
-  button_actions = []
-  click_actions = []
-  actions.each do |action|
-    action_id, action_cmd, action_view_type, action_view_text = parseActionString(action)
-    puts "[ALODE] Evaluating action: #{action_cmd} with type #{action_view_type}"
-    if action_cmd.include?('edit(')
-      if edit_text_actions.length <= 2
-        puts "[ALODE] Found EditText: #{action_cmd}"
-        edit_text_actions << action_cmd
-      else
-        puts '[ALODE] - Warning - Found more than 2 EditText, skipping...'
-      end
-    elsif action_cmd.include?('click(')
-      if action_view_type.include?('Button')
-        button_actions << action_cmd
-      else
-        click_actions << action_cmd
-      end
-    end
+  #need to perform the action to move to next login step
+  #what if the actions are different after attempting login ? NEED TO handle that case
+  # if the login succeeded (a step of it), we don't want to update the weights 
+  #will need to integrate better in weight updating logic
+  need_to_perform_action = true
+  unless $login_attempts >= 3 || login_widget_hash.empty?
+    attempt_login(login_widget_hash, activity, actions, 3) 
+    $login_attempts += 1
+    current_activity,_ = get_activity_and_package_name($emulator_serial)
+    need_to_perform_action = false unless current_activity.eql?(activity)
   end
 
-  # If we have two EditText
-  if edit_text_actions.length.eql? 2
-    puts '[ALODE] 2 EditText detected: infering username and password'
-    # username
-    action_param_username = checkActionParam(edit_text_actions[0])
-    execute_edit_action(edit_text_actions[0], action_param_username, $myConf.get_username)
-    # delay the next event
-    sleep $g_event_delay
-    # password
-    action_param_password = checkActionParam(edit_text_actions[1])
-    execute_edit_action(edit_text_actions[1], action_param_password, $myConf.get_password)
-    # delay the next event
-    sleep $g_event_delay
-    if button_actions.any?
-      execute_event(button_actions[0])
-    elsif click_actions.any?
-      execute_event(click_actions[0])
+  #if we haven't changed screen (check activity or screen node ?) or we never logged in
+  if need_to_perform_action 
+    if login_widget_hash.empty?
+      Log.print("No login widget in current screen")
     else
-      puts "[ALODE]- ERROR - No clickable actions at activity: #{current_activity}"
+      Log.print("No login or current activity #{current_activity} unchanged from #{activity}")
     end
-  elsif edit_text_actions.length.eql? 1
-    puts '[ALODE] Only 1 EditText detected: infering username; password appear afterwards'
-    action_param_username = checkActionParam(edit_text_actions[0])
-    execute_edit_action(edit_text_actions[0], action_param_username, $myConf.get_username)
-    execute_event(click_actions[0])
-    action_param_password = checkActionParam(edit_text_actions[0])
-    execute_edit_action(edit_text_actions[0], action_param_password, $myConf.get_password)
-    actions = get_executable_ui_events(package_name_under_test)
-    new_button_actions = []
-    new_click_actions = []
-    actions.each do |action|
-      action_id, action_cmd, action_view_type, action_view_text = parseActionString(action)
-      if action_cmd.eql?("back\n") || action_cmd.eql?("keyevent_back\n") # "back"
-        next
-      elsif action_cmd.include?('click(')
-        if action_view_type.include?('Button')
-          new_button_actions << action_cmd
-        else
-          new_click_actions << action_cmd
-        end
-      end
-    end
-    if button_actions.any?
-      execute_event(button_actions[0])
-    elsif click_actions.any?
-      execute_event(click_actions[0])
-    else
-      puts "[ALODE]- ERROR - No clickable actions at activity: #{current_activity}"
+  #if login_widget_hash.empty? or !attempt_login(login_widget_hash, activity, actions, 3)
+    if actions.length > 0
+        Log.print("Available actions")
+        action = $picker.selectNextAction(actions)
+        Log.print("Selected Action <#{action.strip}>")
+        execute_action(activity, action)
+        return action
+      Log.print("Done performing random action")
+    else 
+      return false
     end
   else
-    if button_actions.any?
-      execute_event(button_actions[0])
-    elsif click_actions.any?
-      execute_event(click_actions[0])
-    else
-      puts "[ALODE]- ERROR - No clickable actions at activity: #{current_activity}"
-    end
-  end
-  last_activity = current_activity
-  actions, current_package, current_acitivity = get_executable_ui_events(package_name_under_test)
-  if !current_acitivity.eql? last_activity
-    puts '[ALODE] We have logged in ...'
-    $login_success = true
-  else
-    puts '[ALODE] We cannot login, trying again ...'
-    $login_success = false
+     nil
   end
 end
+
+
 
 def enterUsername(actions, view_text, id)
   action = UTIL.find_action_by_text_resid(actions, view_text, id)
@@ -725,7 +1338,7 @@ end
 
 def enterUsernamePwd(package_name_under_test)
   # get executable actions and current activity
-  actions, current_package, current_activity = get_executable_ui_events(package_name_under_test)
+  actions, current_package, current_activity = get_executable_ui_events(package_name_under_test) #this serves to extract the ui with the usrname? But shouldn't it have been extracted already ?
 
   # we give up after three tries
   login_attempt = 0
@@ -825,6 +1438,8 @@ def enterUsernamePwd(package_name_under_test)
   end
 end
 
+
+#need to update the weights
 def execute_edit_action(action_cmd, action_param, text)
   if action_param.eql?('_by_classname_instance')
     # execute action by classname and instance
@@ -835,7 +1450,7 @@ def execute_edit_action(action_cmd, action_param, text)
     puts "[ALODE]: #{action_param}, #{class_name} #{instance}"
 
     # construct the python cmd
-    event_cmd = "#{$timeout_cmd} 60s python ./bin/events/login#{action_param}.py #{$emulator_serial} #{class_name} #{instance} #{text}"
+    event_cmd = "#{$timeout_cmd} 60s python3 ./bin/events/login#{action_param}.py #{$emulator_serial} #{class_name} #{instance} #{text}"
     puts "$ #{event_cmd}"
     `#{event_cmd}`
   else
@@ -847,7 +1462,7 @@ def execute_edit_action(action_cmd, action_param, text)
     puts "[D]: #{action_param}, #{action_param_value}"
 
     # construct the python cmd
-    event_cmd = "#{$timeout_cmd} 60s python ./bin/events/login#{action_param}.py #{$emulator_serial} #{action_param_value} #{text}"
+    event_cmd = "#{$timeout_cmd} 60s python3 ./bin/events/login#{action_param}.py #{$emulator_serial} #{action_param_value} #{text}"
     puts "$ #{event_cmd}"
     `#{event_cmd}`
   end
@@ -910,6 +1525,46 @@ def reset_log_files
   if File.exist?($myConf.get_fsm_building_dir + '/' + 'a3e_runtime_log.txt')
     File.delete($myConf.get_fsm_building_dir + '/' + 'a3e_runtime_log.txt')
   end
+  File.open("#{$myConf.get_fsm_building_dir}/reached_activity.txt", 'a') do |f|
+    f.puts 'reached_screen_node  #time_to_reach (sec)'
+  end
+  File.open("#{$myConf.get_app_output_dir}/reached_connection.txt", 'a') do |f|
+    f.puts 'reached_open_conn  #id #time_to_reach (sec)'
+  end
+end
+
+def calc_avg_times
+  sum = 0
+  count = 0
+  File.open("#{$myConf.get_fsm_building_dir}/reached_activity.txt", 'r').each_line do |f|
+    if $. != 1
+      sum += f.split(" ")[-1].to_f
+      count += 1
+    end
+  end
+  if count > 0
+    File.open("#{$myConf.get_fsm_building_dir}/reached_activity.txt", 'a') do |f|
+      f.puts "Avg time to reach one screen node: #{sum/count}"
+    end
+  end
+
+  sum = 0
+  count = 0
+  Log.print "Waiting for background job to finish"
+  puts "Waiting for background job to finish"
+  pid =  Process.waitpid($background_job)
+  Log.print "Background job finished  #{pid}"
+  File.open("#{$myConf.get_app_output_dir}/reached_connection.txt", 'r').each_line do |f| #need to use the id as well
+    if $. != 1
+      sum += f.split(" ")[-1].to_f
+      count += 1
+    end
+  end
+  if count > 0
+    File.open("#{$myConf.get_app_output_dir}/reached_connection.txt", 'a') do |f|
+      f.puts "Avg time to reach one open connection: #{sum/count}"
+    end
+  end
 end
 
 def exploration_time_exceeded()
@@ -923,6 +1578,7 @@ def ripping_app(package_name_under_test, entry_activity_under_test, startr, nolo
 
   total_exec_time = 0.0
   $login_attempts = 0
+  success = false
   unless $g_disable_crash_report
     # start crash logging
     $g_crash_reporter.start_logging
@@ -954,7 +1610,20 @@ def ripping_app(package_name_under_test, entry_activity_under_test, startr, nolo
       start_time = Time.now
 
       # do main job --> drive the app to execute
-      do_main_job(package_name_under_test, stg)
+      # #maybe we can store the current launcher in the conf?
+      do_main_job(package_name_under_test, stg) #what if I somehow get stuck inside do_main_job?
+      if stg.get_next_target.nil?
+        $aapt.update_launcher
+        if ($aapt.has_more_launchers)
+          stg.reset_tries
+          start_app $myConf.get_instrumented_apk
+        else
+            break
+        end
+        #set current launcher I guess?
+        #I guess here we can check if we have remaining in store, we just set the launcher and do not restart?
+        #here check if there are more launchers or not, if yes, need to start over? of should we store targets we couldn't reach?
+      end
 
       end_time = Time.now
       # We profile the execution time here. Note the execution time is not very precise, since when we rip the app, we
@@ -1045,7 +1714,7 @@ def ripping_app(package_name_under_test, entry_activity_under_test, startr, nolo
       # when it is a closed-source apk, we calculate method coverage
       elsif $closed_source_apk == true && $default_A3E_iteration % 5 == 0 && !$g_disable_coverage_report
 
-        dump_coverage_cmd = "python #{$myConf.get_ella_tool_dir()}/coverage_fsm.py #{$myConf.get_app_dir_loc()}"
+        dump_coverage_cmd = "python3 #{$myConf.get_ella_tool_dir()}/coverage_fsm.py #{$myConf.get_app_dir_loc()}"
         puts "$ #{dump_coverage_cmd}"
         res = `#{dump_coverage_cmd}`
         method_coverage = res.strip
@@ -1058,13 +1727,12 @@ def ripping_app(package_name_under_test, entry_activity_under_test, startr, nolo
 
       $default_A3E_iteration = $default_A3E_iteration + 1
 
-
-      # check the maximum ui events (Note convert string to int)
       # if !$closed_source_apk && $default_A3E_iteration >= $g_maximum_events.to_i
       if !$closed_source_apk && exploration_time_exceeded
         # puts "[D] we have reached the maximum #{$g_maximum_events} UI events"
         puts '[D] an hour has elapsed since last reached target'
         puts '[D] exit A3E'
+        puts '[D] moving on ...'
 
         unless $g_disable_coverage_report
 
@@ -1085,9 +1753,9 @@ def ripping_app(package_name_under_test, entry_activity_under_test, startr, nolo
               app_dir_name = $myConf.get_app_dir_name()
 
               output = "#{app_dir_name},#{total_classes},#{total_methods},#{covered_methods},#{method_coverage_percentage}," +
-                       "#{total_executable_lines},#{covered_lines},#{line_coverage_percentage},#{$g_maximum_line_coverage_events}"
+                      "#{total_executable_lines},#{covered_lines},#{line_coverage_percentage},#{$g_maximum_line_coverage_events}"
               f.puts output
-            else
+            #else
               # TODO do nothing for gradle project
             end
 
@@ -1103,9 +1771,10 @@ def ripping_app(package_name_under_test, entry_activity_under_test, startr, nolo
         # puts "[D] we have reached the maximum #{$g_maximum_events} UI events"
         puts '[D] an hour has elapsed since last reached target'
         puts '[D] exit A3E'
+        puts '[D] moving on ...'
 
         unless $g_disable_coverage_report
-          dump_coverage_cmd = "python #{$myConf.get_ella_tool_dir()}/coverage_fsm.py #{$myConf.get_app_dir_loc()}"
+          dump_coverage_cmd = "python3 #{$myConf.get_ella_tool_dir()}/coverage_fsm.py #{$myConf.get_app_dir_loc()}"
           puts "$ #{dump_coverage_cmd}"
           res = `#{dump_coverage_cmd}`
           method_coverage = res.strip
@@ -1126,12 +1795,12 @@ def ripping_app(package_name_under_test, entry_activity_under_test, startr, nolo
       end
     end
   end
-
-  unless $g_disable_crash_report
-    # exit crash logging
-    $g_crash_reporter.exit_logging()
-  end
-
+  success = true
+  Log.print('Done ripping the app')
+ensure
+  #always executed
+  yield
+  calc_avg_times if success
 end
 
 def pull_log_file()
@@ -1256,6 +1925,8 @@ noloop = true
 apk_path = ''
 steps_file = nil
 stg_file = nil
+strategy = ''
+updatable = false
 
 $closed_source_apk = false
 $ella_coverage = false
@@ -1287,6 +1958,7 @@ OptionParser.new do |opts|
     avd_opt = o
   end
   opts.on('--search search', 'the search strategy to execute actions') do |h|
+    Log.print "Search strategy #{h}"
     $picker.setStrategy(h)
   end
   opts.on('--events events', 'the maximum ui events to be executed') do |e|
@@ -1328,6 +2000,14 @@ OptionParser.new do |opts|
   end
   opts.on('--stg file', 'XML file for STG') do |it|
     stg_file = it
+  end
+  opts.on('--updatable', 'update stg at runtime') do |it|
+    updatable = true
+  end
+  opts.on('--screen_matching_strategy strategy', "the strategy for matching screen, i.e shallow (name only) or deep") do |m|
+    strategy = m
+    $deep_screen_matching = true if strategy.eql?('deep')
+    puts "screen matching strategy: #{strategy}"
   end
   opts.on_tail('-h', '--help', 'show this message') do
     puts opts
@@ -1382,15 +2062,33 @@ prepare_env
 
 #########
 
+#start reached connection counter in background
 
+#todo add test setup option
+
+$background_job = fork do
+  reached_connection_cmd = "bash -x ../bin/reachedConnection.sh #{$emulator_serial} #{$myConf.get_app_output_dir} &"
+  #cmd = "bash -x ./bin/analyzeAndroidApk.sh fsm_apk #{apk_path} apk #{apk_path} >> /data/faridah/menu-runs/server.log.new 2>&1 "
+  puts "$ #{reached_connection_cmd}"
+  exec reached_connection_cmd
+end
+#Process.detach(job)
+
+##########
 
 
 Log.print("Stoat mode, maximum allowed #events: #{$g_maximum_events}")
 Log.print("Apk Name: #{apk_name}")
 
 pkg = $aapt.pkg apk_name
+#$launchers = $aapt.launchers apk_name
+#launchers = $aapt.launchers apk_name
+#@todo we need to store the targets that we could not reach and iterate through all the launchers with the remaining list of targets?
+# launchers.each {|act|
+# put everything here (or maybe not, check there won't be any issues with coverage or concurrency)
+# }
 act = $aapt.launcher apk_name
-stg = STG.construct_stg(stg_file)
+stg = STG.construct_stg(stg_file, strategy, updatable)
 
 start_app_cmd = ''
 if !act.nil?
@@ -1399,6 +2097,7 @@ else
   start_app_cmd =  'adb -s ' + $emulator_serial + ' shell monkey -p ' + pkg + ' -c android.intent.category.LAUNCHER 1'
   act = 'stoat-fake-entry-activity' # when the app does not has an explicit launchable activity, we use the monkey approach to start it
 end
+
 
 # start the app
 UTIL.execute_shell_cmd(start_app_cmd)
@@ -1411,27 +2110,33 @@ report_crawler_state('READY', act)
 retrace_steps(steps_file, $g_event_delay) if steps_file
 
 # rip the app
-ripping_app(pkg, act, 1, noloop, stg)
+ripping_app(pkg, act, 1, noloop, stg) {
+  # stop the server
+  report_crawler_state('STOP','')
+  # stop the coverage recording of Ella
+  if $ella_coverage == true
+    if File.file?("#{$myConf.get_ella_tool_dir()}/ella.sh")
+      clear_ella_coverage_cmd = "#{$myConf.get_ella_tool_dir()}/ella.sh e #{$emulator_serial}"
+      puts "$ #{clear_ella_coverage_cmd}"
+      `#{clear_ella_coverage_cmd}`
+    end
+  end
 
 
-# stop the server
-report_crawler_state('STOP','')
+  cleanup_adb_services()
 
-# stop the coverage recording of Ella
-if $ella_coverage == true
-  clear_ella_coverage_cmd = "#{$myConf.get_ella_tool_dir()}/ella.sh e #{$emulator_serial}"
-  puts "$ #{clear_ella_coverage_cmd}"
-  `#{clear_ella_coverage_cmd}`
-end
-
-# uninstall the app
-uninstall_app(apk_name)
+  unless $g_disable_crash_report
+    # exit crash logging
+    $g_crash_reporter.exit_logging()
+  end
+}
 
 # clean up adb in the localhost only for the target device
-logcat_pids = `ps | grep 'adb' | awk '{print $1}'`
-logcat_pids_list = logcat_pids.sub!("\n", ' ')
-kill_adb_cmd = "kill -9 #{logcat_pids_list}"  # kill the adb logcat process
-puts "$ #{kill_adb_cmd}"
-`#{kill_adb_cmd}`
+#logcat_pids = `ps -aux | grep "adb -s #{$emulator_serial} logcat" | awk '{print $2}'`
+#puts "#{logcat_pids}"
+#logcat_pids_list = logcat_pids.sub!("\n", ' ')
+#kill_adb_cmd = "kill -9 #{logcat_pids_list}"  # kill the adb logcat process
+#puts "$ #{kill_adb_cmd}"
+#`#{kill_adb_cmd}`
 
 exit

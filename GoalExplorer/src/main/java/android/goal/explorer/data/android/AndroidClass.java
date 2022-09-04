@@ -21,10 +21,19 @@ public class AndroidClass {
     public final SootClass scSupportFragmentManager;
     public final SootClass scFragment;
     public final SootClass scSupportFragment;
+    public final SootClass scDialogFragment;
+    public final SootClass scSupportDialogFragment;
+    public final SootClass scAppCompatDialogFragment;
+    public final SootClass scFragmentPagerAdapter;
+    public final SootClass scFragmentStatePagerAdapter;
+    public final SootClass scSupportViewPager;
 
     // Activity
     public final SootClass scSupportV7Activity;
     public final SootClass scSupportV4Activity;
+
+    public final SootClass scSupportActionBarDrawerToggle;
+    public final SootClass scSupportNavigationView;
 
 
     private Map<SootClass, ComponentType> componentTypeCache = new HashMap<>();
@@ -42,6 +51,10 @@ public class AndroidClass {
     public final SootClass osInterfaceServiceConnection;
     public final SootClass osClassIntent;
 
+    //Java async components
+    public final SootClass runnableClass;
+    public final SootClass executorServiceClass;
+
     private static AndroidClass instance;
 
     /**
@@ -54,34 +67,48 @@ public class AndroidClass {
 
     public AndroidClass(){
         // OS classes
-        osClassApplication = Scene.v().getSootClassUnsafe(ClassConstants.APPLICATIONCLASS);
-        osClassActivity = Scene.v().getSootClassUnsafe(ClassConstants.ACTIVITYCLASS);
-        osClassService = Scene.v().getSootClassUnsafe(ClassConstants.SERVICECLASS);
-        osClassFragment = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTCLASS);
-        osClassSupportFragment = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTFRAGMENTCLASS);
-        osClassBroadcastReceiver = Scene.v().getSootClassUnsafe(ClassConstants.BROADCASTRECEIVERCLASS);
-        osClassContentProvider = Scene.v().getSootClassUnsafe(ClassConstants.CONTENTPROVIDERCLASS);
+        osClassApplication = Scene.v().getSootClassUnsafe(ClassConstants.APPLICATIONCLASS,false);
+        osClassActivity = Scene.v().getSootClassUnsafe(ClassConstants.ACTIVITYCLASS,false);
+        osClassService = Scene.v().getSootClassUnsafe(ClassConstants.SERVICECLASS,false);
+        osClassFragment = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTCLASS,false);
+        osClassSupportFragment = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTFRAGMENTCLASS,false);
+        osClassBroadcastReceiver = Scene.v().getSootClassUnsafe(ClassConstants.BROADCASTRECEIVERCLASS,false);
+        osClassContentProvider = Scene.v().getSootClassUnsafe(ClassConstants.CONTENTPROVIDERCLASS,false);
         osClassGCMBaseIntentService = Scene.v()
-                .getSootClassUnsafe(ClassConstants.GCMBASEINTENTSERVICECLASS);
-        osClassGCMListenerService = Scene.v().getSootClassUnsafe(ClassConstants.GCMLISTENERSERVICECLASS);
+                .getSootClassUnsafe(ClassConstants.GCMBASEINTENTSERVICECLASS,false);
+        osClassGCMListenerService = Scene.v().getSootClassUnsafe(ClassConstants.GCMLISTENERSERVICECLASS,false);
         osInterfaceServiceConnection = Scene.v()
-                .getSootClassUnsafe(ClassConstants.SERVICECONNECTIONINTERFACE);
+                .getSootClassUnsafe(ClassConstants.SERVICECONNECTIONINTERFACE, false);
 
-        scContext = Scene.v().getSootClassUnsafe(ClassConstants.CONTEXTCLASS);
-        scServiceConnection = Scene.v().getSootClassUnsafe(ClassConstants.SERVICECONNECTIONINTERFACE);
+        scContext = Scene.v().getSootClassUnsafe(ClassConstants.CONTEXTCLASS,false);
+        scServiceConnection = Scene.v().getSootClassUnsafe(ClassConstants.SERVICECONNECTIONINTERFACE, false);
 
-        scFragmentTransaction = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTTRANSACTIONCLASS);
-        scFragmentManager = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTMANAGERCLASS);
-        scFragment = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTCLASS);
+        scFragmentTransaction = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTTRANSACTIONCLASS,false);
+        scFragmentManager = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTMANAGERCLASS,false);
+        scFragment = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTCLASS,false);
 
-        scSupportFragmentTransaction = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTSUPPORTTRANSACTIONCLASS);
-        scSupportFragmentManager = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTSUPPORTMANAGERCLASS);
-        scSupportFragment = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTFRAGMENTCLASS);
+        scSupportFragmentTransaction = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTSUPPORTTRANSACTIONCLASS,false);
+        scSupportFragmentManager = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTSUPPORTMANAGERCLASS,false);
+        scSupportFragment = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTFRAGMENTCLASS,false);
 
-        scSupportV7Activity = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTV7APPCLASS);
-        scSupportV4Activity = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTV4APPCLASS);
+        scDialogFragment = Scene.v().getSootClassUnsafe(ClassConstants.DIALOGFRAGMENTCLASS,false);
+        scSupportDialogFragment = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTDIALOGFRAGMENTCLASS,false);
+        scAppCompatDialogFragment = Scene.v().getSootClassUnsafe(ClassConstants.APPCOMPATDIALOGFRAGMENTCLASS,false);
 
-        osClassIntent = Scene.v().getSootClassUnsafe(ClassConstants.INTENTCLASS);
+        scFragmentPagerAdapter = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTPAGERADAPTERCLASS,false);
+        scFragmentStatePagerAdapter = Scene.v().getSootClassUnsafe(ClassConstants.FRAGMENTSTATEPAGERADAPTERCLASS,false);
+        scSupportViewPager = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTVIEWPAGERADAPTER,false);
+
+        scSupportActionBarDrawerToggle = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTACTIONBARDRAWERTOGGLE,false);
+        scSupportNavigationView = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTNAVIGATIONVIEW,false);
+
+        scSupportV7Activity = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTV7APPCLASS,false);
+        scSupportV4Activity = Scene.v().getSootClassUnsafe(ClassConstants.SUPPORTV4APPCLASS,false);
+
+        osClassIntent = Scene.v().getSootClassUnsafe(ClassConstants.INTENTCLASS,false);
+
+        runnableClass = Scene.v().getSootClassUnsafe(ClassConstants.RUNNABLECLASS,false);
+        executorServiceClass = Scene.v().getSootClassUnsafe(ClassConstants.EXECUTORSERVICECLASS,false);
     }
 
     public static synchronized AndroidClass v() {
@@ -199,4 +226,6 @@ public class AndroidClass {
                 && MethodConstants.Service.getConnectionMethods().contains(subsignature);
 
     }
+
+
 }

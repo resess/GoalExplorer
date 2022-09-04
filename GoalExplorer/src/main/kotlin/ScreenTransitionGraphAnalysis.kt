@@ -8,7 +8,10 @@ import soot.jimple.infoflow.android.SetupApplication
 import soot.jimple.infoflow.android.resources.controls.AndroidLayoutControl
 
 class ScreenTransitionGraphAnalysis(private val flowDroidAnalysis: SetupApplication) : Runnable {
-    lateinit var baseScreens: Map<SootClass, Set<Screen>>
+    override fun run() {
+        TODO("Not yet implemented")
+    }
+    /*lateinit var baseScreens: Map<SootClass, Set<Screen>>
     lateinit var intraActivityScreenTransitionsProvider: IntraActivityScreenTransitionsProvider
     lateinit var lifecycleScreenTransitionsProvider: LifecycleScreenTransitionsProvider
     /**
@@ -28,8 +31,8 @@ class ScreenTransitionGraphAnalysis(private val flowDroidAnalysis: SetupApplicat
         lifecycleScreenTransitionsProvider = LifecycleScreenTransitionsProvider(flowDroidAnalysis)
     }
 
-    private fun <T: LayoutComponent> getStaticLayoutInfoForComponents(components: List<T>): Map<T, StaticLayoutInfo> {
-        val androidResourceInfoProvider = ARSCInfoProvider(flowDroidAnalysis.resources)
+   /* private fun <T: LayoutComponent> getStaticLayoutInfoForComponents(components: List<T>): Map<T, StaticLayoutInfo> {
+        val androidResourceInfoProvider = ARSCInfoProvider(flowDroidAnalysis.)
 
         return components.map { component ->
             val layoutFileName = androidResourceInfoProvider.getFileNameForLayoutId(component.layoutId)
@@ -38,7 +41,7 @@ class ScreenTransitionGraphAnalysis(private val flowDroidAnalysis: SetupApplicat
                 it.userControls.get(layoutFileName)
             ) }
         }.toMap()
-    }
+    }*/
 
     /**
      * @param staticFragments fragments declared in XML layout and cannot be changed dynamically
@@ -51,5 +54,5 @@ class ScreenTransitionGraphAnalysis(private val flowDroidAnalysis: SetupApplicat
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScreenTransitionGraphAnalysis::class.java)
-    }
+    }*/
 }

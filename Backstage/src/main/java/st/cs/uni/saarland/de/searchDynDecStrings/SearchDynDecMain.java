@@ -29,11 +29,13 @@ public class SearchDynDecMain {
 	}
 	
 	private void processResults(Set<DynDecStringInfo> strings){
+		logger.debug("Processing dynamic string results");
 		
 		// the xmlParser is needed for reparsing the strings.xml and the public.xml file
 			// this way the tool finds out the text of the string id
 		
 		for (DynDecStringInfo str: strings){
+			//logger.debug("Dyn string {}", str);
 			if (CheckIfMethodsExisting.getInstance().checkIfValueIsID(str.getUiEID())){
 
 				CheckIfMethodsExisting check = CheckIfMethodsExisting.getInstance();

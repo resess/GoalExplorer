@@ -7,10 +7,11 @@ import st.cs.uni.saarland.de.helpClasses.AndroidRIdValues;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.testApps.Content;
 
+import java.io.Serializable;
 import java.util.*;
 
 
-public class AppsUIElement {
+public class AppsUIElement implements Serializable {
 
     protected List<Integer> parentIDs = new ArrayList<>();
     protected List<Integer> childIDs = new ArrayList<>();
@@ -19,8 +20,11 @@ public class AppsUIElement {
     protected String idVar = "";// element id variable name (not set for every element)
     // element id given in decimal value, if 7 digits-> self created id, 8d-> android default id, 10d-> normal Android id
     protected int id = 0;
+    protected Integer idInCode = null;
     protected String textVar = ""; // element text variables joined with "#"
     protected Map<String, String> text = new HashMap<>(); // element texts joined with "#"
+    protected String intent = "";
+    protected String declaringClass = "";
     protected String kindOfUiElement = ""; // saves which tag type was found: eg button, textView, View, include
     protected List<Listener> listeners = new ArrayList<>(); // list of listeners attached to this element
     private Set<String> drawableNames = new HashSet<>(); // list of attached drawables
@@ -49,8 +53,10 @@ public class AppsUIElement {
         if (!StringUtils.isBlank(textVariable))
             this.textVar = textVariable;
 
-        if (listener != null)
+        if (listener != null){
             listeners.add(listener);
+            //logger.debug("Adding a listener to uielement {}", listeners);
+        }
 
         if (styles != null)
             this.styles.addAll(styles);
@@ -142,6 +148,36 @@ public class AppsUIElement {
         }
     }
 
+    public void setIdInCode(Integer id){
+        this.idInCode = id;
+    }
+
+    public Integer getIdInCode(){
+        return this.idInCode;
+    }
+
+    public boolean hasIdInCode(){
+        return this.idInCode != null;
+    }
+
+    public String getIntent() {
+        return intent;
+    }
+
+    public void setIntent(String intent) {
+        this.intent = intent;
+    }
+
+    public String getDeclaringClass() {
+        return declaringClass;
+    }
+
+    public void setDeclaringClass(String declaringClass) {
+        this.declaringClass = declaringClass;
+    }
+
+    public boolean hasIntent() { return !this.intent.isEmpty();}
+
     @Override
     public String toString() {
         String parentName = "";
@@ -185,6 +221,7 @@ public class AppsUIElement {
     }
 
     public List<Listener> getListernersFromElement() {
+        //logger.debug("Defined listener for element {} {} {}", this, this.listeners, styles);
         if (styles.size() <= 0)
             return this.listeners;
         else {
@@ -214,6 +251,7 @@ public class AppsUIElement {
 
     // should only be used by transformation from an AppsUIElement to SpecialXMLTag
     protected void setListener(List<Listener> l) {
+        //logger.debug("Setting the listener from {} to {}", this.listeners, l);
         this.listeners = l;
     }
 
@@ -535,8 +573,40 @@ public class AppsUIElement {
     public Set<Style> getStyles() {
         return styles;
     }
-    //	@Override
-//	public boolean equals(Object o){
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parentIDs, childIDs, parentIDsDyn, childIDsDyn, idVar, id, idInCode, textVar, text, kindOfUiElement, listeners, drawableNames, styles);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null)
+                return false;
+            /*if (!super.equals(obj))
+                return false;*/
+            if (getClass() != o.getClass())
+                return  false;
+            AppsUIElement element = (AppsUIElement)o;
+            if(id != element.id)
+                return false;
+            if(kindOfUiElement == null)
+                if(element.kindOfUiElement != null)
+                    return false;
+            else if(!kindOfUiElement.equals(element.kindOfUiElement))
+                return false;
+            /*if(id != 0 && id == element.id) //TODO double check this actually
+                return true;*/
+            if(text == null)
+                if(element.text != null)
+                    return false;
+            else if(!text.equals(element.text))
+                return false;
+            return true;
+        }
 //		if (o instanceof AppsUIElement){
 //			if (((AppsUIElement) o).getKindOfUiElement().equals(kindOfUiElement)
 //					&& ((AppsUIElement) o).getUIID().equals(uiID)){

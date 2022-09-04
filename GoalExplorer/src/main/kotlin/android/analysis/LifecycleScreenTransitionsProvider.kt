@@ -16,7 +16,7 @@ class LifecycleScreenTransitionsProvider(private val flowDroidAnalysis: SetupApp
      * @param screen the screen to perform analysis for
      * @return possible screens after the lifecycle chains have been run
      */
-    fun findScreens(screen: Screen): List<Screen> =
+    /*fun findScreens(screen: Screen): List<Screen> =
         lifecycleChains.flatMap { findScreensAfterChain(screen, it) }
 
     private fun findScreensAfterChain(screen: Screen,
@@ -30,7 +30,7 @@ class LifecycleScreenTransitionsProvider(private val flowDroidAnalysis: SetupApp
                                              lifecycleChain: List<MethodSignatures.ActivityLifecycleMethods>)
     : List<SootMethod> {
         val methods = mutableListOf<SootMethod>()
-        val callbacks = flowDroidAnalysis.callbackMethods.get(activity)
+        val callbacks = flowDroidAnalysis.get.get(activity)
             .map { it.targetMethod }
 
         for (lifecycleMethod in lifecycleChain) {
@@ -59,5 +59,5 @@ class LifecycleScreenTransitionsProvider(private val flowDroidAnalysis: SetupApp
                 MethodSignatures.ActivityLifecycleMethods.ON_PAUSE
             ),
         )
-    }
+    }*/
 }

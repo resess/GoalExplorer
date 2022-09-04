@@ -6,7 +6,8 @@ import org.xmlpull.v1.XmlPullParserException;
 import soot.SootClass;
 import soot.VoidType;
 import soot.jimple.infoflow.android.axml.AXmlNode;
-import soot.jimple.infoflow.android.manifest.Manifest;
+import soot.jimple.infoflow.android.manifest.ProcessManifest;
+import soot.jimple.infoflow.android.manifest.binary.AbstractBinaryAndroidComponent;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.helpClasses.SootHelper;
 import st.cs.uni.saarland.de.testApps.AppController;
@@ -31,9 +32,7 @@ public class ReachabilityAnalysis implements Runnable {
     private final int maxDepthMethodLevel;
     private final boolean loadUiResults;
     private final boolean limitByPackageName;
-    private Map<String, List<Map<String, List<String>>>> servicesToIntentFilters = new HashMap<>();
-    private Map<String, List<Map<String, List<String>>>> activitiesToIntentFilters = new HashMap<>();
-    private Map<String, List<Map<String, List<String>>>> receiversToIntentFilters = new HashMap<>();
+
     private List<UiElement> processedUiElement;
     private final Set<ResultsSaver> resultsSavers = new HashSet<>();
 
@@ -43,7 +42,7 @@ public class ReachabilityAnalysis implements Runnable {
         this.rechabilityTimeoutValue = rTimeValue;
         this.loadUiResults = loadUiRes;
         this.apkPath = apkPath;
-        retrieveIntentFilters();
+        IntentFilterResolver.retrieveIntentFilters(apkPath);
         this.uiElements = uiElements;
         this.maxDepthMethodLevel = depthMethodLevel;
         this.limitByPackageName = limitByPackageName;
@@ -64,81 +63,14 @@ public class ReachabilityAnalysis implements Runnable {
         logger.info(logText);
         Helper.saveToStatisticalFile(logText);
         Map<UiElement, List<ApiInfoForForward>> results = getResults(uiElements);
+        logger.info("Extracting preferences");
+        PreferenceResolver.v().setIntentFilters(IntentFilterResolver.getActivitiesToIntentFilters());
+        PreferenceResolver.v().run().forEach(pref -> AppController.getInstance().updateUiElement(pref.globalId, pref));
         if(!loadUiResults) {
             AppController.getInstance().mergeReachabilityAnalysisResults(results);
         }
         resultsSavers.forEach(x->x.save(results));
         logger.info("Reachability analysis has been finished");
-    }
-
-    private void retrieveIntentFilters(){
-        try {
-            Manifest processMan = new Manifest(apkPath);
-            String packageName = processMan.getPackageName();
-            List<AXmlNode> activities = processMan.getActivities();
-            List<AXmlNode> services = processMan.getServices();
-            List<AXmlNode> receivers = processMan.getReceivers();
-
-
-            servicesToIntentFilters.putAll(getIntentFilters(packageName, services));
-            activitiesToIntentFilters.putAll(getIntentFilters(packageName, activities));
-            receiversToIntentFilters.putAll(getIntentFilters(packageName, receivers));
-        } catch (IOException | XmlPullParserException e) {
-            e.printStackTrace();
-            Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
-        }
-    }
-
-    private Map<String, List<Map<String, List<String>>>> getIntentFilters(String packageName, List<AXmlNode> baseNode) {
-        Map<String, List<Map<String, List<String>>>> baseNodeToIntentFilters = new HashMap<>();
-        for(AXmlNode service: baseNode){
-            String name = service.getAttribute("name").getValue().toString();
-            if(name.startsWith(".")){
-                name = String.format("%s%s", packageName, name);
-            }
-            List<AXmlNode> nodes = service.getChildrenWithTag("intent-filter");
-            if(nodes.size() == 0){
-                continue;
-            }
-            baseNodeToIntentFilters.put(name, new ArrayList<>());
-            for(AXmlNode inFilterNode : nodes) {
-                Map<String, List<String>> local = new HashMap<>();
-                for (AXmlNode subNode : inFilterNode.getChildren()) {
-                    String tagName = subNode.getTag().toString();
-                    switch (tagName) {
-                        case "action":
-                        case "category": {
-                            if(subNode.hasAttribute("name")) {
-                                String attrValue = subNode.getAttribute("name").getValue().toString();
-                                if (attrValue.startsWith(".")) {
-                                    attrValue = String.format("%s%s", packageName, attrValue);
-                                }
-                                if (!local.containsKey(tagName)) {
-                                    local.put(tagName, new ArrayList());
-                                }
-                                local.get(tagName).add(attrValue);
-                            }
-                            break;
-                        }
-                        case "data": {
-                            if(subNode.hasAttribute("mimeType")) {
-                                String attrValue = subNode.getAttribute("mimeType").getValue().toString();
-                                if (attrValue.startsWith(".")) {
-                                    attrValue = String.format("%s%s", packageName, attrValue);
-                                }
-                                if (!local.containsKey(tagName)) {
-                                    local.put(tagName, new ArrayList());
-                                }
-                                local.get(tagName).add(attrValue);
-                            }
-                            break;
-                        }
-                    }
-                }
-                baseNodeToIntentFilters.get(name).add(local);
-            }
-        }
-        return baseNodeToIntentFilters;
     }
 
     private Map<UiElement, List<ApiInfoForForward>> getResults(List<UiElement> uiElements) {
@@ -164,15 +96,19 @@ public class ReachabilityAnalysis implements Runnable {
         ExecutorService mainExecutor = Executors.newFixedThreadPool(RAHelper.numThreads);
 
         List<Future<Void>> tasks = new ArrayList<>();
+        //localUiElements.stream().filter(uiElement -> uiElement.declaringSootClass.endsWith("ISBNSearch")).collect(Collectors.toList())
         localUiElements.forEach(callbackToAnalyze -> {
             tasks.add(mainExecutor.submit(() -> {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
 
                 final List<ApiInfoForForward> apis = new CopyOnWriteArrayList<>();
+                String elementId = callbackToAnalyze.hasIdInCode() ? Integer.toString(callbackToAnalyze.idInCode) : callbackToAnalyze.elementId;
                 CallbackToApiMapper forwardFounder = new CallbackToApiMapper(
-                        callbackToAnalyze.handlerMethod, callbackToAnalyze.elementId, counter.incrementAndGet(),
+                        callbackToAnalyze.handlerMethod, elementId, counter.incrementAndGet(),
                         overallCallbacks, this.maxDepthMethodLevel, this.limitByPackageName, apis, false);
+                forwardFounder.setDeclaringSootClass(callbackToAnalyze.declaringSootClass);
                 forwardFounder.setSourcesAndSinks(this.sourcesSinksSignatures);
+
                 Future<Void> futureTask =  executor.submit(forwardFounder);
                 try {
                     futureTask.get(this.rechabilityTimeoutValue, this.rechabilityTimeoutUnit);
@@ -186,6 +122,12 @@ public class ReachabilityAnalysis implements Runnable {
                     futureTask.cancel(true);
                 }
                 finally {
+                    //here need to see if forwardFounder found any AlertDialog.Builder
+                    //need to call dialogfinder, process the results,
+                    //maybe not the best place for this
+                    //then update set of appsuielements and also setofuielements
+                    //then back to list, probably need to use a stack instead for concurrency
+                    logger.debug("Performed forward reachability analysis for {} and result {}", callbackToAnalyze, forwardFounder.getNewSootActivityClass());
                     if (forwardFounder.getNewSootActivityClass() != null) {
                         callbackToAnalyze.targetSootClass = forwardFounder.getNewSootActivityClass();
                     }

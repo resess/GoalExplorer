@@ -22,14 +22,14 @@ package android.goal.explorer.analysis.value.results;
 import android.goal.explorer.analysis.value.analysis.solvers.PropagationSolver;
 
 /**
- * A printer for {@link PropagationSceneTransformer}. Subclasses should indicate how to print
+ * A printer for {@link android.goal.explorer.analysis.value.PropagationSceneTransformer}. Subclasses should indicate how to print
  * debugging output after the constant propagation is over.
  */
 public interface PropagationSceneTransformerPrinter {
 
   /**
    * Prints the results of a constant propagation solver. This is executed when debugging output is
-   * activated for {@link PropagationSceneTransformer}.
+   * activated for {@link android.goal.explorer.analysis.value.PropagationSceneTransformer}.
    * 
    * @param solver A constant propagation solver.
    */

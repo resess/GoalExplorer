@@ -1,0 +1,143 @@
+package android.goal.explorer.builder;
+
+import android.goal.explorer.analysis.CallbackReachableMethods;
+import android.goal.explorer.analysis.FragmentChangeAnalysis;
+import android.goal.explorer.analysis.FragmentChangeAnalyzer;
+import android.goal.explorer.analysis.TypeAnalyzer;
+import android.goal.explorer.analysis.value.identifiers.Argument;
+import android.goal.explorer.analysis.value.managers.ArgumentValueManager;
+import android.goal.explorer.cmdline.GlobalConfig;
+import android.goal.explorer.data.android.AndroidClass;
+import android.goal.explorer.model.App;
+import android.goal.explorer.model.component.Activity;
+import android.goal.explorer.model.component.Fragment;
+import android.goal.explorer.model.entity.Menu;
+import android.goal.explorer.model.stg.STG;
+import android.goal.explorer.model.stg.edge.EdgeTag;
+import android.goal.explorer.model.stg.node.ScreenNode;
+import android.goal.explorer.topology.TopologyExtractor;
+import android.graphics.drawable.Drawable.Callback;
+import android.util.Pair;
+
+import org.pmw.tinylog.Logger;
+import soot.Local;
+import soot.MethodOrMethodContext;
+import soot.RefType;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Type;
+import soot.Unit;
+import soot.UnitPatchingChain;
+import soot.Value;
+import soot.jimple.AssignStmt;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.InvokeExpr;
+import soot.jimple.Stmt;
+import soot.jimple.infoflow.android.SetupApplication;
+import soot.jimple.infoflow.android.callbacks.CallbackDefinition;
+import soot.jimple.infoflow.android.callbacks.filters.ICallbackFilter;
+import soot.jimple.infoflow.util.SystemClassHandler;
+import soot.jimple.toolkits.callgraph.Edge;
+import soot.util.MultiMap;
+import soot.util.queue.QueueReader;
+import st.cs.uni.saarland.de.entities.Application;
+import st.cs.uni.saarland.de.entities.XMLLayoutFile;
+import st.cs.uni.saarland.de.helpClasses.Helper;
+import st.cs.uni.saarland.de.reachabilityAnalysis.UiElement;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
+
+import static android.goal.explorer.analysis.AnalysisUtils.extractIntArgumentFrom;
+import static android.goal.explorer.utils.InvokeExprHelper.invokesInflate;
+import static android.goal.explorer.utils.InvokeExprHelper.invokesSetContentView;
+
+
+public class BaseScreenBuilder {
+
+	private App app;
+	private STG stg;
+
+	private GlobalConfig config;
+
+	private final List<ICallbackFilter> callbackFilters = new ArrayList<>();
+
+	public BaseScreenBuilder(App app, STG stg, GlobalConfig config){
+		this.app = app;
+		this.stg = stg;
+		this.config = config;
+	}
+
+	/**
+	 * Construct the base screens for each activity
+	 *
+	 */
+	public void collectBaseScreens() {
+		for (Activity activity: app.getActivities()) {
+			collectionBaseScreensForActivity(activity);
+		}
+	}
+
+	public HashSet<Screen> collectBaseScreensForActivity(Activity activity) {
+		Set<Screen> baseScreens = new HashSet<>();
+		List<Map<Integer, SootClass>> initialFragmentClasses = new ArrayList<>();
+		initialFragmentClasses>add(new HashMap<Integer, SootClass>>);
+		
+		
+		Set<Fragment> staticFragments = new HashSet<>();
+
+		// Gets the fragment from layout
+		Map<Integer, XMLLayoutFile> layoutMap = activity.getLayouts();
+		for (XMLLayoutFile layout : layoutMap.values()) {
+		    for (Integer includeId : layout.getStaticIncludedLayoutIDs()) {
+			staticFragments.addAll(app.getFragmentsByResId(includeId));
+		    }
+		}
+
+		for (MethodOrMethodContext lifecycleMethod: activity.getLifecycleMethodsPreRun()) {
+
+		    SootMethod method = lifecycleMethod.method();
+		    Logger.debug("Here is the analyzed method from lifecycle, "+method);
+		    // Do not analyze system classes
+		    if (SystemClassHandler.isClassInSystemPackage(method.getDeclaringClass().getName()))
+			continue;
+		    if (!method.isConcrete())
+			continue;
+		    // Edges for context-sensitive point-to analysis
+		    Set<List<Edge>> edges = rm.getContextEdges(method);
+
+		    // Analyze layout: assigns resource id of the activity, and connects it with the layout file
+		    if (method.getName().contains("onCreate")) {
+			analyzeLayout(method, activity, edges);
+		    }//WHY ?
+		    // Find fragments
+		    //FragmentChangeAnalyzer fragmentChangeAnalyzer = new FragmentChangeAnalyzer(config, method, edges);
+		    FragmentChangeAnalysis fragmentChangeAnalyzer = new FragmentChangeAnalysis(config, method, edges);
+		    //Extract fragment transactions
+		    List<List<Unit>> fragmentTransactions = fragmentChangeAnalyzer.calculateFragmentTransactions();
+		    //Apply fragment transactions to obtain new layouts
+		    //if(fragmentTransactions != null && !fragmentTransactions.isEmpty()){
+		    Logger.debug("Here are the fragment transactions {}", fragmentTransactions);
+		    initialFragmentClasses = initialFragmentClasses.stream()
+								    .flatMap(layout -> fragmentChangeAnalyzer.calculateFragmentChanges(layout, fragmentTransactions).stream())
+								    .collect(Collectors.toList());
+		    Logger.debug("Here are the initial fragments, obtained from lifecycle, "+initialFragmentClasses);
+		    //ITERAate through the states and add the fragments
+		    }
+		}
+	}

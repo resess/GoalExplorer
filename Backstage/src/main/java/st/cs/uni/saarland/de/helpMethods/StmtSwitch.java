@@ -4,10 +4,7 @@ import java.util.List;
 
 import soot.Value;
 import soot.ValueBox;
-import soot.jimple.AssignStmt;
-import soot.jimple.IdentityStmt;
-import soot.jimple.InvokeExpr;
-import soot.jimple.ReturnStmt;
+import soot.jimple.*;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 
 public class StmtSwitch {
@@ -74,22 +71,28 @@ public class StmtSwitch {
 	public String getDeclaringClassName(InvokeExpr invokeExpr){
 		return invokeExpr.getMethod().getDeclaringClass().getName().toString();
 	}
-	
-	public String getCallerOfInvokeStmt(final InvokeExpr invokeExpr){
-		List<ValueBox> box = invokeExpr.getUseBoxes();	
-		if (box.size() ==  0)
-			return "";
-		Value callerReg = box.get(box.size() -1).getValue();
-		return callerReg.toString();
+
+	public Value getCallerValueOfInvokeStmt(final InvokeExpr invokeExpr){
+		if(!(invokeExpr instanceof InstanceInvokeExpr)){
+			List<ValueBox> useBoxes = invokeExpr.getUseBoxes();
+			if(useBoxes.size() > 0)
+				return useBoxes.get(0).getValue();
+			return null;
+		}
+		InstanceInvokeExpr iExpr = (InstanceInvokeExpr)invokeExpr;
+		return iExpr.getBase();
 	}
 	
+	public String getCallerOfInvokeStmt(final InvokeExpr invokeExpr){ //TODO check static invoke
+		Value value = getCallerValueOfInvokeStmt(invokeExpr);
+		return (value == null)?"": value.toString();
+	}
+
+
+	
 	public String getCallerTypeOfInvokeStmt(InvokeExpr invokeExpr){
-		List<ValueBox> box = invokeExpr.getUseBoxes();
-		if (box.size() > 0){
-			Value callerReg = box.get(box.size() -1).getValue();
-			return callerReg.getType().toString();
-		}
-		return "";
+		Value value = getCallerValueOfInvokeStmt(invokeExpr);
+		return (value == null)?"": value.getType().toString();
 	}
 	
 	public String getSignatureOfInvokeExpr(InvokeExpr invokeExpr){
@@ -103,5 +106,6 @@ public class StmtSwitch {
 	public String getReturnRegOfReturnStmt(ReturnStmt stmt){
 		return stmt.getOp().toString();
 	}
+
 
 }

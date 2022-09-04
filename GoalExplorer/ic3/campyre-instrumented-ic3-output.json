@@ -1,0 +1,77 @@
+{
+    "transitions": [
+        {
+            "handler": "campyre.android.RoomList/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "campyre.android.RoomList"
+            ],
+            "targets": [
+                "campyre.android.Settings"
+            ]
+        },
+        {
+            "handler": "campyre.android.RoomList/void selectRoom(campyre.java.Room)",
+            "sources": [
+                "campyre.android.RoomList"
+            ],
+            "targets": [
+                "campyre.android.RoomTabs"
+            ]
+        },
+        {
+            "handler": "campyre.android.RoomList/void verifyLogin()",
+            "sources": [
+                "campyre.android.RoomList",
+                "campyre.android.EmmaInstrument.InstrumentedActivity"
+            ],
+            "targets": [
+                "campyre.android.Login"
+            ]
+        },
+        {
+            "handler": "campyre.android.RoomView/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "campyre.android.RoomView"
+            ],
+            "targets": [
+                "campyre.android.Settings"
+            ]
+        },
+        {
+            "handler": "campyre.android.RoomView/void verifyLogin()",
+            "sources": [
+                "campyre.android.RoomView"
+            ],
+            "targets": [
+                "campyre.android.Login"
+            ]
+        },
+        {
+            "handler": "campyre.android.ShareImage/void onLogin()",
+            "sources": [
+                "campyre.android.ShareImage"
+            ],
+            "targets": [
+                "campyre.android.RoomList"
+            ]
+        },
+        {
+            "handler": "campyre.android.ShareImage/void verifyLogin()",
+            "sources": [
+                "campyre.android.ShareImage"
+            ],
+            "targets": [
+                "campyre.android.Login"
+            ]
+        },
+        {
+            "handler": "campyre.android.Utils/void installShortcut(android.content.Context,campyre.java.Room)",
+            "sources": [
+                "campyre.android.RoomView"
+            ],
+            "targets": [
+                "campyre.android.RoomTabs"
+            ]
+        }
+    ]
+}

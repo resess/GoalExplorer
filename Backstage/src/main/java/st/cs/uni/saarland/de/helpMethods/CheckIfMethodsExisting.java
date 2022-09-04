@@ -80,6 +80,10 @@ public class CheckIfMethodsExisting {
 		return Scene.v().containsMethod("<" + className +": " + methodSubSignature +">");
 	}
 
+	public boolean checkIfValueIsInteger(String value){
+		return StringUtils.isBlank(value)? false : value.matches("-*[0123456789]+");
+	}
+
 	public boolean checkIfValueIsID(String value){
 		return StringUtils.isBlank(value)? false : value.matches("[0123456789]+");
 	}

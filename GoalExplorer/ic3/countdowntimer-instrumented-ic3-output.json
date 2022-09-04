@@ -1,0 +1,50 @@
+{
+    "transitions": [
+        {
+            "handler": "net.everythingandroid.timer.Preferences/void onResume()",
+            "sources": [
+                "net.everythingandroid.timer.Preferences"
+            ],
+            "targets": [
+                "net.everythingandroid.timer.TimerActivity"
+            ]
+        },
+        {
+            "handler": "net.everythingandroid.timer.TimerActivity/boolean onMenuItemSelected(int,android.view.MenuItem)",
+            "sources": [
+                "net.everythingandroid.timer.TimerActivity"
+            ],
+            "targets": [
+                "net.everythingandroid.timer.Preferences"
+            ]
+        },
+        {
+            "handler": "net.everythingandroid.timer.TimerAlarmActivity$2/void onClick(android.view.View)",
+            "sources": [
+                "net.everythingandroid.timer.TimerActivity",
+                "net.everythingandroid.timer.TimerAlarmActivity"
+            ],
+            "targets": [
+                "net.everythingandroid.timer.TimerActivity"
+            ]
+        },
+        {
+            "handler": "net.everythingandroid.timer.TimerAlarmActivity/void onResume()",
+            "sources": [
+                "net.everythingandroid.timer.TimerAlarmActivity"
+            ],
+            "targets": [
+                "net.everythingandroid.timer.TimerActivity"
+            ]
+        },
+        {
+            "handler": "net.everythingandroid.timer.TimerAlarmReceiver/void onReceive(android.content.Context,android.content.Intent)",
+            "sources": [
+                "net.everythingandroid.timer.TimerAlarmReceiver"
+            ],
+            "targets": [
+                "net.everythingandroid.timer.TimerAlarmActivity"
+            ]
+        }
+    ]
+}

@@ -8,9 +8,10 @@ import sys
 d = Device(sys.argv[1])
 
 # click  
-if d(className=sys.argv[2]).count > int(sys.argv[3]):
+instance_num = d(className=sys.argv[2]).count
+if instance_num > int(sys.argv[3]):
 	d(className=sys.argv[2],instance = int(sys.argv[3])).click()
-	print("end")
-elif d(className=sys.argv[2]).count == int(sys.argv[3]):
+elif instance_num == int(sys.argv[3]):
 	d(className=sys.argv[2],instance = (int(sys.argv[3])-1)).click()
-	print("end")
+else:
+	print("Could not find classname instance" + str(sys.argv[2])+ " "+str(sys.argv[3])+" among "+ str(instance_num) + " instances")

@@ -17,6 +17,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import android.model.Screen;
+import org.pmw.tinylog.Logger;
 
 public class STG {
 //    private static STG instance;
@@ -99,6 +103,7 @@ public class STG {
     public void addTransitionEdge(AbstractNode srcNode, AbstractNode tgtNode, EdgeTag tag) {
         TransitionEdge newEdge = new TransitionEdge(srcNode, tgtNode, tag);
         transitionEdges.add(newEdge);
+        
     }
 
     /**
@@ -132,6 +137,14 @@ public class STG {
     }
 
     /**
+     * Gets the number of edges in the model
+     * @return
+     */
+    public int getNumEdges(){
+        return transitionEdges.size();
+    }
+
+    /**
      * Gets the screen nodes by name
      * @param name The name to look up screen node
      * @return The screen nodes
@@ -144,6 +157,19 @@ public class STG {
             }
         }
         return screenNodes;
+    }
+
+    public Set<AbstractNode> getBaseComponentNodeByName(String name){
+        return getNodesByName(name).stream().filter(abstractNode -> {
+            if(abstractNode instanceof ScreenNode){
+                return ((ScreenNode)abstractNode).isBaseScreenNode();
+            }
+            return true; //a service or broadcast receiver node
+        }).collect(Collectors.toSet()) ;
+    }
+
+    public Set<ScreenNode> getBaseScreenNodesByName(String name) {
+        return getScreenNodesByName(name).stream().filter(screenNode -> screenNode.isBaseScreenNode()).collect(Collectors.toSet());
     }
 
     /**
@@ -248,6 +274,14 @@ public class STG {
      */
     public Set<ScreenNode> getAllScreens(){
         return screenNodeSet;
+    }
+
+    public Set<AbstractNode> getAllNodes() {
+        Set<AbstractNode> allNodes = new HashSet<>();
+        allNodes.addAll(screenNodeSet);
+        allNodes.addAll(serviceNodeSet);
+        allNodes.addAll(broadcastReceiverNodeSet);
+        return allNodes;
     }
 
     public Set<TransitionEdge> getAllEdges() {
@@ -376,4 +410,6 @@ public class STG {
      * @return All transition edges
      */
     public Set<TransitionEdge> getTransitionEdges(){ return transitionEdges; }
+
+
 }

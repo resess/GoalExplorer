@@ -1,0 +1,28 @@
+# Excludes for IDE settings folders
+.idea
+.vscode
+.settings/
+
+# Excludes python generated code
+__pycache__/
+
+# Excludes for build folders for modules
+target/
+*.class
+
+# Exclude extensions
+*.iml
+
+# Exclude eclipse configs
+.classpath
+.project
+
+# Misc.
+# generated folder from using flowdroid
+/implementation/goal-explorer/sootOutput/
+
+/implementation/Stoat/CONF.txt
+
+/results/
+
+logs/

@@ -97,6 +97,27 @@ public class InterprocAnalysis2 {
 		return results;
 	}
 
+	//public List<InterProcInfo> findReturnValueOfMethod(
+
+	public List<String> findReturnValueInMethodForClassArrays(Stmt stmt, Value arrayReg, int index) {
+		List<String> results = new ArrayList<>();
+		Iterator<Edge> iteratorOverEdges = Scene.v().getCallGraph().edgesOutOf(stmt);
+		while (iteratorOverEdges.hasNext()) {
+			Edge edge = iteratorOverEdges.next();
+			SootMethod m = edge.tgt();
+			if (m.hasActiveBody()) {
+				StmtSwitchForClassArrays stmtSwitch = new StmtSwitchForClassArrays(index, arrayReg, m);
+				stmtSwitch.setSearchInReturn(true);
+				Body body = m.getActiveBody();
+				IterateOverUnitsHelper iterHelper = IterateOverUnitsHelper.newInstance();
+				iterHelper.runUnitsOverMethodBackwards(body, stmtSwitch);
+
+				results.addAll(stmtSwitch.getArrayResults());
+			}
+		}
+		return results;
+	}
+
 	public List<Integer> findReturnValueInMethodForArrays(Stmt stmt, Value arrayReg, int index) {
 		List<Integer> results = new ArrayList<>();
 		Iterator<Edge> iteratorOverEdges = Scene.v().getCallGraph().edgesOutOf(stmt);
@@ -137,8 +158,8 @@ public class InterprocAnalysis2 {
 		return results;
 	}
 
-	public List<Integer> findArrayInitInReachableMethods(int arrayIndex, int argumentIndex, SootMethod method, List<SootMethod> callStack, boolean searchInReturn) {
-		List<Integer> res = new ArrayList<>();
+	public List<String> findClassArrayInitInReachableMethods(int arrayIndex, int argumentIndex, SootMethod method, List<SootMethod> callStack, boolean searchInReturn) {
+		List<String> res = new ArrayList<>();
 		callStack.add(method);
 
 		List<SootMethod> localCallStack = new ArrayList<SootMethod>();
@@ -156,6 +177,37 @@ public class InterprocAnalysis2 {
 
 			// get the value of the argument of the stmt which called the analysed method/stmt
 			Value arrayReg = stmt.getInvokeExpr().getArg(argumentIndex);
+			StmtSwitchForClassArrays switchForArrays = new StmtSwitchForClassArrays(arrayIndex, arrayReg, method);
+			switchForArrays.setSearchInReturn(searchInReturn);
+			IterateOverUnitsHelper.newInstance().runUnitsOverMethodBackwards(caller.method().getActiveBody(), switchForArrays);
+			res.addAll(switchForArrays.getArrayResults());
+
+		}
+		return res;
+	}
+
+	public List<Integer> findArrayInitInReachableMethods(int arrayIndex, int argumentIndex, SootMethod method, List<SootMethod> callStack, boolean searchInReturn) {
+		List<Integer> res = new ArrayList<>();
+		callStack.add(method);
+
+		List<SootMethod> localCallStack = new ArrayList<SootMethod>();
+		localCallStack.addAll(callStack);
+
+		final Iterator<Edge> iteratorOverCallers = Scene.v().getCallGraph().edgesInto(method);
+		while (iteratorOverCallers.hasNext()) {
+
+			callStack.clear();
+			callStack.addAll(localCallStack);
+
+			final Edge e = iteratorOverCallers.next();
+			Stmt stmt = e.srcStmt();
+			MethodOrMethodContext caller = e.getSrc();
+
+			if(caller != null && caller.method() != null && caller.method().getDeclaringClass().getName().equals("dummyMainClass"))
+				continue;
+
+			// get the value of the argument of the stmt which called the analysed method/stmt
+			Value arrayReg = stmt.getInvokeExpr().getArg(argumentIndex);
 			StmtSwitchForArrays switchForArrays = new StmtSwitchForArrays(arrayIndex, arrayReg, method);
 			switchForArrays.setSearchInReturn(searchInReturn);
 			IterateOverUnitsHelper.newInstance().runUnitsOverMethodBackwards(caller.method().getActiveBody(), switchForArrays);
@@ -165,7 +217,8 @@ public class InterprocAnalysis2 {
 		return res;
 	}
 
-	public List<Info> findInReachableMethods2(int argumentIndex, SootMethod method, List<SootMethod> callStack) {
+
+		public List<Info> findInReachableMethods2(int argumentIndex, SootMethod method, List<SootMethod> callStack) {
 		return findInReachableMethods2(argumentIndex, method, callStack, null, -1);
 	}
 
@@ -186,6 +239,9 @@ public class InterprocAnalysis2 {
 			final Edge e = iteratorOverCallers.next();
 			Stmt stmt = e.srcStmt();
 			MethodOrMethodContext caller = e.src();
+
+			if(caller != null && caller.method() != null && caller.method().getDeclaringClass().getName().equals("dummyMainClass"))
+				continue;
 
 			if (argumentIndex > stmt.getInvokeExpr().getArgCount() - 1) {
 				continue;
@@ -259,6 +315,9 @@ public class InterprocAnalysis2 {
 			final Edge e = edges.next();
 			Stmt stmt = e.srcStmt();
 			MethodOrMethodContext caller = e.src();
+
+			if(caller != null && caller.method() != null && caller.method().getDeclaringClass().getName().equals("dummyMainClass"))
+				continue;
 
 			if (argumentIndex > stmt.getInvokeExpr().getArgCount() - 1) {
 				continue;

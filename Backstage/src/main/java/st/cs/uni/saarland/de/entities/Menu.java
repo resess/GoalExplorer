@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.testApps.Content;
 
+import st.cs.uni.saarland.de.searchMenus.MenuInfo;
+
 import java.util.*;
 
 // Menu is a special XMLLayoutFile which either represents a menu that was found in code or
@@ -18,7 +20,9 @@ public class Menu extends XMLLayoutFile {
 	String kindOfMenu; // states which Menu this is: option, contextual, nav.-drop-down, popup or TabView.
 	// assigned listeners to the layout (not to the elements of the layout): eg a menu listener for an options menu
 	Set<Listener> listeners = new HashSet<Listener>();
-	private final Logger logger =  LoggerFactory.getLogger(Thread.currentThread().getName());
+	boolean dynamicallyRegistered = false;
+	Map<Integer, Integer> realDynamicEIDs;
+	private final transient Logger logger =  LoggerFactory.getLogger(Thread.currentThread().getName());
 
 	// constructor for creating a new completely free Menu object
 	public Menu (int specialID){
@@ -28,6 +32,17 @@ public class Menu extends XMLLayoutFile {
 
 	public Menu(){
 		super();
+	}
+
+	public Menu (int specialID, MenuInfo menuInfo){
+		super();
+		this.setId(specialID);
+		this.name = "menu";
+		this.dynamicallyRegistered = true;
+		elementIDs = new HashSet<>();
+		realDynamicEIDs = new HashMap<>();
+		//menuInfo.getDynMenuItems().values());
+		
 	}
 
 	// constructor for replacing an XMLayoutFile to an Menu object
@@ -102,9 +117,26 @@ public class Menu extends XMLLayoutFile {
 		this.listeners.add(listener);
 	}
 
+	public boolean isDynamicallyRegistered(){
+		return this.dynamicallyRegistered;
+	}
+
+	public Map<Integer, Integer> getRealDynamicEIDs(){
+		return this.realDynamicEIDs;
+	}
+
+	public void addRealDynamicEID(int fakeId, int realId){
+		this.realDynamicEIDs.put(realId, fakeId);
+	}
+
+	public boolean isEmpty(){
+		return false;
+	}
+
 	@Override
 	public String toString(){
 		String res = kindOfMenu + "Menu:" + super.toString();
+		res += "assignedActivity: "+assignedActivity+" ";
 		for (Listener l : listeners){
 			res = res + " " + l;
 		}
@@ -123,4 +155,18 @@ public class Menu extends XMLLayoutFile {
 //		listeners.addAll(plistener);
 	}
 
+	//TODO deal with menu duplication due to branching
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Menu menu = (Menu) o;
+		return dynamicallyRegistered == menu.dynamicallyRegistered && Objects.equals(assignedActivity, menu.assignedActivity) && Objects.equals(kindOfMenu, menu.kindOfMenu) && Objects.equals(realDynamicEIDs, menu.realDynamicEIDs);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(assignedActivity, kindOfMenu, dynamicallyRegistered, realDynamicEIDs);
+	}
 }

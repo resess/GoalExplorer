@@ -1,0 +1,13 @@
+{
+    "transitions": [
+        {
+            "handler": "org.jtb.alogcat.LogActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "org.jtb.alogcat.LogActivity"
+            ],
+            "targets": [
+                "org.jtb.alogcat.PrefsActivity"
+            ]
+        }
+    ]
+}

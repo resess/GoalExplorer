@@ -1,0 +1,151 @@
+{
+    "transitions": [
+        {
+            "handler": "net.fercanet.LNM.Game$1/void onClick(android.content.DialogInterface,int)",
+            "sources": [
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.MainMenu"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.Game$2/void onClick(android.content.DialogInterface,int)",
+            "sources": [
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.MainMenu"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.Game$3/void onClick(android.content.DialogInterface,int)",
+            "sources": [
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.MainMenu"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.Game$4/void onClick(android.content.DialogInterface,int)",
+            "sources": [
+                "net.fercanet.LNM.Settings",
+                "net.fercanet.LNM.MainMenu",
+                "net.fercanet.LNM.Hof",
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.MainMenu"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.Game$5/void onClick(android.view.View)",
+            "sources": [
+                "net.fercanet.LNM.Settings",
+                "net.fercanet.LNM.MainMenu",
+                "net.fercanet.LNM.Hof",
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.MainMenu"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.Hof$1/void onClick(android.view.View)",
+            "sources": [
+                "net.fercanet.LNM.Settings",
+                "net.fercanet.LNM.MainMenu",
+                "net.fercanet.LNM.Hof",
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.MainMenu"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.MainMenu$1/void onClick(android.view.View)",
+            "sources": [
+                "net.fercanet.LNM.Settings",
+                "net.fercanet.LNM.MainMenu",
+                "net.fercanet.LNM.Hof",
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.Game"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.MainMenu$1/void onClick(android.view.View)",
+            "sources": [
+                "net.fercanet.LNM.Settings",
+                "net.fercanet.LNM.MainMenu",
+                "net.fercanet.LNM.Hof",
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.Game"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.MainMenu$1/void onClick(android.view.View)",
+            "sources": [
+                "net.fercanet.LNM.Settings",
+                "net.fercanet.LNM.MainMenu",
+                "net.fercanet.LNM.Hof",
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.Hof"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.MainMenu/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "net.fercanet.LNM.MainMenu"
+            ],
+            "targets": [
+                "net.fercanet.LNM.Game"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.MainMenu/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "net.fercanet.LNM.MainMenu"
+            ],
+            "targets": [
+                "net.fercanet.LNM.Game"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.MainMenu/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "net.fercanet.LNM.MainMenu"
+            ],
+            "targets": [
+                "net.fercanet.LNM.Hof"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.MainMenu/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "net.fercanet.LNM.MainMenu"
+            ],
+            "targets": [
+                "net.fercanet.LNM.Settings"
+            ]
+        },
+        {
+            "handler": "net.fercanet.LNM.Settings$1/void onClick(android.view.View)",
+            "sources": [
+                "net.fercanet.LNM.Settings",
+                "net.fercanet.LNM.MainMenu",
+                "net.fercanet.LNM.Hof",
+                "net.fercanet.LNM.Game"
+            ],
+            "targets": [
+                "net.fercanet.LNM.MainMenu"
+            ]
+        }
+    ]
+}

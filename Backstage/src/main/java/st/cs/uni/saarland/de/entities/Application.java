@@ -5,17 +5,31 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import st.cs.uni.saarland.de.dissolveSpecXMLTags.AdapterViewInfo;
+import st.cs.uni.saarland.de.dissolveSpecXMLTags.ListViewInfo;
+import st.cs.uni.saarland.de.helpClasses.AndroidRIdValues;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.reachabilityAnalysis.UiElement;
+import st.cs.uni.saarland.de.searchMenus.MenuInfo;
+import st.cs.uni.saarland.de.searchMenus.MenuItemInfo;
+import st.cs.uni.saarland.de.testApps.Content;
+import sun.security.provider.ConfigFile;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 
 // class where the data of the whole currently analysed app and the results of the analysis is stored
 public class Application {
+    //TO-DO: rewrite properly
+    //maybe store two maps, one for only the addition stuff (operation only done on addition)
 
     private String name; // name of the application
-    private Map<Integer, AppsUIElement> uiElementsOfApp;
+    private Map<Integer, Set<AppsUIElement>> uiElementsOfApp;
+    private Map<Integer, AppsUIElement> uiElementsOfAppUnique;
+    private Map<Integer, Set<AppsUIElement>> uiElementsIDNotUnique;
     private Map<Integer, UiElement> uiElementsWithListener;
+    private Map<Integer, Set<UiElement>> uiElementsWithMultipleListeners;
     // set of all XML files inside the res folder of the unpacked app, <counter of layout, XMLayoutFile object>
     private Map<Integer, XMLLayoutFile> xmlLayoutFiles;
     // list of all dialog this app has
@@ -40,6 +54,10 @@ public class Application {
         return activities;
     }
 
+    public Set<Tab> getTabs() {
+        return tabs;
+    }
+
     public Activity getActivityByName(String name) {
         for (Activity activity : activities) {
             if (name.equalsIgnoreCase(activity.getName())) {
@@ -51,10 +69,14 @@ public class Application {
 
     public void addActivity(Activity activity){
         this.activities.add(activity);
+        if(!StringUtils.isBlank(activity.getNameSpace()))
+            Helper.addNameSpace(activity.getNameSpace());
     }
 
     // list of all activity names declared inside the AndroidManifest file
     private Set<Activity> activities;
+
+    private Set<Tab> tabs = new HashSet<>();
 
     // save the ids of include- and fragment tags, to iterate over them to resolve the included layout
     // done for performance issues (otherwise all ui element would need to be iterated over)
@@ -90,18 +112,92 @@ public class Application {
         mergedLayoutFileIDs = new HashMap<>();
         fragmentClassToLayout = new HashMap<>();
         uiElementsOfApp = new HashMap<>();
+        uiElementsOfAppUnique = new HashMap<>();
         uiElementsWithListener = new HashMap<>();
+        uiElementsWithMultipleListeners = new HashMap<>();
 
         menus = new HashMap<>();
     }
 
+    
 
-    public AppsUIElement getUiElement(int elementID) {
+
+    public AppsUIElement getUIElementByType(int elementID, String type){
+        Set<AppsUIElement> allUIelements = uiElementsOfApp.get(elementID);
+        if(allUIelements == null){
+            logger.error("No ui element found for id {} and type {}", elementID, type);
+            return null;
+        }
+        if(StringUtils.isBlank(type)){
+            if(allUIelements.size() > 0)
+                return allUIelements.stream().findFirst().get();
+        }
+        else for (AppsUIElement element: allUIelements){
+            if(element.getKindOfUiElement().equals(type))
+                return element;
+        }
+        return null;
+    }
+
+    public AppsUIElement getUIElementByTypeExcluded(int elementID, String type){
+        Set<AppsUIElement> allUIelements = uiElementsOfApp.get(elementID);
+        AppsUIElement uiElement = null;
+        for (AppsUIElement element: allUIelements){
+            if(!element.getKindOfUiElement().equals(type))
+                return element;
+            uiElement = element;
+        }
+        //logger.debug("Returning a null ui element for {} {}", elementID, allUIelements);
+        return uiElement;
+    }
+
+    public Set<AppsUIElement> getAllUIElementsForId(int elementID){
         return uiElementsOfApp.get(elementID);
     }
 
+    public AppsUIElement getUiElement(int elementID) {
+        Set<AppsUIElement> allUIelements = uiElementsOfApp.get(elementID);
+        if(allUIelements == null)
+            return null;
+        if(allUIelements.size() == 1)
+            return allUIelements.stream().findFirst().get();
+        //should be the case of fragments I guess
+        //for now, just exclude fragment, since overriding only happens for navigation object
+        return this.getUIElementByTypeExcluded(elementID, "fragment");
+    }
+
     public void addUiElementsOfApp(AppsUIElement uiElement) {
-        this.uiElementsOfApp.put(uiElement.getId(), uiElement);
+        Set<AppsUIElement> allUIelements = uiElementsOfApp.get(uiElement.getId());
+        if(allUIelements == null)
+            allUIelements = new HashSet<>();
+        allUIelements.add(uiElement);
+        this.uiElementsOfApp.put(uiElement.getId(), allUIelements);
+    }
+
+    public void addUIElementIDNotUnique(AppsUIElement uiElement){
+        Set<AppsUIElement> allUIelements = uiElementsIDNotUnique.get(uiElement.getId());
+        if(allUIelements == null)
+            allUIelements = new HashSet<>();
+        allUIelements.add(uiElement);
+        this.uiElementsIDNotUnique.put(uiElement.getId(), allUIelements);
+    }
+
+    public void addUiElementOfApp(AppsUIElement uiElement) {
+        //check if the main list is occupied
+        int id = uiElement.getId();
+        if (!uiElementsOfAppUnique.containsKey(id)){
+            uiElementsOfAppUnique.put(id, uiElement);
+        }
+        else {
+            //need to check whether the content should be moved to this additional
+            //for now, only applies to fragments to handle navigation graph
+            AppsUIElement element = uiElementsOfAppUnique.get(id);
+            if (element.getKindOfUiElement().equals("fragment")){
+                //move to additional list
+                uiElementsOfAppUnique.put(id, uiElement);
+                addUIElementIDNotUnique(element);
+            }
+        }
     }
 
     // TODO: remove superclasses check. should be directly there a normal class
@@ -121,6 +217,49 @@ public class Application {
         }
     }
 
+    public void addXMLPreferenceToActivity(String activityClassName, String layoutID) {
+        //For now, this is static only
+        int id = Integer.parseInt(layoutID);
+        if(activityClassName == null || activityClassName.length() == 0){
+            return;
+        }
+        try{
+            if (!activityClassName.equals("")) {
+                PreferenceScreen prefScreen = (PreferenceScreen)xmlLayoutFiles.get(id);
+                prefScreen.setAssignedActivity(activityClassName);
+                
+                for(Integer childId: prefScreen.getUIElementIDs()) {
+                    for(AppsUIElement childElement: uiElementsOfApp.get(childId)){
+                        if(childElement instanceof PreferenceElement){
+                            PreferenceElement prefElement = (PreferenceElement)childElement;
+                            prefElement.setAssignedActivity(activityClassName);
+                            logger.debug("Found a preference in preference screen {} {} {}", id, childElement.getKindOfUiElement(),childElement);
+                      
+                        }
+                    
+                    }
+                }
+                //Need to update the children as well
+                if (activityToXMLLayoutFiles.containsKey(activityClassName)) {
+                    Set<Integer> layoutIDs = activityToXMLLayoutFiles.get(activityClassName);
+                    layoutIDs.add(id);
+                }
+                else {
+                    Set<Integer> newSet = new HashSet<>();
+                    newSet.add(id);
+                    activityToXMLLayoutFiles.put(activityClassName, newSet);
+                }
+            }
+        }
+        catch(Exception e) {
+            logger.error("Application does not contain preferences file with id {}", id);
+            logger.error(e.toString());
+            return;
+        }
+        
+
+    }
+
     // store two layouts that are merged together
     public void addMergedLayoutIDs(int layoutID, int addedLayoutID) {
 
@@ -136,8 +275,8 @@ public class Application {
         // set the child and parent of the root elements of the layouts accordingly
         XMLLayoutFile xmlFroot = xmlLayoutFiles.get(layoutID);
         XMLLayoutFile xmlFaddedLay = xmlLayoutFiles.get(addedLayoutID);
-        AppsUIElement rootElementOfRootLay = uiElementsOfApp.get(xmlFroot.getRootElementID());
-        AppsUIElement rootElementOfAddedLay = uiElementsOfApp.get(xmlFaddedLay.getRootElementID());
+        AppsUIElement rootElementOfRootLay = this.getUiElement(xmlFroot.getRootElementID());
+        AppsUIElement rootElementOfAddedLay = this.getUiElement(xmlFaddedLay.getRootElementID());
         rootElementOfAddedLay.addParentDyn(rootElementOfRootLay.getId());
         rootElementOfRootLay.addChildIDDyn(rootElementOfAddedLay.getId());
     }
@@ -171,12 +310,18 @@ public class Application {
     // Corrupted
     @Deprecated
     public Collection<AppsUIElement> getAllUIElementsOfApp() {
-        return uiElementsOfApp.values();
+        return uiElementsOfApp.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     public Map<Integer, AppsUIElement> getUIElementsMap() {
-        return uiElementsOfApp;
+        //Map<Integer, AppsUIElement> elementsMap = new HashMap<>();
+        //uiElementsOfApp.entrySet().forEach(entry -> elementsMap.put(entry.getKey(), getUIElement(entry.getValue())));
+        return uiElementsOfApp.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> getUiElement(entry.getKey())));
     }
+    public Map<Integer, Set<AppsUIElement>> getUIElementsMapNotUnique(){
+        return uiElementsOfApp;
+        }
 
 //	public void addPossibleListenerClasses(String possibleListenerClass){
 //			possibleXMLListenerClasses.add(possibleListenerClass);
@@ -199,7 +344,7 @@ public class Application {
     @Deprecated
     public String getStringForsavingAllUIElementAttributes() {
         String res = "";
-        for (AppsUIElement sc : uiElementsOfApp.values()) {
+        for (AppsUIElement sc : this.getAllUIElements()) {
             res = res + sc.attributesForSavingToString(name);
         }
         return res;
@@ -233,6 +378,68 @@ public class Application {
         return layoutClasses;
     }
 
+    public void extendAdapterViewWithDynItems(int id, AdapterViewInfo adapterViewInfo) {
+        AdapterView adapterView = null;
+        boolean isSpinner = false;
+        //TODO pick the list view where the id and the assigned activity match?
+        if(!uiElementsOfApp.containsKey(id) || id == AndroidRIdValues.getAndroidID("list")){
+            if(id == AndroidRIdValues.getAndroidID("list")){
+                Map<String, String> text = new HashMap<>();
+                text.put("default_value","");
+                adapterView = new ListView("listview",new ArrayList<>(),Integer.toString(id),text,"",new HashSet<>(), new HashSet<>()); //TODO should it be declaringSootClass?
+                adapterView.setAssignedActivity(adapterViewInfo.getDeclaringSootClass());
+                this.addUiElementsOfApp(adapterView);
+            }
+            else{
+                logger.error("List view with id {} not present in app", id);
+                return;
+            }
+
+        }
+        else {
+            AppsUIElement element = uiElementsOfApp.get(id).stream().findFirst().get();
+            if(element instanceof Spinner ){
+                if(!adapterViewInfo.equals("spinner"))
+                    logger.error("Issue identifying spinner type for adapter view {}", adapterViewInfo);
+                adapterView = (Spinner)element;
+                isSpinner = true;
+            }
+            else if(element instanceof ListView)
+                adapterView = (ListView)element;
+            else {
+                logger.error("Found adapter view of unknown type {}", element);
+                return;
+            }
+        }
+        
+        //String layoutID = listViewInfo.getAssociatedLayoutIDForText();
+        //XMLLayoutFile elementLayout = xmlLayoutFiles.get(Integer.parseInt(id));
+        List<Integer> parentList = new ArrayList<>();
+        parentList.add(id);
+
+        int itemId = 0;
+        Map<String, String> textMap = new HashMap<>();
+        for(String text: adapterViewInfo.getTextAsList()){
+            //Create a new ui element for the list view
+            textMap.put("default_value", text);
+
+            //make a random id instead? otherwise there will be an overlap
+            int newId = Content.getNewUniqueID(); //need some MOD?
+            //listView.getId() + (10 * itemId); //CHECK IF VALID
+           // Content.updateIDCounter(newId + 1);
+            AppsUIElement uiE = new AppsUIElement(isSpinner ? "spinneritem" : "listviewitem", parentList, Integer.toString(newId), textMap, "", null, new HashSet<String>(), null);
+            uiE.setIdInCode(itemId);
+            logger.debug("Adding ui element {} at position {} of list view", uiE, itemId, adapterView);
+            adapterView.addItemID(newId);
+            //listView.addRealDynamicEID(uiE.getId(), itemId);
+            addUiElementsOfApp(uiE);
+            //do something with the listener
+            //probably check the listener when doing reachability analysis?
+            itemId ++;
+            textMap.clear();
+        }
+    }
+
 
     // returns a Menu object with the same data than the XMLLayoutFile with the xmlLayoutFileID
     // and replaces the XMLLayoutFile object with the Menu object in the list of all XMLLayoutFiles in this class
@@ -241,6 +448,9 @@ public class Application {
         XMLLayoutFile deleteFile = null;
         // search the XMLLayoutFile with the id , xmlLayoutFileID
         XMLLayoutFile xmlF = xmlLayoutFiles.get(xmlLayoutFileID);
+        if(xmlF == null)
+            throw new IllegalArgumentException("no XMLLayoutFile with the given ID found: " + xmlLayoutFileID);
+           
         if (!(xmlF instanceof Menu)) {
             // create new Menu object which contains all informations of the XMLLayoutFile xmlF
             menu = new Menu(xmlF);
@@ -256,6 +466,53 @@ public class Application {
             menu = (Menu) xmlF;
         }
         this.menus.put(menu.getId(), menu);
+    }
+
+    //ADDED
+    public void addPhantomXMLLayoutForDynMenu(int xmlLayoutFileID, MenuInfo menuInfo) {
+        Menu menu = new Menu(xmlLayoutFileID, menuInfo);
+        //for(String resId)
+        //resId need to be an int
+        //iterate through the items and add to the
+        logger.debug("Trying to create menu {} {}", xmlLayoutFileID, menu.getId());
+        this.xmlLayoutFiles.put(menu.getId(), menu);
+        this.menus.put(menu.getId(), menu);
+
+        //TODO here need to resolve the classnmame if necessary
+
+        List<Integer> parentList = new ArrayList<>();
+        parentList.add(menu.getId());
+
+        //MenuItemInfo item = null;
+        menuInfo.getDynMenuItems().forEach((reg, item)  -> {
+            Integer itemId = item.getId();
+            String text = item.getText();
+            Map<String, String> textMap = new HashMap<>();
+
+            textMap.put("default_value", text); //Should we parse this ?
+            int newId = -1;
+            if(itemId != null && itemId/ 100000 > 0) //six digits, already a valid ID
+                newId = itemId;
+            else{
+                newId = Content.getNewUniqueID();
+                        //menu.getId() + (10 * itemId);
+                //Content.updateIDCounter(newId + 1);
+            }
+            //TODO check if id not in use, content might not be thread-safe
+            AppsUIElement uiE = new AppsUIElement("item", parentList, Integer.toString(newId), textMap, "", null, new HashSet<String>(), null);
+            uiE.setIdInCode(itemId);
+            if(item.getIntentInfo() != null){
+                String intent = item.getIntentInfo().getClassName();
+                if(!StringUtils.isBlank(intent)) {
+                    uiE.setIntent(intent);
+                    uiE.setDeclaringClass(menuInfo.getActivityClassName());
+                }
+            }
+            menu.addUIElement(uiE.getId());
+            menu.addRealDynamicEID(uiE.getId(), itemId);
+            addUiElementsOfApp(uiE);
+            //menu.addChildID(uiE.getId()); //or should it be dyn ?
+        });
     }
 
     /**
@@ -302,11 +559,13 @@ public class Application {
             return (SpecialXMLTag) uiE;
         }
 
-        if ((spec == null) || oldElement == null)
+        if ((spec == null) || oldElement == null) {
+            logger.error("no AppsUIElement with this Id found: {}",elementID);
             throw new IllegalArgumentException("no AppsUIElement with this Id found: " + elementID);
+        }
 
         // replace the AppsUIElement with the SpecialTag inside the elements list of this object
-        uiElementsOfApp.put(spec.getId(), spec);
+        this.addUiElementsOfApp(spec);
         // return the object with id elementID as SpecialXMLTag object
         return spec;
     }
@@ -315,11 +574,11 @@ public class Application {
     public Map<String, String> getInactiveContextText(int elementId, int depth) {
         // call getSurroundingElementIDs(id, depth)
         // and then iterate over this list and get the text
-        List<Integer> children = uiElementsOfApp.get(elementId).getHierarchyChildren(depth, xmlLayoutFiles, uiElementsOfApp);
+        List<Integer> children = getUiElement(elementId)/*uiElementsOfApp.get(elementId)*/.getHierarchyChildren(depth, xmlLayoutFiles, getUIElementsMap());
 
         Map<String,String> res = new HashMap<>();
         for (int uiEID : children) {
-            AppsUIElement uiE = uiElementsOfApp.get(uiEID);
+            AppsUIElement uiE = this.getUiElement(uiEID);
             Map<String, String> childrenText = uiE.getTextIfInactiveListener();
             childrenText.keySet().forEach(k->{
                 if(!res.containsKey(k)){
@@ -357,7 +616,7 @@ public class Application {
         if (!xmlLayoutFiles.containsKey(sc.getId()))
             xmlLayoutFiles.put(sc.getId(), sc);
         else
-            logger.error("xmlFile could not be added to map because id (as key) is contained in xmlFiles map");
+            logger.error("xmlFile could not be added to map because id {} (as key) is contained in xmlFiles map", sc.getId());
     }
 
     public void setIntentFilters(List<String> intentFilters) {
@@ -380,13 +639,17 @@ public class Application {
         dialogs.put(dia.getId(), dia);
     }
 
+    public void addTab(Tab tab) {
+        tabs.add(tab);
+    }
+
     public XMLLayoutFile getXmlLayoutFile(int elementID) {
         return xmlLayoutFiles.get(elementID);
     }
 
     // use this with attention. only AppController is allowed to call this!
     public Collection<AppsUIElement> getAllUIElements() {
-        return uiElementsOfApp.values();
+       return uiElementsOfApp.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     // use this with attention. only AppController is allowed to call this!
@@ -434,13 +697,46 @@ public class Application {
         return uiElementsWithListener.get(resId);
     }
 
+    public UiElement getUiElementWithListenerById(Integer resId, String declaringSootClass) {
+        if(uiElementsWithMultipleListeners.containsKey(resId)){
+            return uiElementsWithMultipleListeners.get(resId).stream().filter(uiElement -> declaringSootClass.equals(uiElement.declaringSootClass))
+                                                                        .findFirst()
+                                                                        .orElse(null);
+        }
+        else return getUiElementWithListenerById(resId);
+    }
+
     public Collection<UiElement> getUiElementsWithListeners() {
         return uiElementsWithListener.values();
     }
 
-    public void addUiElementsWithListener(Integer resId, UiElement distinctUiElement) {
-        this.uiElementsWithListener.put(resId, distinctUiElement);
+    public Collection<UiElement> getAllUiElementsWithListeners() {
+        Set<UiElement> allElements = new HashSet<>();
+        allElements.addAll(uiElementsWithListener.values());
+        uiElementsWithMultipleListeners.values().forEach(uiElementList -> allElements.addAll(uiElementList));
+        return allElements;
     }
+
+    //We assume every ui element is added only once
+    public void addUiElementsWithListener(Integer resId, UiElement distinctUiElement) {
+        if(uiElementsWithListener.containsKey(resId)){
+            //not unique
+            //logger.debug("Adding a non unique ui element for {} {}", resId, distinctUiElement);
+            Set<UiElement> uiElementSet = null;
+            if(uiElementsWithMultipleListeners.containsKey(resId))
+                uiElementSet = uiElementsWithMultipleListeners.get(resId);
+            else {
+                uiElementSet = new HashSet<>();
+                uiElementSet.add(uiElementsWithListener.get(resId));
+            }
+            //logger.debug("Previous ui element definitions FOR {} {}", resId, uiElementList);
+            uiElementSet.add(distinctUiElement);
+            this.uiElementsWithMultipleListeners.put(resId, uiElementSet);
+        }
+        else this.uiElementsWithListener.put(resId, distinctUiElement);
+    }
+
+
 }
 
 

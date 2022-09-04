@@ -1,32 +1,45 @@
 package android.goal.explorer.model.component;
 
+import android.goal.explorer.analysis.value.values.fields.SetFieldValue;
 import android.goal.explorer.data.android.constants.MethodConstants;
+import android.goal.explorer.model.entity.Drawer;
 import android.goal.explorer.model.entity.IntentFilter;
 import android.goal.explorer.model.entity.Listener;
 import android.goal.explorer.model.widget.AbstractWidget;
 import android.goal.explorer.utils.AxmlUtils;
 import soot.MethodOrMethodContext;
+import soot.Scene;
 import soot.SootClass;
 import soot.jimple.infoflow.android.axml.AXmlNode;
 import st.cs.uni.saarland.de.entities.Dialog;
 import st.cs.uni.saarland.de.entities.Menu;
+import st.cs.uni.saarland.de.entities.Tab;
 import st.cs.uni.saarland.de.entities.XMLLayoutFile;
 import st.cs.uni.saarland.de.reachabilityAnalysis.UiElement;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.*;
 
 import static android.goal.explorer.utils.SootUtils.findAndAddMethod;
 
-public class Activity extends AbstractComponent {
+public class Activity extends AbstractComponent  {
 
-    private Set<MethodOrMethodContext> menuOnCreateMethods;
-    private Set<MethodOrMethodContext> menuCallbackMethods;
+    private transient Set<MethodOrMethodContext> menuOnCreateMethods;
+    private transient Set<MethodOrMethodContext> menuCallbackMethods;
+    private transient Set<MethodOrMethodContext> contextMenuOnCreateMethods, contextMenuCallbackMethods;
+    private transient Set<MethodOrMethodContext> drawerMenuCallbackMethods;
+    private transient Set<MethodOrMethodContext> dialogCallbackMethods;
+
+
+    private Set<String> menuOnCreateMethodsStrings;
+    private Set<String> contextMenuOnCreateMethodsStrings;
+    private Set<String> menuCallbackMethodsStrings;
+    private Set<String> contextMenuCallbackMethodsStrings;
+    private Set<String> drawerMenuCallbackMethodsStrings;
+    private  Set<String> dialogCallbackMethodsStrings;
 
     private Set<IntentFilter> intentFilters;
     private Set<Listener> listeners;
@@ -48,8 +61,15 @@ public class Activity extends AbstractComponent {
     // For BACKSTAGE
     private Map<Integer, XMLLayoutFile> layouts;
     private Map<Integer, UiElement> uiElementsMap;
-    private Menu menu;
+    //private Menu menu; //rename to backstage menu
+    private Menu backstageMenu;
+    private android.goal.explorer.model.entity.Menu visibleMenu;
+    private Set<Menu> backstageContextMenus;
+    private Drawer drawer;
     private Set<Dialog> dialogs;
+    private Set<Tab> tabs;
+    private Set<android.goal.explorer.model.entity.Menu> visibleContextMenus;
+
 
     public Activity(AXmlNode node, SootClass sc, String packageName) {
         super(node, sc, packageName);
@@ -62,6 +82,17 @@ public class Activity extends AbstractComponent {
 
         menuOnCreateMethods = new HashSet<>();
         menuCallbackMethods = new HashSet<>();
+        contextMenuOnCreateMethods = new HashSet<>();
+        contextMenuCallbackMethods = new HashSet<>();
+        drawerMenuCallbackMethods = new HashSet<>();
+        dialogCallbackMethods = new HashSet<>();
+
+        menuOnCreateMethodsStrings = new HashSet<>();
+        menuCallbackMethodsStrings = new HashSet<>();
+        contextMenuOnCreateMethodsStrings = new HashSet<>();
+        contextMenuCallbackMethodsStrings = new HashSet<>();
+        drawerMenuCallbackMethodsStrings = new HashSet<>();
+        dialogCallbackMethodsStrings = new HashSet<>();
 
         listeners = new HashSet<>();
         fragments = new HashSet<>();
@@ -74,6 +105,10 @@ public class Activity extends AbstractComponent {
         uiElementsMap = new HashMap<>();
         layoutFiles = new HashSet<>();
         dialogs = new HashSet<>();
+        backstageContextMenus = new HashSet<>();
+        tabs = new HashSet<>();
+
+        visibleContextMenus = new HashSet<>();
     }
 
     /* ========================================
@@ -124,20 +159,35 @@ public class Activity extends AbstractComponent {
         return menuOnCreateMethods;
     }
 
+    public Set<MethodOrMethodContext> getContextMenuOnCreateMethods() {return contextMenuCallbackMethods;}
+
+    public Set<String> getMenuOnCreateMethodsStrings() {
+        return menuOnCreateMethodsStrings;
+    }
+
     /**
      * Adds the menu methods to this activity
      * @param menuMethods The menu methods to be added
      */
-    public void addMenuOnCreateMethods(Set<MethodOrMethodContext> menuMethods) {
-        this.menuOnCreateMethods.addAll(menuMethods);
+    public void addMenuOnCreateMethods(List<String> menuMethods) {
+        this.menuOnCreateMethodsStrings.addAll(menuMethods);
+        this.callbacks.stream().filter(callback -> menuOnCreateMethodsStrings.contains(callback.getTargetMethod().getSubSignature()))
+                .forEach(callback -> menuOnCreateMethods.add(callback.getTargetMethod()));
     }
+
 
     /**
      * Adds a menu method to this activity
      * @param menuMethod The menu method to be added
      */
-    public void addMenuOnCreateMethod(MethodOrMethodContext menuMethod) {
-        this.menuOnCreateMethods.add(menuMethod);
+    public void addMenuOnCreateMethod(String menuMethod) {
+        this.menuOnCreateMethodsStrings.add(menuMethod);
+    }
+
+    public void addContextMenuOnCreateMethods(List<String> contextMenuMethods){
+        this.contextMenuOnCreateMethodsStrings.addAll(contextMenuMethods);
+        this.callbacks.stream().filter(callback -> contextMenuOnCreateMethodsStrings.contains(callback.getTargetMethod().getSubSignature()))
+                .forEach(callback -> contextMenuOnCreateMethods.add(callback.getTargetMethod()));
     }
 
     /**
@@ -147,22 +197,83 @@ public class Activity extends AbstractComponent {
     public Set<MethodOrMethodContext> getMenuCallbackMethods() {
         return menuCallbackMethods;
     }
+    public Set<MethodOrMethodContext> getContextMenuCallbackMethods() { return contextMenuCallbackMethods;}
+
+    public Set<String> getMenuCallbackMethodsStrings() {
+        return menuCallbackMethodsStrings;
+    }
 
     /**
      * Adds the menu methods to this activity
      * @param menuMethods The menu methods to be added
      */
-    public void addMenuCallbackMethods(Set<MethodOrMethodContext> menuMethods) {
-        this.menuCallbackMethods.addAll(menuMethods);
+    public void addMenuCallbackMethods(List<String> menuMethods) {
+        this.menuCallbackMethodsStrings.addAll(menuMethods);
+        this.callbacks.stream().filter(callback -> menuCallbackMethodsStrings.contains(callback.getTargetMethod().getSubSignature()))
+                .forEach(callback -> menuCallbackMethods.add(callback.getTargetMethod()));
     }
 
     /**
      * Adds a menu method to this activity
      * @param menuMethod The menu method to be added
      */
-    public void addMenuCallbackMethod(MethodOrMethodContext menuMethod) {
-        this.menuCallbackMethods.add(menuMethod);
+    public void addMenuCallbackMethod(String menuMethod) {
+        this.menuCallbackMethodsStrings.add(menuMethod);
     }
+
+    public void addContextMenuCallbackMethods(List<String> contextMenuMethods){
+        this.contextMenuCallbackMethodsStrings.addAll(contextMenuMethods);
+        this.callbacks.stream().filter(callback -> contextMenuCallbackMethodsStrings.contains(callback.getTargetMethod().getSubSignature()))
+                .forEach(callback -> contextMenuCallbackMethods.add(callback.getTargetMethod()));
+    }
+
+
+    /**
+     * Gets the drawer menu methods of this activity
+     * @return
+     */
+    public Set<MethodOrMethodContext> getDrawerMenuCallbackMethods() {
+        return drawerMenuCallbackMethods;
+    }
+
+    public Set<String> getDrawerMenuCallbackMethodsStrings() {
+        return drawerMenuCallbackMethodsStrings;
+    }
+
+    /**
+     * Adds the drawer menu methods to this activity
+     * @param menuMethods The menu methods to be added
+     */
+    public void addDrawerMenuCallbackMethods(List<String> menuMethods) {
+        this.drawerMenuCallbackMethodsStrings.addAll(menuMethods);
+        this.callbacks.stream().filter(callback -> drawerMenuCallbackMethodsStrings.contains(callback.getTargetMethod().getSubSignature()))
+                .forEach(callback -> this.drawerMenuCallbackMethods.add(callback.getTargetMethod()));
+
+    }
+
+    /**
+     * Adds a drawer menu methods to this activity
+     * @param drawerMenuMethod The menu method to be added
+     */
+    public void addDrawerMenuCallbackMethod(String drawerMenuMethod) {
+        this.drawerMenuCallbackMethodsStrings.add(drawerMenuMethod);
+    }
+
+
+    /**
+     * Gets the dialog callbacks in this activity (i.e )
+     * @return
+     */
+    public Set<MethodOrMethodContext> getDialogCallbackMethods() {
+        return this.dialogCallbackMethods;
+    }
+    public void addDialogCallbackMethods(List<String> dialogMethods){
+        this.dialogCallbackMethodsStrings.addAll(dialogMethods);
+        this.callbacks.stream().filter(callback -> dialogCallbackMethodsStrings.contains(callback.getTargetMethod().getSubSignature()))
+                                .forEach(callback -> this.dialogCallbackMethods.add(callback.getTargetMethod()));
+
+    }
+
 
     /**
      * Gets the resource id of the parse XML layout file of this activity
@@ -365,12 +476,71 @@ public class Activity extends AbstractComponent {
     }
 
 
-    public Menu getMenu() {
-        return menu;
+    public boolean hasMenu(){
+        return backstageMenu != null;
     }
 
-    public void setMenu(Menu menu) {
-        this.menu = menu;
+    public boolean hasContextMenu() { return backstageContextMenus != null &&  !backstageContextMenus.isEmpty();}
+
+    public boolean hasDrawer(){
+        return drawer != null;
+    }
+
+    //public boolean hasDialogs() { return dialogs != null && ! dialogs.isEmpty()};
+
+
+    public Menu getMenu() {
+        return backstageMenu;
+    }
+
+    public Menu getBackstageMenu(){
+        return backstageMenu;
+    }
+
+
+    public void setBackstageMenu(Menu menu) {
+        this.backstageMenu = menu;
+        //this.menu = menu;
+    }
+
+    public Set<Menu> getBackstageContextMenus() {
+        return backstageContextMenus;
+    }
+
+    public void addBackstageContextMenu(Menu menu){
+        this.backstageContextMenus.add(menu);
+    }
+
+    public android.goal.explorer.model.entity.Menu getVisibleMenu(){
+        return visibleMenu;
+    }
+
+    public android.goal.explorer.model.entity.Menu getMenuEntity(){
+        return visibleMenu;
+    }
+
+    public void setMenu(android.goal.explorer.model.entity.Menu menu){
+        visibleMenu = menu;
+    }
+
+    public void setMenuEntity(android.goal.explorer.model.entity.Menu menu){
+        this.visibleMenu = menu;
+    }
+
+    public Set<android.goal.explorer.model.entity.Menu> getContextMenuEntities() { return this.visibleContextMenus;}
+
+    public void setContextMenuEntities(Set<android.goal.explorer.model.entity.Menu> contextMenus) { this.visibleContextMenus.addAll(contextMenus);}
+
+    public Drawer getDrawerEntity(){
+        return drawer;
+    }
+
+    public Drawer getDrawer(){
+        return drawer;
+    }
+
+    public void setDrawer(Drawer drawer){
+        this.drawer = drawer;
     }
 
     public Set<Dialog> getDialogs() {
@@ -381,8 +551,23 @@ public class Activity extends AbstractComponent {
         this.dialogs = dialogs;
     }
 
+    public boolean hasDialogs(){
+        return this.dialogs != null && !this.dialogs.isEmpty();
+    }
     public void addDialog(Dialog dialog) {
         this.dialogs.add(dialog);
+    }
+
+    public Set<Tab> getTabs() {
+        return tabs;
+    }
+
+    public void setTabs(Set<Tab> tabs) {
+        this.tabs = tabs;
+    }
+
+    public void addTab(Tab tab) {
+        this.tabs.add(tab);
     }
 
     /**
@@ -443,8 +628,8 @@ public class Activity extends AbstractComponent {
     @Override
     public int hashCode() {
         final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + ((resourceId == null) ? 0 : resourceId.hashCode());
+        int result = prime * super.hashCode();
+        //result = prime * result + ((resourceId == null || resourceId) ? 0 : resourceId.hashCode());
         return result;
     }
 
@@ -459,8 +644,8 @@ public class Activity extends AbstractComponent {
 
         Activity other = (Activity) obj;
 
-        if (!resourceId.equals(other.resourceId))
-            return false;
+        /*if (!resourceId.equals(other.resourceId))
+            return false;*/
         return getName().equals(other.getName());
     }
 
@@ -473,6 +658,18 @@ public class Activity extends AbstractComponent {
     }
 
     public void addUiElement(Integer id, UiElement uiElement) {
+
         uiElementsMap.put(id, uiElement);
     }
+
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        ois.defaultReadObject();
+        this.menuOnCreateMethods = new HashSet<>();
+        this.menuCallbackMethods = new HashSet<>();
+        this.drawerMenuCallbackMethods = new HashSet<>();
+        this.dialogCallbackMethods = new HashSet<>();
+    }
+
+
 }

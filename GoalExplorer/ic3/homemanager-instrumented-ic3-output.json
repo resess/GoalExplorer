@@ -1,0 +1,22 @@
+{
+    "transitions": [
+        {
+            "handler": "com.twsitedapps.homemanager.HomeManagerActivity$5/void onClick(android.view.View)",
+            "sources": [
+                "com.twsitedapps.homemanager.HomeManagerActivity"
+            ],
+            "targets": [
+                "com.twsitedapps.homemanager.GetHomeActivity"
+            ]
+        },
+        {
+            "handler": "com.twsitedapps.homemanager.HomeManagerActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "com.twsitedapps.homemanager.HomeManagerActivity"
+            ],
+            "targets": [
+                "com.twsitedapps.homemanager.Preferences"
+            ]
+        }
+    ]
+}

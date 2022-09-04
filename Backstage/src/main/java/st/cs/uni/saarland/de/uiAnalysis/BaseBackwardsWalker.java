@@ -1,7 +1,10 @@
 package st.cs.uni.saarland.de.uiAnalysis;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.Body;
 import soot.SootMethod;
+import st.cs.uni.saarland.de.searchTabs.TabInfo;
 import st.cs.uni.saarland.de.dissolveSpecXMLTags.TabViewInfo;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.helpClasses.MyStmtSwitchForResultLists;
@@ -18,11 +21,17 @@ import java.util.Set;
  * Created by avdiienko on 11/05/16.
  */
 public class BaseBackwardsWalker implements Runnable {
-    protected Set<TabViewInfo> resultTabs = new HashSet<>();
+    protected Set<TabViewInfo> resultTabsViews = new HashSet<>();
+    protected Set<TabInfo> resultTabs = new HashSet<>();
     protected Map<Integer, LayoutInfo> resultLayouts = new HashMap<>();
     private final Class<? extends MyStmtSwitchForResultLists> switchClass;
+    private final Logger logger =  LoggerFactory.getLogger(Thread.currentThread().getName());
 
-    public Set<TabViewInfo> getResultTabInfos() {
+    public Set<TabViewInfo> getResultTabViewInfos() {
+        return resultTabsViews;
+    }
+
+    public Set<TabInfo> getResultTabInfos() {
         return resultTabs;
     }
 
@@ -49,7 +58,7 @@ public class BaseBackwardsWalker implements Runnable {
             return;
         }
         final Body body = currentMethod.getActiveBody();
-        if (!Helper.processMethod(body.getUnits().size()) || !body.getMethod().getDeclaringClass().getName().startsWith(Helper.getPackageName())) {
+        if (!Helper.processMethod(body.getUnits().size()) || !Helper.isClassInAppNameSpace(body.getMethod().getDeclaringClass().getName())) {
             return;
         }
         try {
@@ -63,11 +72,25 @@ public class BaseBackwardsWalker implements Runnable {
             stmtSwitch.setCurrentSootMethod(body.getMethod());
             IterateOverUnitsHelper.newInstance().runUnitsOverMethodBackwards(body, stmtSwitch);
 
-            Set<TabViewInfo> resT = stmtSwitch.getResultedTabs();
+            Set<TabViewInfo> resTV = stmtSwitch.getResultedTabsViews();
+            Set<TabInfo> resT = stmtSwitch.getResultedTabs();
             Map<Integer, LayoutInfo> resL = stmtSwitch.getResultLayoutInfos();
 
-            if (resT != null)
+            if (resT != null) {
+                String toPrint = currentMethod.getSignature() + " basebackwards tabs: ";
+                for (TabInfo tab : stmtSwitch.getResultedTabs()) {
+                    toPrint += " " + tab.toString();
+                }
+                //logger.info(toPrint);
                 resultTabs.addAll(resT);
+                toPrint = currentMethod.getSignature() + " basebackwards tabs after adding: ";
+                for (TabInfo tab : getResultTabInfos()) {
+                    toPrint += " " + tab.toString();
+                }
+                //logger.info(toPrint);
+            }
+            if (resTV != null)
+                resultTabsViews.addAll(resTV);
             if (resL != null)
                 resultLayouts.putAll(resL);
 

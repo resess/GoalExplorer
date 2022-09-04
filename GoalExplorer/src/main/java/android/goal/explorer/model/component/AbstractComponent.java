@@ -3,39 +3,59 @@ package android.goal.explorer.model.component;
 import android.goal.explorer.model.entity.IntentFilter;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import soot.MethodOrMethodContext;
+import soot.Scene;
 import soot.SootClass;
 import soot.jimple.infoflow.android.axml.AXmlNode;
-import soot.jimple.infoflow.android.callbacks.CallbackDefinition;
+import soot.jimple.infoflow.android.callbacks.AndroidCallbackDefinition;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.pmw.tinylog.Logger;
 
 import static android.goal.explorer.utils.AxmlUtils.processNodeName;
 
-public class AbstractComponent {
+public class AbstractComponent implements Serializable {
     private String name;
     private String shortName;
-    private SootClass mainClass;
-    private Set<SootClass> addedClasses;
+    private transient SootClass mainClass;
+    private transient Set<SootClass> addedClasses;
 
     // Callback methods
     @XStreamOmitField()
-    private Set<CallbackDefinition> callbacks;
+    protected transient Set<AndroidCallbackDefinition> callbacks;
 
     // Lifecycle methods
     @XStreamOmitField()
-    private LinkedList<MethodOrMethodContext> lifecycleMethods;
+    private transient LinkedList<MethodOrMethodContext> lifecycleMethods;
 
     public AbstractComponent(String name) {
         this.name = name;
     }
 
+    public AbstractComponent(String name, String packageName){
+        this.name = name;
+        if(this.name.length() < packageName.length()){
+            Logger.error("Issue with app name {} and package name {}", name, packageName);
+            setShortName(name);
+        }
+        else setShortName(this.name.substring(packageName.length()));
+        this.addedClasses = new HashSet<>();
+        this.callbacks = new HashSet<>();
+        this.lifecycleMethods = new LinkedList<>();
+    }
+
     public AbstractComponent(AXmlNode node, String packageName) {
         this.name = processNodeName(node, packageName);
-        setShortName(this.name.substring(packageName.length()));
+        if(this.name.length() < packageName.length()){
+            Logger.error("Issue with app name {} and package name {}", name, packageName);
+            setShortName(name);
+        }
+        else setShortName(this.name.substring(packageName.length()));
         this.addedClasses = new HashSet<>();
         this.callbacks = new HashSet<>();
         this.lifecycleMethods = new LinkedList<>();
@@ -43,7 +63,24 @@ public class AbstractComponent {
 
     public AbstractComponent(AXmlNode node, SootClass sc, String packageName) {
         this.name = processNodeName(node, packageName);
-        setShortName(this.name.substring(packageName.length()));
+        if(this.name.length() < packageName.length()){
+            Logger.error("Issue with app name {} and package name {}", name, packageName);
+            setShortName(name);
+        }
+        else setShortName(this.name.substring(packageName.length()));
+        this.mainClass = sc;
+        addedClasses = new HashSet<>();
+        callbacks = new HashSet<>();
+        lifecycleMethods = new LinkedList<>();
+    }
+
+    public AbstractComponent(String name, SootClass sc, String packageName) {
+        this.name = name;
+        if(this.name.length() < packageName.length()){
+            Logger.error("Issue with app name {} and package name {}", name, packageName);
+            setShortName(name);
+        }
+        else setShortName(this.name.substring(packageName.length()));
         this.mainClass = sc;
         addedClasses = new HashSet<>();
         callbacks = new HashSet<>();
@@ -188,11 +225,11 @@ public class AbstractComponent {
      * Gets the callback definitions in the current component
      * @return The callback definitions
      */
-    public Set<CallbackDefinition> getCallbacks() {
+    public Set<AndroidCallbackDefinition> getCallbacks() {
         if (callbacks!=null && !callbacks.isEmpty()){
             return callbacks;
         } else {
-            return Collections.emptySet();
+            return new HashSet<>();
         }
     }
 
@@ -200,7 +237,7 @@ public class AbstractComponent {
      * Adds the callback definition to the current component
      * @return true if we have successfully added the callbacks
      */
-    public boolean addCallbacks(Set<CallbackDefinition> callbacks) {
+    public boolean addCallbacks(Set<AndroidCallbackDefinition> callbacks) {
         return this.callbacks.addAll(callbacks);
     }
 
@@ -208,8 +245,12 @@ public class AbstractComponent {
      * Adds the callback definition to the current component
      * @return true if we have successfully added the callbacks
      */
-    public boolean addCallback(CallbackDefinition callback) {
+    public boolean addCallback(AndroidCallbackDefinition callback) {
         return this.callbacks.addAll(Collections.singleton(callback));
+    }
+
+    public boolean removeCallback(AndroidCallbackDefinition callback){
+        return this.callbacks.remove(callback);
     }
 
     @Override
@@ -218,7 +259,7 @@ public class AbstractComponent {
         int result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((mainClass == null) ? 0 : mainClass.hashCode());
-        result = prime * result + ((addedClasses == null) ? 0 : addedClasses.hashCode());
+        //result = prime * result + ((addedClasses == null) ? 0 : addedClasses.hashCode());
         return result;
     }
 
@@ -247,5 +288,40 @@ public class AbstractComponent {
 
     public String toString() {
         return name;
+    }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        oos.defaultWriteObject();
+        oos.writeObject(mainClass.getName());
+        //System.out.println("The added classes before serialization "+addedClasses);
+        //oos.writeObject(addedClasses.stream().map(addedClass -> addedClass.getName()).collect(Collectors.toSet()));
+    }
+
+    private List<String> writeCallbackDefinition(AndroidCallbackDefinition callback){
+        ArrayList<String> callbackInfo = new ArrayList<>();
+
+        callbackInfo.add(callback.getTargetMethod().getSignature());
+        callbackInfo.add(callback.getParentMethod().getSignature());
+        callbackInfo.add(callback.getCallbackType().name());
+        return callbackInfo;
+    }
+
+    /*private AndroidCallbackDefinition readCallbackDefinition(List<String> callbackInfo){
+        return new AndroidCallbackDefinition(callbackInfo.get())
+    }
+
+    private List<String> writeMethodOrMethodContext(MethodOrMethodContext methodOrMethodContext){
+        ArrayList<String>
+    }*/
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        ois.defaultReadObject();
+        SootClass sootClass = Scene.v().getSootClass((String)ois.readObject());
+        this.mainClass = sootClass;
+        this.addedClasses = new HashSet<>();
+        this.callbacks = new HashSet<>();
+        this.lifecycleMethods = new LinkedList<>();
+                //((Set<String>)ois.readObject()).stream().map(name -> Scene.v().getSootClass(name)).collect(Collectors.toSet());
+        //System.out.println("The added classes after serialization "+addedClasses);
     }
 }

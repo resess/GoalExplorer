@@ -2,16 +2,20 @@ package st.cs.uni.saarland.de.helpClasses;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.SootMethod;
+import st.cs.uni.saarland.de.searchTabs.TabInfo;
 import st.cs.uni.saarland.de.dissolveSpecXMLTags.TabViewInfo;
 import st.cs.uni.saarland.de.searchScreens.LayoutInfo;
 
 public class MyStmtSwitchForResultLists extends MyStmtSwitch {
 
-	private Set<TabViewInfo> resultTabs = Collections.synchronizedSet(new LinkedHashSet<>());
+	private Set<TabViewInfo> resultTabsViews = Collections.synchronizedSet(new LinkedHashSet<>());
+	private Set<TabInfo> resultTabs = Collections.synchronizedSet(new LinkedHashSet<>());
 	private Map<Integer, LayoutInfo> resultLayouts = new ConcurrentHashMap<>();
+	private final Logger loggerHere =  LoggerFactory.getLogger(Thread.currentThread().getName());
 
 	public void putAllToResultedLayouts(Map<Integer, LayoutInfo> toAdd){
 		resultLayouts.putAll(toAdd);
@@ -29,20 +33,33 @@ public class MyStmtSwitchForResultLists extends MyStmtSwitch {
 		return resultLayouts;
 	}
 
-	public void addAllToResultedTabs(Set<TabViewInfo> toAdd){
+	public void addAllToResultedTabsViews(Set<TabViewInfo> toAdd){
+		resultTabsViews.addAll(toAdd);
+	}
+
+	public void addToResultedTabsViews(TabViewInfo toAdd){
+		resultTabsViews.add(toAdd);
+	}
+
+	public Set<TabViewInfo> getResultedTabsViews(){
+
+		return resultTabsViews;
+	}
+
+	public void addAllToResultedTabs(Set<TabInfo> toAdd){
 		resultTabs.addAll(toAdd);
 	}
 
-	public void addToResultedTabs(TabViewInfo toAdd){
+	public void addToResultedTabs(TabInfo toAdd){
 		resultTabs.add(toAdd);
 	}
 
-	public Set<TabViewInfo> getResultedTabs(){
+	public Set<TabInfo> getResultedTabs(){
 		return resultTabs;
 	}
 
 	public void removeAllFromResultedTabs(Set<TabViewInfo> toRemove){
-		resultTabs.removeAll(toRemove);
+		resultTabsViews.removeAll(toRemove);
 	}
 
 
@@ -55,7 +72,7 @@ public class MyStmtSwitchForResultLists extends MyStmtSwitch {
 	@Override
 	public void init() {
 		super.init();
-		resultTabs = Collections.synchronizedSet(new LinkedHashSet<>());
+		resultTabsViews = Collections.synchronizedSet(new LinkedHashSet<>());
 		resultLayouts = new HashMap<>();
 		shouldBreak = false;
 	}
@@ -68,9 +85,12 @@ public class MyStmtSwitchForResultLists extends MyStmtSwitch {
 	public boolean run(){
 		if (resultLayouts.size() > 0){
 			return !resultLayouts.entrySet().stream().allMatch(x->x.getValue().allValuesFound());
-		}else if (resultTabs.size() > 0){
+		}else if (resultTabsViews.size() > 0){
 			return !resultLayouts.entrySet().stream().allMatch(x->x.getValue().allValuesFound());
-		}else{
+		}else if(resultTabs.size() > 0){
+			boolean allValuesFound = !resultTabs.stream().allMatch(x->x.allValuesFound());
+			return allValuesFound;
+		}else {
 			return false;
 		}
 	}

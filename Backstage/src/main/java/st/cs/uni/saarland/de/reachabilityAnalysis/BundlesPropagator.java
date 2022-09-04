@@ -19,7 +19,7 @@ public class BundlesPropagator extends StringPropagator {
     }
 
     public BundlesPropagator(SootMethod currentSootMethod, Unit unitOfStartMethod, Value registerToTrack) {
-        super(currentSootMethod, unitOfStartMethod, registerToTrack);
+        super(currentSootMethod, unitOfStartMethod, registerToTrack,"");
         results = new HashSet<>();
     }
 

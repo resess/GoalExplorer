@@ -8,7 +8,7 @@ This repository contains the source code for the application to produce STGs for
 used to dynamically explore to find the target of interest. 
 
 ### Compatibility
-Currently, the tool supports API levels 26 and under. The Android Applications should also not use androidx libraries. 
+Currently, the tool supports API levels 25 and under. The Android Applications should also not use androidx libraries. 
 This is due to a dependency on Backstage which fails to analyze components of these applications. 
 
 ## Table of Contents

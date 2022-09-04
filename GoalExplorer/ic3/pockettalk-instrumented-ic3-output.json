@@ -1,0 +1,13 @@
+{
+    "transitions": [
+        {
+            "handler": "com.zachrattner.pockettalk.util.SMSReader/void onReceive(android.content.Context,android.content.Intent)",
+            "sources": [
+                "com.zachrattner.pockettalk.util.SMSReader"
+            ],
+            "targets": [
+                "com.zachrattner.pockettalk.gui.Main"
+            ]
+        }
+    ]
+}

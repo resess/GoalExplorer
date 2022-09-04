@@ -1,0 +1,13 @@
+{
+    "transitions": [
+        {
+            "handler": "org.beide.bomber.BomberActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "org.beide.bomber.BomberActivity"
+            ],
+            "targets": [
+                "org.beide.bomber.BomberPreferences"
+            ]
+        }
+    ]
+}

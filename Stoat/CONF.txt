@@ -1,16 +1,18 @@
 # Android SDK Configurations
 #ANDROID_SDK_DIR = /data/common/android_sdk/
 #ANDROID_LIB_DIR = /data/common/android_sdk/platforms/android-23/android.jar
-ANDROID_SDK_DIR = /Users/dulinglai/Library/Android/sdk/
-ANDROID_LIB_DIR = /Users/dulinglai/Library/Android/sdk/platforms/android-23/android.jar
+ANDROID_SDK_DIR = /data/faridah/android/
+ANDROID_LIB_DIR = /data/faridah/android/platforms/android-25/android.jar
 
 # Stoat Tool Dir 
 # STOAT_TOOL_DIR = /data/duling/TestingTools/Stoat/
-STOAT_TOOL_DIR = /home/bowenluo/workspace/goalexplorer/implementation/Executor/Stoat
+STOAT_TOOL_DIR = /data/Faridah/goalexplorer_runs/2019_android_targeted_exploration/implementation/Stoat
+
+# ELLA_TOOL_DIR = ? 
 
 # Timeout Command, use "timeout" for Linux, use "gtimeout" for MacOS
 #TIMEOUT_CMD = timeout
-TIMEOUT_CMD = gtimeout
+TIMEOUT_CMD = timeout
 
 # Client Side (Model Construction) Running Parameters
 # the name of coverage result file
@@ -37,4 +39,4 @@ PROB_MODEL_FILE_NAME = optimal_markov_model.txt
 # login settings
 USERNAME = recessubc@gmail.com
 PASSWORD = Kaiser4095
-
+LOGIN_TYPE = google

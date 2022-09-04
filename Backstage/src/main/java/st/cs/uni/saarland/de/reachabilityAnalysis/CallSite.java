@@ -9,6 +9,9 @@ public class CallSite {
 	public SootClass classOfInvokeExpr;
 	public Unit unit;
 	public SootMethod caller;
+	public String registerToSwitchOver;
+	public boolean isFullObject = false;
+	public String getIdMethod;
 	
 	@Override
 	public String toString(){

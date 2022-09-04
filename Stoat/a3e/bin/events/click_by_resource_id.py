@@ -9,6 +9,8 @@ d = Device(sys.argv[1])
 # check whether the resourceId exists
 if d(resourceId=sys.argv[2]).exists:
 	d(resourceId=sys.argv[2]).click()
+else:
+	print("Could not find instance by resource id "+sys.argv[2])
 
 
 

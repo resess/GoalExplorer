@@ -10,8 +10,10 @@ class PreAnalysisRunner(val config: GlobalConfig, private val settings: Settings
         logger.info("Running old goal-explorer apk data collection involving backstage")
         if (!this::stgExtractor.isInitialized) {
             stgExtractor = STGExtractor(config, settings)
+            
             stgExtractor.constructSTG()
         }
+        logger.info("Done with STG construction")
     }
 
     fun runAndGetResult(): STGExtractor {

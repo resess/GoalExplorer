@@ -5,9 +5,17 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 @XStreamAlias("Node")
 public class OutAbstractNode {
     private String name;
+    protected boolean target = false;
+    protected OutTargetActionTag targetAction;
 
     public OutAbstractNode(String name) {
         this.name = name;
+    }
+
+    public OutAbstractNode(String name, boolean target, OutTargetActionTag targetAction){
+        this.name = name;
+        this.target = target;
+        this.targetAction = targetAction;
     }
 
     /* =======================================

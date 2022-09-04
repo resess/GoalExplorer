@@ -19,7 +19,7 @@ public class MainClass {
         extractor.constructSTG();
 
         // print the results to XML file
-        SaveData saveData = new SaveData(new OutSTG(extractor.getStg(), Collections.emptyMap()), config);
+        SaveData saveData = new SaveData(new OutSTG(extractor.getStg(), Collections.emptyMap()), extractor.getApp(), config);
         saveData.saveSTG();
     }
 }

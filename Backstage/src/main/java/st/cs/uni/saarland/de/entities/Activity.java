@@ -16,15 +16,22 @@ public class Activity {
 
     public void setName(String name) {
         this.name = name;
+        int i = name.lastIndexOf(".");
+        nameSpace = (i <= 0) ? "": name.substring(0, i);
     }
 
     private String name;
+    private String nameSpace;
 
     public String getLabel() {
         if (label == null) {
             label = "";
         }
         return label;
+    }
+
+    public String getNameSpace(){
+       return nameSpace;
     }
 
     public void setLabel(String label) {

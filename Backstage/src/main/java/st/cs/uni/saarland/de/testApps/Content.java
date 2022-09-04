@@ -18,7 +18,7 @@ public class Content {
 	
 	private static Content content;
 
-	private static AtomicInteger idCounter = new AtomicInteger(1000000);
+	private static AtomicInteger idCounter = new AtomicInteger(100000);
 	
 	private Map<String, Integer> nameToIds; // Map<type:name, id>
 	private Map<Integer, String> idToName; // Map<id, name>
@@ -51,10 +51,14 @@ public class Content {
 		return content;
 	}
 
-	// first ID starts at 100.000.001 -> 9 digits; Android IDs are always 6 digits
+	// first ID starts at 10.000.001 -> 8 digits; Android IDs are always 6 digits
 	public static int getNewUniqueID(){
 		// first increment, then the new value is returned
 		return idCounter.getAndIncrement();
+	}
+
+	public static void updateIDCounter(int newId){
+		idCounter.set(newId);
 	}
 
 	public String getAppOutputDir() {
@@ -66,14 +70,16 @@ public class Content {
 		int idInt = Integer.parseInt(id);
 		String strName = idToName.get(idInt);
 		if (!StringUtils.isBlank(strName)) {
-			if (stringNameToValue.containsKey(strName)) {
+			if (stringNameToValue.containsKey(strName)) 
 				res = stringNameToValue.get(strName);
-			} else {
-				res = stringDefaultIdToValue.get(id);
-			}
 
+		}
+		if(StringUtils.isBlank(res)){
+			res = stringDefaultIdToValue.get(id);
+		}
+		if(!StringUtils.isBlank(res))
 			return res;
-		}else{
+		else{
 			Helper.saveToStatisticalFile("Did not find string name from string id: id: " + id);
 			return "";
 		}

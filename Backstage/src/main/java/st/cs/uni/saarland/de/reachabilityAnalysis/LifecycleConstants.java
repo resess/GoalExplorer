@@ -23,6 +23,7 @@ public class LifecycleConstants {
     public static final String SERVICE_ONBIND = "android.os.IBinder onBind(android.content.Intent)";
     public static final String SERVICE_ONREBIND = "void onRebind(android.content.Intent)";
     public static final String SERVICE_ONUNBIND = "boolean onUnbind(android.content.Intent)";
+    public static final String INTENT_SERVICE_ONHANDLEINTENT = "void onHandleIntent(android.content.Intent)";
     public static final String SERVICE_ONDESTROY = "void onDestroy()";
 
     public static final String SERVICE_START="android.content.ComponentName startService(android.content.Intent)";
@@ -40,5 +41,5 @@ public class LifecycleConstants {
             ACTIVITY_ONCREATEDESCRIPTION,
             ACTIVITY_ONPOSTCREATE,
             ACTIVITY_ONPOSTRESUME};
-    public static final String[] serviceMethods = {SERVICE_ONBIND, SERVICE_ONCREATE, SERVICE_ONDESTROY, SERVICE_ONREBIND, SERVICE_ONSTART1, SERVICE_ONSTART2, SERVICE_ONUNBIND};
+    public static final String[] serviceMethods = {SERVICE_ONBIND, SERVICE_ONCREATE, SERVICE_ONDESTROY, SERVICE_ONREBIND, SERVICE_ONSTART1, SERVICE_ONSTART2, SERVICE_ONUNBIND, INTENT_SERVICE_ONHANDLEINTENT};
 }

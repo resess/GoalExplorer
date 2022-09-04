@@ -1,0 +1,13 @@
+{
+    "transitions": [
+        {
+            "handler": "com.google.android.divideandconquer.DivideAndConquerActivity/boolean onOptionsItemSelected(android.view.MenuItem)",
+            "sources": [
+                "com.google.android.divideandconquer.DivideAndConquerActivity"
+            ],
+            "targets": [
+                "com.google.android.divideandconquer.Preferences"
+            ]
+        }
+    ]
+}

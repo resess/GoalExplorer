@@ -8,11 +8,13 @@ import android.goal.explorer.model.component.Activity;
 import android.goal.explorer.model.component.BroadcastReceiver;
 import android.goal.explorer.model.component.Fragment;
 import android.goal.explorer.model.component.Service;
-import org.pmw.tinylog.Logger;
+import android.util.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.MethodOrMethodContext;
 import soot.Scene;
 import soot.SootClass;
-import soot.jimple.infoflow.android.callbacks.CallbackDefinition;
+import soot.jimple.infoflow.android.callbacks.AndroidCallbackDefinition;
 import soot.jimple.infoflow.memory.IMemoryBoundedSolver;
 import soot.jimple.infoflow.memory.ISolverTerminationReason;
 import soot.jimple.infoflow.util.SystemClassHandler;
@@ -27,11 +29,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static android.goal.explorer.utils.SootUtils.findAndAddMethod;
+import static android.goal.explorer.utils.SootUtils.*;
 
 public class TopologyExtractor implements IMemoryBoundedSolver {
 
     private static final String TAG = "Topology";
+    private static Logger logger = LoggerFactory.getLogger(TAG);
 
     private App app;
 
@@ -61,7 +64,7 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
         ExecutorService classExecutor = Executors.newFixedThreadPool(numThread);
         Set<Future<Void>> classTasks = new HashSet<>();
 
-        Logger.debug(String.format("Submitting %d activity analysis tasks", app.getActivities().size()));
+        logger.debug(String.format("Submitting %d activity analysis tasks", app.getActivities().size()));
         for (Activity activity : app.getActivities()) {
             classTasks.add(classExecutor.submit(() -> {
                 submitTopologyAnalysisTask(activity);
@@ -69,7 +72,7 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
             }));
         }
 
-        Logger.debug(String.format("Submitting %d service analysis tasks", app.getServices().size()));
+        logger.debug(String.format("Submitting %d service analysis tasks", app.getServices().size()));
         for (Service service : app.getServices()) {
             classTasks.add(classExecutor.submit(() -> {
                 submitTopologyAnalysisTask(service);
@@ -77,7 +80,7 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
             }));
         }
 
-        Logger.debug(String.format("Submitting %d broadcast receiver analysis tasks", app.getBroadcastReceivers().size()));
+        logger.debug(String.format("Submitting %d broadcast receiver analysis tasks", app.getBroadcastReceivers().size()));
         for (BroadcastReceiver receiver : app.getBroadcastReceivers()) {
             classTasks.add(classExecutor.submit(() -> {
                 submitTopologyAnalysisTask(receiver);
@@ -90,17 +93,18 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
             try {
                 classTask.get(timeout, TimeUnit.MINUTES);
             } catch (InterruptedException e) {
-                Logger.warn("[{}] Interrupted analyzer from a parent thread", TAG);
+                logger.warn("[{}] Interrupted analyzer from a parent thread", TAG);
                 classTask.cancel(true);
             } catch (TimeoutException e) {
-                Logger.warn("[{}] Timeout for analysis task: {}", TAG, classTask);
+                logger.warn("[{}] Timeout for analysis task: {}", TAG, classTask);
                 classTask.cancel(true);
             } catch (Exception e) {
-                Logger.error("[{}] Unknown error happened: {}", TAG, e.getMessage());
+                logger.error("[{}] Unknown error happened: {}", TAG, e.getMessage());
+                e.printStackTrace();
                 classTask.cancel(true);
             }
         }
-        Logger.debug("Finished all analysis tasks");
+        logger.debug("Finished all analysis tasks");
         classExecutor.shutdown();
     }
 
@@ -109,18 +113,22 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
      * @param comp The activity class to analyze
      */
     private void submitTopologyAnalysisTask(AbstractComponent comp) {
-        Logger.debug("[{}] Collecting topology for: {}...", TAG, comp.getMainClass());
+        logger.debug("[{}] Collecting topology for: {}...", TAG, comp.getMainClass());
 
         // collect extended classes
         collectExtendedClasses(comp);
+
 
         // Collect lifecycle methods
         collectLifecycleMethods(comp);
 
         // Collect callback methods
+        /*for(SootClass superClass: comp.getAddedClasses())
+            collectCallbackMethods(comp, app.getCallbacksInSootClass(superClass));
+        */
         collectCallbackMethods(comp, app.getCallbacksInSootClass(comp.getMainClass()));
 
-        Logger.debug("[{}] DONE - Collected topology for: {}...", TAG, comp.getMainClass());
+        logger.debug("[{}] DONE - Collected topology for: {}...", TAG, comp.getMainClass());
 
         // Collect reachable methods from lifecycle methods
 //        for (MethodOrMethodContext method : comp.getLifecycleMethods()) {
@@ -169,7 +177,7 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
 //                    collectFragmentLifecycleMethods(fragment);
 //
 //                    // collect menu methods
-//                    collectMenuMethods(fragment);
+//                    collectMenuAndDrawerMethods(fragment);
 //
 //                    // collect reachable methods
 //                    LinkedList<MethodOrMethodContext> lifecycleMethods = new LinkedList<>(fragment.getLifecycleMethods());
@@ -191,6 +199,7 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
 //        analyzeMenuDrawerMethods(screen);
     }
 
+
     /**
      * Collects all extended classes of the component declared in the manifest
      */
@@ -198,43 +207,47 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
         // Find the main SootClass if not found
         SootClass sc = comp.getMainClass();
         if (sc == null) {
-            sc = Scene.v().getSootClassUnsafe(comp.getName());
-            if (sc != null)
+            sc = Scene.v().getSootClassUnsafe(comp.getName(), false);
+            if (sc != null) {
+                System.out.println("Adding soot class "+ sc);
                 comp.setMainClass(sc);
+            }
             else
-                Logger.error("Failed to find class for component: {}", comp.getName());
+                logger.error("Failed to find class for component: {}", comp.getName());
         }
 
         if (comp instanceof Activity) {
             Scene.v().getActiveHierarchy().getSuperclassesOf(comp.getMainClass()).forEach(x -> {
-                if (Scene.v().getActiveHierarchy().isClassSubclassOf(x, AndroidClass.v().osClassActivity) ||
-                        Scene.v().getActiveHierarchy().isClassSubclassOf(x, AndroidClass.v().scSupportV7Activity) ||
-                        Scene.v().getActiveHierarchy().isClassSubclassOf(x, AndroidClass.v().scSupportV4Activity)) {
-                    if (!SystemClassHandler.isClassInSystemPackage(x.getName()))
+                if (isSubclassOf(x, AndroidClass.v().osClassActivity) ||
+                        isSubclassOf(x, AndroidClass.v().scSupportV7Activity) ||
+                        isSubclassOf(x, AndroidClass.v().scSupportV4Activity)) {
+                    if (!SystemClassHandler.v().isClassInSystemPackage(x.getName())) {
+                        //logger.debug("Added super class")
                         comp.addAddedClass(x);
+                    }
                 }});
         } else if (comp instanceof Service) {
             // Services
             Scene.v().getActiveHierarchy().getSuperclassesOf(comp.getMainClass()).forEach(x -> {
-                if (Scene.v().getActiveHierarchy().isClassSubclassOf(x, AndroidClass.v().osClassService)){
-                    if (!SystemClassHandler.isClassInSystemPackage(x.getName()))
+                if (isSubclassOf(x, AndroidClass.v().osClassService)){
+                    if (!SystemClassHandler.v().isClassInSystemPackage(x.getName()))
                         comp.addAddedClass(x);
                 }
             });
         } else if (comp instanceof BroadcastReceiver) {
             // Broadcast receivers
             Scene.v().getActiveHierarchy().getSuperclassesOf(comp.getMainClass()).forEach(x -> {
-                if (Scene.v().getActiveHierarchy().isClassSubclassOf(x, AndroidClass.v().osClassBroadcastReceiver)) {
-                    if (!SystemClassHandler.isClassInSystemPackage(x.getName()))
+                if (isSubclassOf(x, AndroidClass.v().osClassBroadcastReceiver)) {
+                    if (!SystemClassHandler.v().isClassInSystemPackage(x.getName()))
                         comp.addAddedClass(x);
                 }
             });
         } else if (comp instanceof Fragment) {
             // Fragments
             Scene.v().getActiveHierarchy().getSuperclassesOf(comp.getMainClass()).forEach(x -> {
-                if (Scene.v().getActiveHierarchy().isClassSubclassOf(x, AndroidClass.v().osClassFragment) ||
-                        Scene.v().getActiveHierarchy().isClassSubclassOf(x, AndroidClass.v().scFragment)) {
-                    if (!SystemClassHandler.isClassInSystemPackage(x.getName()))
+                if (isSubclassOf(x, AndroidClass.v().osClassFragment) ||
+                        isSubclassOf(x, AndroidClass.v().scFragment)) {
+                    if (!SystemClassHandler.v().isClassInSystemPackage(x.getName()))
                         comp.addAddedClass(x);
                 }
             });
@@ -271,36 +284,33 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
      * Collects all callback methods of the component
      * @param comp The given component to collect callback methods
      */
-    public static void collectCallbackMethods(AbstractComponent comp, Set<CallbackDefinition> callbacks) {
+    public static void collectCallbackMethods(AbstractComponent comp, Set<AndroidCallbackDefinition> callbacks) {
         comp.addCallbacks(callbacks);
 
         // Menu callbacks
-        collectMenuMethods(comp);
+        collectMenuAndDrawerMethods(comp); //TODO callbacks is empty for fragments?
+        //Dialog callbacks
+        collectDialogMethods(comp);
     }
 
     /**
      * Finds all menu creation and callback methods in a given component
      * @param comp The component to look for menu creation and callback methods
      */
-    private static void collectMenuMethods(AbstractComponent comp) {
+    private static void collectMenuAndDrawerMethods(AbstractComponent comp) {
         // Get the list of menu methods
         List<String> menuCreateMethods;
         List<String> menuCallbackMethods = MethodConstants.Menu.getOptionMenuCallbackMethodList();
+        List<String> contextMenuOnCreateMethods = MethodConstants.Menu.getContextMenuCreateMethodList(),
+                contextMenuCallbackMethods = MethodConstants.Menu.getContextMenuCallbackMethodList();
+        List<String> drawerCallbacksMethods = MethodConstants.Drawer.getDrawerCallbackMethods();
         if (comp instanceof Activity) {
             menuCreateMethods = MethodConstants.Menu.getOptionMenuCreateForActivity();
-            // The list of menu methods (in order of create and callback)
-            menuCreateMethods.iterator().forEachRemaining(x -> {
-                MethodOrMethodContext method = findAndAddMethod(x, comp);
-                if (method!=null) {
-                    ((Activity)comp).addMenuOnCreateMethod(method);
-                }
-            });
-
-            menuCallbackMethods.iterator().forEachRemaining(x -> {
-                MethodOrMethodContext method = findAndAddMethod(x, comp);
-                if (method!=null)
-                    ((Activity)comp).addMenuCallbackMethod(method);
-            });
+            ((Activity)comp).addMenuOnCreateMethods(menuCreateMethods);
+            ((Activity)comp).addMenuCallbackMethods(menuCallbackMethods);
+            ((Activity)comp).addContextMenuOnCreateMethods(contextMenuOnCreateMethods);
+            ((Activity)comp).addContextMenuCallbackMethods(contextMenuCallbackMethods);
+            ((Activity)comp).addDrawerMenuCallbackMethods(drawerCallbacksMethods);
         } else if (comp instanceof Fragment) {
             menuCreateMethods = MethodConstants.Menu.getOptionMenuCreateForFragment();
             // The list of menu methods (in order of create and callback)
@@ -311,11 +321,39 @@ public class TopologyExtractor implements IMemoryBoundedSolver {
                 }
             });
 
+            contextMenuOnCreateMethods.iterator().forEachRemaining(x -> {
+                MethodOrMethodContext method = findAndAddMethod(x, comp);
+                if (method!=null) {
+                    ((Fragment)comp).addContextMenuRegistrationMethod(method);
+                }
+            });
+
             menuCallbackMethods.iterator().forEachRemaining(x -> {
                 MethodOrMethodContext method = findAndAddMethod(x, comp);
-                if (method!=null)
+                if (method!=null) {
                     ((Fragment)comp).addMenuCallbackMethod(method);
+                    comp.addCallback(new AndroidCallbackDefinition(method.method(), method.method(), AndroidCallbackDefinition.CallbackType.Widget));
+                }
             });
+
+            contextMenuCallbackMethods.iterator().forEachRemaining(x -> {
+                MethodOrMethodContext method = findAndAddMethod(x, comp);
+                if (method!=null) {
+                    ((Fragment)comp).addMenuCallbackMethod(method);
+                    comp.addCallback(new AndroidCallbackDefinition(method.method(), method.method(), AndroidCallbackDefinition.CallbackType.Widget));
+                }
+            });
+        }
+    }
+
+    private static void collectDialogMethods(AbstractComponent comp){
+        List<String> dialogCreateMethods; //onCreateDialog within a fragment
+        List<String> dialogCallbackMethods = MethodConstants.Dialog.getDialogCallbackMethods();
+        if(comp instanceof Activity){ //the callback is probably within an inner class?
+            ((Activity)comp).addDialogCallbackMethods(dialogCallbackMethods);
+        }
+        else if (comp instanceof Fragment){
+            //TODO
         }
     }
 

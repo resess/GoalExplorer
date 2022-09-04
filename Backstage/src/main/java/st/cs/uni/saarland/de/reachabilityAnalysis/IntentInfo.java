@@ -1,10 +1,10 @@
 package st.cs.uni.saarland.de.reachabilityAnalysis;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
+import org.apache.commons.lang3.StringUtils;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by avdiienko on 22/04/16.
@@ -17,14 +17,36 @@ public class IntentInfo extends ApiInfoForForward {
     }
 
     public String getClassName() {
+        if(className == null && actionTargets.size() > 0) {
+            className = actionTargets.get(0);
+        }
         return className;
     }
 
     public void setClassName(String className) {
-        this.className = className;
+        if(StringUtils.isBlank(this.className) || !this.className.startsWith("L"))
+            this.className = className;
+    }
+
+    public String getClassNameReg() { return classNameReg; }
+
+    public void setClassNameReg(String classNameReg) {
+        this.classNameReg = classNameReg;
     }
 
     private String className;
+    private String classNameReg = "";
+
+    private Map<String, String> contextSensitiveClassNames;
+    private List<String> actionTargets = new ArrayList<>();
+
+    public Map<String, String> getContextSensitiveClassNames() {
+        return contextSensitiveClassNames;
+    }
+
+    public void setContextSensitiveClassNames(Map<String, String> contextSensitiveClassNames) {
+        this.contextSensitiveClassNames = contextSensitiveClassNames;
+    }
 
     public String getData() {
         return data;
@@ -42,6 +64,7 @@ public class IntentInfo extends ApiInfoForForward {
 
     public void setAction(String action) {
         this.action = action;
+        actionTargets.addAll(IntentFilterResolver.getTargetComponents(action));
     }
 
     private String action;
@@ -65,5 +88,19 @@ public class IntentInfo extends ApiInfoForForward {
             return String.format("API: %s; DepthMethodLevel: %s; DepthComponentLevel: %s",
                     "Null", depthMethodLevel, depthComponentLevel);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        IntentInfo that = (IntentInfo) o;
+        return Objects.equals(className, that.className) && Objects.equals(data, that.data) && Objects.equals(action, that.action);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), className, data, action);
     }
 }

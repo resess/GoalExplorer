@@ -74,7 +74,7 @@ public class SearchListener {
 								if (mainFragLayouts == null || mainFragLayouts.size() == 0)
 									continue;
 
-								appController.addFragmentClassToItsViewIDs(listClass, mainFragLayouts);
+								//appController.addFragmentClassToItsViewIDs(listClass, mainFragLayouts);
 
 								
 								// get the uiElement (probably a ViewPager) corresponding to the Adapter
@@ -102,6 +102,7 @@ public class SearchListener {
 								for (String listClass: listenerInfo.getListenerClasses()){
 									if (StringUtils.isBlank(listClass))
 										continue;
+									//TODO fix the issue of overriding listeners?
 									Listener l = new Listener(listenerInfo.getWhichAction(), false, callbackMethod, listenerInfo.getDecaringSootClass());
 									l.setListenerClass(listClass);
 									try {
@@ -122,7 +123,7 @@ public class SearchListener {
 	// TODO check repair
 	private Set<Integer> getMainLayoutOfFragmentsInAdapter(String listenerClass) {
 		Set<Integer> res = new HashSet<Integer>();
-		
+		//TODO deal with androidx as well
 	// get Fragment class names that are returned from the getItem method in the adapter
 		String fragmentOnCreateViewSig = "<" + listenerClass + ": " + "android.support.v4.app.Fragment getItem(int)>";
 		logger.debug("Started Page Adapter");
@@ -186,6 +187,7 @@ public class SearchListener {
 							// try to get the method with the listener method's name
 							SootMethod m = Scene.v().getSootClass(possibleClasses.get(i)).getMethodByName(listener.getListenerMethod());
 							// set the signature of the method to the listener method
+							listener.setListenerClass(m.getDeclaringClass().toString());
 							listener.setListenerMethod(m.getSubSignature());
 						}catch( Exception e){
 							// if the method is for example ambiguous then an exception will be thrown
@@ -194,7 +196,9 @@ public class SearchListener {
 								// catch the first method that has the same name than the listener method's name
 								if (m.getName().equals(listener.getListenerMethod())){
 									// set the listener method to the signature of the found method with the same name
+									listener.setListenerClass(m.getDeclaringClass().toString());
 									listener.setListenerMethod(m.getSubSignature());
+									
 								}
 							}
 						}

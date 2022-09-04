@@ -10,7 +10,7 @@ class SystemClassInfoProvider {
 
         @JvmStatic
         fun isClassInSystemPackage(className: String): Boolean {
-            return SystemClassHandler.isClassInSystemPackage(className)
+            return SystemClassHandler.v().isClassInSystemPackage(className)
                 || className.startsWith("kotlin.") || className.startsWith("androidx.")
         }
     }

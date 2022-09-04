@@ -1,0 +1,23 @@
+{
+    "transitions": [
+        {
+            "handler": "com.irahul.worldclock.WorldClockActivity/boolean onContextItemSelected(android.view.MenuItem)",
+            "sources": [
+                "com.irahul.worldclock.WorldClockActivity"
+            ],
+            "targets": [
+                "com.irahul.worldclock.TimeZoneEdit"
+            ]
+        },
+        {
+            "handler": "com.irahul.worldclock.WorldClockActivity/void invokeAddZoneActivity()",
+            "sources": [
+                "com.irahul.worldclock.WorldClockActivity",
+                "com.irahul.worldclock.TimeZoneEdit"
+            ],
+            "targets": [
+                "com.irahul.worldclock.TimeZoneEdit"
+            ]
+        }
+    ]
+}

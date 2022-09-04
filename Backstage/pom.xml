@@ -29,6 +29,11 @@
         </developer>
     </developers>
 
+    <properties>
+        <flowdroid.version>2.11.0-SNAPSHOT</flowdroid.version>
+    </properties>
+
+
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -45,6 +50,7 @@
             <artifactId>mongo-java-driver</artifactId>
             <version>3.3.0</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -137,14 +143,14 @@
             <version>2.0.6</version>
         </dependency>
         <dependency>
-            <groupId>ca.mcgill.sable</groupId>
-            <artifactId>soot</artifactId>
-            <version>3.3.0</version>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow</artifactId>
+            <version>${flowdroid.version}</version>
         </dependency>
         <dependency>
-            <groupId>ca.mcgill.sable</groupId>
-            <artifactId>axmlprinter</artifactId>
-            <version>2016-07-27</version>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow-android</artifactId>
+            <version>${flowdroid.version}</version>
         </dependency>
         <dependency>
             <groupId>android</groupId>
@@ -160,6 +166,10 @@
 
     <repositories>
         <repository>
+            <id>mavenCentral</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <!--repository>
             <id>soot-snapshot</id>
             <name>Soot snapshot server</name>
             <url>https://soot-build.cs.uni-paderborn.de/nexus/repository/soot-snapshot/</url>
@@ -168,7 +178,7 @@
             <id>soot-release</id>
             <name>Soot release server</name>
             <url>https://soot-build.cs.uni-paderborn.de/nexus/repository/soot-release/</url>
-        </repository>
+        </repository-->
     </repositories>
 
     <build>
@@ -235,7 +245,7 @@
                             <file>${basedir}/libs/disco-2.1.jar</file>
                         </configuration>
                     </execution>
-                    <execution>
+                    <!--execution>
                         <id>soot</id>
                         <phase>initialize</phase>
                         <goals>
@@ -262,7 +272,7 @@
                             <packaging>jar</packaging>
                             <file>${basedir}/libs/axml-2.0.jar</file>
                         </configuration>
-                    </execution>
+                    </execution-->
                     <execution>
                         <id>langdetect</id>
                         <phase>initialize</phase>
@@ -298,8 +308,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.3</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
             <plugin>

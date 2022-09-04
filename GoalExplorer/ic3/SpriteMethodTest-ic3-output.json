@@ -1,0 +1,14 @@
+{
+    "transitions": [
+        {
+            "handler": "com.android.spritemethodtest.SpriteMethodTest$1/void onClick(android.view.View)",
+            "sources": [
+                "com.android.spritemethodtest.SpriteMethodTest"
+            ],
+            "targets": [
+                "com.android.spritemethodtest.CanvasTestActivity",
+                "com.android.spritemethodtest.OpenGLTestActivity"
+            ]
+        }
+    ]
+}

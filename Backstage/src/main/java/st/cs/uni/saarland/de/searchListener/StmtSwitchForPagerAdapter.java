@@ -9,6 +9,7 @@ import st.cs.uni.saarland.de.entities.FieldInfo;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.helpClasses.Info;
 import st.cs.uni.saarland.de.helpClasses.MyStmtSwitch;
+import st.cs.uni.saarland.de.helpMethods.InterprocAnalysis;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -91,9 +92,9 @@ public class StmtSwitchForPagerAdapter extends MyStmtSwitch {
 								Unit workingUnit = fInfo.unitToStart;
 								PagerAdapterInfo newInfo = new PagerAdapterInfo("");
 								newInfo.setSearchedEReg(fInfo.register.getName());
-								StmtSwitchForPagerAdapter newStmtSwitch = new StmtSwitchForPagerAdapter(newInfo, getCurrentSootMethod());
+								StmtSwitchForPagerAdapter newStmtSwitch = new StmtSwitchForPagerAdapter(newInfo, fInfo.methodToStart.method());
 								previousFields.forEach(x->newStmtSwitch.addPreviousField(x));
-								iteratorHelper.runOverToFindSpecValuesBackwards(fInfo.methodToStart.method().getActiveBody(), workingUnit, newStmtSwitch);
+								iteratorHelper.runOverToFindSpecValuesBackwards(fInfo.methodToStart.method().retrieveActiveBody(), workingUnit, newStmtSwitch);
 								Set<Info> initValues = newStmtSwitch.getResultInfos();
 
 								if(initValues.size() > 0) {
@@ -122,10 +123,21 @@ public class StmtSwitchForPagerAdapter extends MyStmtSwitch {
 						pInfo.setSearchedEReg(invokeExpr.getArg(1).toString());
 					}
 					else if(invokeExpr.getMethod().getSignature().equals("<java.lang.Class: java.lang.String getName()>")){
-						pInfo.setSearchedEReg(invokeExpr.getUseBoxes().get(invokeExpr.getUseBoxes().size() - 1).getValue().toString());
+						pInfo.setSearchedEReg(helpMethods.getCallerOfInvokeStmt(invokeExpr));
+								//invokeExpr.getUseBoxes().get(0).getValue().toString());
+					}
+					else if(invokeExpr.getMethod().getSubSignature().equals(pInfo.getFragmentClass()+" getItem(int)")){ //method of interest
+						//String methodSignature = getCurrentSootMethod().getSignature().replace("android.support.v4.app.Fragment", pInfo.getFragmentClass());
+						List<Info> infos = InterprocAnalysis.getInstance().runStmtSwitchOnSpecificMethodForward(new StmtSwitchForPagerAdapter(null), invokeExpr.getMethod().getSignature());
+						toAddInfos.addAll(infos);
+						toRemoveInfos.add(pInfo);
 					}
 					else{
 						//unknown method. just stop
+						//for now, default to return type of method
+						logger.warn("Found unknown method call for fragment instantiation: {}", invokeExpr.getMethod());
+						//pInfo.setSearchedEReg("");
+						pInfo.setFragmentClass(helpMethods.getTypeOfRightRegOfAssignStmt(stmt));
 						shouldBreak = true;
 					}
 
@@ -152,7 +164,7 @@ public class StmtSwitchForPagerAdapter extends MyStmtSwitch {
 			PagerAdapterInfo pInfo = new PagerAdapterInfo(returnReg);
 			addToResultInfo(pInfo);
 			if(!stmt.getOp().getType().toString().equals("android.support.v4.app.Fragment")){
-				pInfo.setSearchedEReg("");
+				pInfo.setSearchedEReg(returnReg);
 				pInfo.setFragmentClass(stmt.getOp().getType().toString());
 				shouldBreak = true;
 			}

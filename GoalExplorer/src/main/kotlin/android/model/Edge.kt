@@ -1,6 +1,6 @@
 package android.model
 
-import soot.jimple.infoflow.android.callbacks.CallbackDefinition
+import soot.jimple.infoflow.android.callbacks.AndroidCallbackDefinition
 import soot.jimple.infoflow.android.resources.controls.AndroidLayoutControl
 
 data class Edge(
@@ -15,7 +15,7 @@ data class Edge(
     /**
      * Callback responsible for screen transition
      */
-    val callback: CallbackDefinition,
+    val callback: AndroidCallbackDefinition,
     /**
      * The widget that is responsible for the callback
      */

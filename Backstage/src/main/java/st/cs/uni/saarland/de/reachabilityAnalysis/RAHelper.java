@@ -45,7 +45,7 @@ public class RAHelper {
     private static List<SootClass> implementersOfExecutorServiceClass;
 
     public static List<SootClass> getImplementersOfExecutorServiceClass() {
-        if(RAHelper.getExecutorServiceClass().isPhantom() || !RAHelper.getExecutorServiceClass().isInterface()){
+        if(/*RAHelper.getExecutorServiceClass().isPhantom() ||*/ !RAHelper.getExecutorServiceClass().isInterface()){
             return new ArrayList<>();
         }
         if (implementersOfExecutorServiceClass == null) {
@@ -147,7 +147,7 @@ public class RAHelper {
     }
 
     public static boolean isClassInSystemPackage(String className) {
-        return className.startsWith("android.") || className.startsWith("java.") || className.startsWith("sun.");
+        return !className.startsWith(Helper.getPackageName()) && className.startsWith("android.") || className.startsWith("java.") || className.startsWith("sun.");
     }
     public static String analyzeInvokeExpressionToFindUris(final Body b, final Unit u, SootMethod method, Value uriRegister, boolean isContentResolver) {
 

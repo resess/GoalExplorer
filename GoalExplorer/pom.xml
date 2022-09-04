@@ -20,7 +20,7 @@
         <junit-jupiter.version>5.6.0</junit-jupiter.version>
         <assertj.version>3.18.1</assertj.version>
         <slf4j.version>1.7.20</slf4j.version>
-        <flowdroid.version>2.7.1</flowdroid.version>
+        <flowdroid.version>2.11.0-SNAPSHOT</flowdroid.version>
     </properties>
 
     <repositories>
@@ -158,21 +158,41 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>org.soot-oss</groupId>
             <artifactId>soot</artifactId>
             <version>4.2.1</version>
-        </dependency>
-        <dependency>
+        </dependency-->
+        <!--dependency>
             <groupId>de.tud.sse</groupId>
             <artifactId>soot-infoflow</artifactId>
-            <version>${flowdroid.version}</version>
+            <version>2.8</version>
+        </dependency-->
+        <!-- https://mvnrepository.com/artifact/de.tud.sse/soot-infoflow -->
+        <!-- https://mvnrepository.com/artifact/de.tud.sse/soot-infoflow-android -->
+        <dependency>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow-android</artifactId>
+            <version>2.11.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>de.tud.sse</groupId>
-            <artifactId>soot-infoflow-android</artifactId>
-            <version>${flowdroid.version}</version>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow</artifactId>
+            <version>2.11.0-SNAPSHOT</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/de.fraunhofer.sit.sse.flowdroid/soot-infoflow-android -->
+        <!--dependency>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow-android</artifactId>
+            <version>2.10.0</version>
+        </dependency-->
+
         <dependency>
             <groupId>st.cs.uni-saarland.de</groupId>
             <artifactId>Backstage</artifactId>
@@ -183,6 +203,13 @@
             <artifactId>protobuf-java</artifactId>
             <version>3.11.0</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
 
 
         <!--dependencies for legacy goal-explorer code-->
@@ -215,6 +242,11 @@
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
             <version>1.48</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.2</version>
         </dependency>
     </dependencies>
 

@@ -1,6 +1,7 @@
 package android.goal.explorer.analysis;
 
 import android.goal.explorer.analysis.value.identifiers.Argument;
+import android.goal.explorer.analysis.value.managers.ArgumentValueManager;
 import android.goal.explorer.analysis.value.values.propagation.PropagationConstants;
 import android.goal.explorer.model.widget.ClickWidget;
 import heros.solver.Pair;
@@ -10,10 +11,7 @@ import soot.SootMethod;
 import soot.Type;
 import soot.Unit;
 import soot.Value;
-import soot.jimple.AssignStmt;
-import soot.jimple.CastExpr;
-import soot.jimple.InvokeExpr;
-import soot.jimple.Stmt;
+import soot.jimple.*;
 import soot.jimple.infoflow.util.SootMethodRepresentationParser;
 import soot.toolkits.graph.Block;
 import soot.toolkits.graph.BriefUnitGraph;
@@ -127,6 +125,26 @@ public class AnalysisUtils {
         return null;
     }
 
+    public static Integer getIntValue(Value value, Unit unit) {
+        InvokeExpr inv = ((Stmt)unit).getInvokeExpr();
+        Integer intValue = null;
+        if(!(value instanceof IntConstant)){
+            Argument arg = extractIntArgumentFrom(inv);
+            //TODO should keep the index of the desired value
+            Set<Object> values = ArgumentValueManager.v().getArgumentValues(arg, unit, null);
+            if (values!=null && !values.isEmpty()) {
+                Object valueObj = values.iterator().next();
+                if (valueObj instanceof Integer) {
+                    intValue = (Integer)valueObj;
+                }
+            }
+        }
+        else{
+            return ((IntConstant)value).value; //what about other int type, check best way to deal with
+        }
+        return intValue;
+    }
+
 
     /**
      * Gets the argument from the invoke expresion
@@ -160,7 +178,7 @@ public class AnalysisUtils {
         int n = 0;
         for (int i = 0; i < inv.getArgCount(); i++) {
             Value argValue = inv.getArg(i);
-            if (argValue.getType().equals(Scene.v().getTypeUnsafe("java.lang.String"))) {
+            if (argValue.getType().equals(Scene.v().getTypeUnsafe("java.lang.String")) || argValue.getType().equals(Scene.v().getTypeUnsafe("java.lang.CharSequence"))) {
                 argNum[n++] = i;
             }
         }

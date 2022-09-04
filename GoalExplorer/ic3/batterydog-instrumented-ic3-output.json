@@ -1,0 +1,13 @@
+{
+    "transitions": [
+        {
+            "handler": "net.sf.andbatdog.batterydog.BatteryDog$5/void onClick(android.view.View)",
+            "sources": [
+                "net.sf.andbatdog.batterydog.BatteryDog"
+            ],
+            "targets": [
+                "net.sf.andbatdog.batterydog.BatteryGraph"
+            ]
+        }
+    ]
+}

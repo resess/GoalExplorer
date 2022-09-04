@@ -1,6 +1,7 @@
 package android.goal.explorer.model.stg.node;
 
 import android.goal.explorer.model.component.AbstractComponent;
+import org.pmw.tinylog.Logger;
 
 public class AbstractNode {
 
