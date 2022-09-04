@@ -37,23 +37,21 @@ import soot.util.queue.QueueReader;
 public class ComponentReachableMethods {
 
 	protected final InfoflowAndroidConfiguration config;
-	private final SootClass originalComponent;
+	protected final SootClass originalComponent;
 	protected final Set<MethodOrMethodContext> set = new HashSet<MethodOrMethodContext>();
 	protected final ChunkedQueue<MethodOrMethodContext> reachables = new ChunkedQueue<MethodOrMethodContext>();
-	private final QueueReader<MethodOrMethodContext> allReachables = reachables.reader();
+	protected final QueueReader<MethodOrMethodContext> allReachables = reachables.reader();
 	protected QueueReader<MethodOrMethodContext> unprocessedMethods;
 
 	/**
-	 * Creates a new instance of the {@link ComponentReachableMethods} class
+	 * Creates a new instance of the {@link MyReachableMethods} class
 	 * 
-	 * @param config
-	 *            The configuration of the data flow solver
-	 * @param originalComponent
-	 *            The original component or which we are looking for callback
-	 *            registrations. This information is used to more precisely model
-	 *            calls to abstract methods.
-	 * @param entryPoints
-	 *            The entry points from which to find the reachable methods
+	 * @param config            The configuration of the data flow solver
+	 * @param originalComponent The original component or which we are looking for
+	 *                          callback registrations. This information is used to
+	 *                          more precisely model calls to abstract methods.
+	 * @param entryPoints       The entry points from which to find the reachable
+	 *                          methods
 	 */
 	public ComponentReachableMethods(InfoflowAndroidConfiguration config, SootClass originalComponent,
 			Collection<MethodOrMethodContext> entryPoints) {
@@ -70,12 +68,13 @@ public class ComponentReachableMethods {
 
 	private void addMethod(MethodOrMethodContext m) {
 		// Filter out methods in system classes
-		if (!SystemClassHandler.isClassInSystemPackage(m.method().getDeclaringClass().getName())) {
+		if (!SystemClassHandler.v().isClassInSystemPackage(m.method().getDeclaringClass().getName())) {
 			if (set.add(m)) {
 				reachables.add(m);
 			}
 		}
 	}
+
 
 	public void update() {
 		while (unprocessedMethods.hasNext()) {
@@ -86,10 +85,6 @@ public class ComponentReachableMethods {
 		}
 	}
 
-	/**
-	 * Creates a new edge filter
-	 * @return The edge filter
-	 */
 	protected Filter createEdgeFilter(){
 		return new Filter(new EdgePredicate() {
 
@@ -120,7 +115,7 @@ public class ComponentReachableMethods {
 						// We do not expect callback registrations in
 						// any
 						// calls to system classes
-						if (SystemClassHandler.isClassInSystemPackage(refMethod.getDeclaringClass().getName()))
+						if (SystemClassHandler.v().isClassInSystemPackage(refMethod.getDeclaringClass().getName()))
 							return false;
 					}
 				} else if (config.getCallbackConfig().getFilterThreadCallbacks()) {
@@ -138,6 +133,7 @@ public class ComponentReachableMethods {
 				}
 				return true;
 			}
+
 		});
 	}
 

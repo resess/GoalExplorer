@@ -15,6 +15,7 @@ import java.io.IOException;
 
 import org.xmlpull.v1.XmlPullParserException;
 
+import soot.jimple.infoflow.InfoflowConfiguration;
 import soot.jimple.infoflow.InfoflowConfiguration.ImplicitFlowMode;
 import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
 import soot.jimple.infoflow.android.SetupApplication;
@@ -22,18 +23,23 @@ import soot.jimple.infoflow.results.InfoflowResults;
 import soot.jimple.infoflow.taintWrappers.EasyTaintWrapper;
 
 public class JUnitTests {
+	enum TestResultMode {
+		DROIDBENCH, // the actual expected values of droidbench
+		FLOWDROID_BACKWARDS, // the values from FlowDroid backwards analysis, use to test regressions/fixes
+		FLOWDROID_FORWARDS
+	}
+
+	protected final TestResultMode mode = TestResultMode.FLOWDROID_FORWARDS;
 
 	/**
 	 * Analyzes the given APK file for data flows
-	 * 
-	 * @param fileName
-	 *            The full path and file name of the APK file to analyze
+	 *
+	 * @param fileName The full path and file name of the APK file to analyze
 	 * @return The data leaks found in the given APK file
-	 * @throws IOException
-	 *             Thrown if the given APK file or any other required file could
-	 *             not be found
-	 * @throws XmlPullParserException
-	 *             Thrown if the Android manifest file could not be read.
+	 * @throws IOException            Thrown if the given APK file or any other
+	 *                                required file could not be found
+	 * @throws XmlPullParserException Thrown if the Android manifest file could not
+	 *                                be read.
 	 */
 	public InfoflowResults analyzeAPKFile(String fileName) throws IOException, XmlPullParserException {
 		return analyzeAPKFile(fileName, false);
@@ -41,17 +47,14 @@ public class JUnitTests {
 
 	/**
 	 * Analyzes the given APK file for data flows
-	 * 
-	 * @param fileName
-	 *            The full path and file name of the APK file to analyze
-	 * @param iccModel
-	 *            The full path and file name of the ICC model to use
+	 *
+	 * @param fileName The full path and file name of the APK file to analyze
+	 * @param iccModel The full path and file name of the ICC model to use
 	 * @return The data leaks found in the given APK file
-	 * @throws IOException
-	 *             Thrown if the given APK file or any other required file could
-	 *             not be found
-	 * @throws XmlPullParserException
-	 *             Thrown if the Android manifest file could not be read.
+	 * @throws IOException            Thrown if the given APK file or any other
+	 *                                required file could not be found
+	 * @throws XmlPullParserException Thrown if the Android manifest file could not
+	 *                                be read.
 	 */
 	public InfoflowResults analyzeAPKFile(String fileName, String iccModel) throws IOException, XmlPullParserException {
 		return analyzeAPKFile(fileName, iccModel, null);
@@ -59,17 +62,16 @@ public class JUnitTests {
 
 	/**
 	 * Analyzes the given APK file for data flows
-	 * 
-	 * @param fileName
-	 *            The full path and file name of the APK file to analyze
-	 * @param enableImplicitFlows
-	 *            True if implicit flows shall be tracked, otherwise false
+	 *
+	 * @param fileName            The full path and file name of the APK file to
+	 *                            analyze
+	 * @param enableImplicitFlows True if implicit flows shall be tracked, otherwise
+	 *                            false
 	 * @return The data leaks found in the given APK file
-	 * @throws IOException
-	 *             Thrown if the given APK file or any other required file could
-	 *             not be found
-	 * @throws XmlPullParserException
-	 *             Thrown if the Android manifest file could not be read.
+	 * @throws IOException            Thrown if the given APK file or any other
+	 *                                required file could not be found
+	 * @throws XmlPullParserException Thrown if the Android manifest file could not
+	 *                                be read.
 	 */
 	public InfoflowResults analyzeAPKFile(String fileName, final boolean enableImplicitFlows)
 			throws IOException, XmlPullParserException {
@@ -86,18 +88,17 @@ public class JUnitTests {
 
 	/**
 	 * Interface that allows test cases to configure the analyzer for DroidBench
-	 * 
+	 *
 	 * @author Steven Arzt
 	 *
 	 */
 	public interface AnalysisConfigurationCallback {
 
 		/**
-		 * Method that is called to give the test case the chance to change the
-		 * analyzer configuration
-		 * 
-		 * @param config
-		 *            The configuration object used by the analyzer
+		 * Method that is called to give the test case the chance to change the analyzer
+		 * configuration
+		 *
+		 * @param config The configuration object used by the analyzer
 		 */
 		public void configureAnalyzer(InfoflowAndroidConfiguration config);
 
@@ -105,21 +106,17 @@ public class JUnitTests {
 
 	/**
 	 * Analyzes the given APK file for data flows
-	 * 
-	 * @param fileName
-	 *            The full path and file name of the APK file to analyze
-	 * @param iccModel
-	 *            The full path and file name of the ICC model to use
-	 * @param configCallback
-	 *            A callback that is invoked to allow the test case to change
-	 *            the analyzer configuration when necessary. Pass null to ignore
-	 *            the callback.
+	 *
+	 * @param fileName       The full path and file name of the APK file to analyze
+	 * @param iccModel       The full path and file name of the ICC model to use
+	 * @param configCallback A callback that is invoked to allow the test case to
+	 *                       change the analyzer configuration when necessary. Pass
+	 *                       null to ignore the callback.
 	 * @return The data leaks found in the given APK file
-	 * @throws IOException
-	 *             Thrown if the given APK file or any other required file could
-	 *             not be found
-	 * @throws XmlPullParserException
-	 *             Thrown if the Android manifest file could not be read.
+	 * @throws IOException            Thrown if the given APK file or any other
+	 *                                required file could not be found
+	 * @throws XmlPullParserException Thrown if the Android manifest file could not
+	 *                                be read.
 	 */
 	public InfoflowResults analyzeAPKFile(String fileName, String iccModel,
 			AnalysisConfigurationCallback configCallback) throws IOException, XmlPullParserException {
@@ -133,6 +130,13 @@ public class JUnitTests {
 		String droidBenchDir = System.getenv("DROIDBENCH");
 		if (droidBenchDir == null)
 			droidBenchDir = System.getProperty("DROIDBENCH");
+		if (droidBenchDir == null) {
+			File droidBenchFile = new File("DroidBench/apk");
+			if (!droidBenchFile.exists())
+				droidBenchFile = new File("../DroidBench/apk");
+			if (droidBenchFile.exists())
+				droidBenchDir = droidBenchFile.getAbsolutePath();
+		}
 		if (droidBenchDir == null)
 			throw new RuntimeException("DroidBench dir not set");
 		System.out.println("Loading DroidBench from " + droidBenchDir);
@@ -148,15 +152,16 @@ public class JUnitTests {
 		// Make sure to apply the settings before we calculate entry points
 		if (configCallback != null)
 			configCallback.configureAnalyzer(setupApplication.getConfig());
+		setupApplication.getConfig().setEnableArraySizeTainting(true);
 
 		setupApplication.setTaintWrapper(new EasyTaintWrapper(taintWrapperFile));
-		setupApplication.getConfig().setEnableArraySizeTainting(true);
+
+		if (mode == TestResultMode.FLOWDROID_BACKWARDS)
+			setupApplication.getConfig().setDataFlowDirection(InfoflowConfiguration.DataFlowDirection.Backwards);
 
 		if (iccModel != null && iccModel.length() > 0) {
 			setupApplication.getConfig().getIccConfig().setIccModel(iccModel);
 		}
-
-		return setupApplication.runInfoflow("SourcesAndSinks.txt");
+		return  setupApplication.runInfoflow("SourcesAndSinks.txt");
 	}
-
 }

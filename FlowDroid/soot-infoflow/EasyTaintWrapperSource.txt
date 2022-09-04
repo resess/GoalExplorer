@@ -348,14 +348,14 @@
 
 <org.apache.http.message.BasicNameValuePair: void <init>(java.lang.String,java.lang.String)>
 
-<org.apache.http.client.abstractEntity.UrlEncodedFormEntity: void <init>(java.util.List,java.lang.String)>
-<org.apache.http.client.abstractEntity.UrlEncodedFormEntity: void <init>(java.util.List)>
+<org.apache.http.client.entity.UrlEncodedFormEntity: void <init>(java.util.List,java.lang.String)>
+<org.apache.http.client.entity.UrlEncodedFormEntity: void <init>(java.util.List)>
 
-<org.apache.http.abstractEntity.StringEntity: void <init>(java.lang.String)>
-<org.apache.http.abstractEntity.StringEntity: void <init>(java.lang.String,java.nio.charset.Charset)>
-<org.apache.http.abstractEntity.StringEntity: void <init>(java.lang.String,org.apache.http.abstractEntity.ContentType)>
-<org.apache.http.abstractEntity.StringEntity: void <init>(java.lang.String,java.lang.String)>
-<org.apache.http.abstractEntity.StringEntity: void <init>(java.lang.String,java.lang.String,java.lang.String)>
+<org.apache.http.entity.StringEntity: void <init>(java.lang.String)>
+<org.apache.http.entity.StringEntity: void <init>(java.lang.String,java.nio.charset.Charset)>
+<org.apache.http.entity.StringEntity: void <init>(java.lang.String,org.apache.http.entity.ContentType)>
+<org.apache.http.entity.StringEntity: void <init>(java.lang.String,java.lang.String)>
+<org.apache.http.entity.StringEntity: void <init>(java.lang.String,java.lang.String,java.lang.String)>
 
 <org.apache.http.client.methods.HttpPost: void <init>(java.lang.String)>
 <org.apache.http.client.methods.HttpPost: void <init>(java.net.URI)>

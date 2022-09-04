@@ -41,10 +41,10 @@ import heros.solver.Pair;
 import heros.solver.PathEdge;
 import soot.SootMethod;
 import soot.Unit;
-import soot.jimple.infoflow.collect.ConcurrentHashSet;
 import soot.jimple.infoflow.collect.MyConcurrentHashMap;
 import soot.jimple.infoflow.memory.IMemoryBoundedSolver;
 import soot.jimple.infoflow.memory.ISolverTerminationReason;
+import soot.jimple.infoflow.solver.EndSummary;
 import soot.jimple.infoflow.solver.PredecessorShorteningMode;
 import soot.jimple.infoflow.solver.executors.InterruptableExecutor;
 import soot.jimple.infoflow.solver.executors.SetPoolExecutor;
@@ -56,9 +56,9 @@ import soot.jimple.toolkits.ide.icfg.BiDiInterproceduralCFG;
  * the IDESolver implementation in Heros for performance reasons.
  * 
  * @param <N> The type of nodes in the interprocedural control-flow graph.
- *        Typically {@link Unit}.
+ *            Typically {@link Unit}.
  * @param <D> The type of data-flow facts to be computed by the tabulation
- *        problem.
+ *            problem.
  * @param <I> The type of inter-procedural control-flow graph being used.
  * @see IFDSTabulationProblem
  */
@@ -87,7 +87,7 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 	// stores summaries that were queried before they were computed
 	// see CC 2010 paper by Naeem, Lhotak and Rodriguez
 	@SynchronizedBy("consistent lock on 'incoming'")
-	protected final MyConcurrentHashMap<Pair<SootMethod, D>, Set<Pair<N, D>>> endSummary = new MyConcurrentHashMap<Pair<SootMethod, D>, Set<Pair<N, D>>>();
+	protected final MyConcurrentHashMap<Pair<SootMethod, D>, Map<EndSummary<N, D>, EndSummary<N, D>>> endSummary = new MyConcurrentHashMap<>();
 
 	// edges going along calls
 	// see CC 2010 paper by Naeem, Lhotak and Rodriguez
@@ -283,46 +283,48 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 
 		// for each possible callee
 		Collection<SootMethod> callees = icfg.getCalleesOfCallAt(n);
-		if (maxCalleesPerCallSite < 0 || callees.size() <= maxCalleesPerCallSite) {
-			callees.stream().filter(m -> m.isConcrete()).forEach(new Consumer<SootMethod>() {
+		if (callees != null && !callees.isEmpty()) {
+			if (maxCalleesPerCallSite < 0 || callees.size() <= maxCalleesPerCallSite) {
+				callees.stream().filter(m -> m.isConcrete()).forEach(new Consumer<SootMethod>() {
 
-				@Override
-				public void accept(SootMethod sCalledProcN) {
-					// Early termination check
-					if (killFlag != null)
-						return;
+					@Override
+					public void accept(SootMethod sCalledProcN) {
+						// Early termination check
+						if (killFlag != null)
+							return;
 
-					// compute the call-flow function
-					FlowFunction<D> function = flowFunctions.getCallFlowFunction(n, sCalledProcN);
-					Set<D> res = computeCallFlowFunction(function, d1, d2);
+						// compute the call-flow function
+						FlowFunction<D> function = flowFunctions.getCallFlowFunction(n, sCalledProcN);
+						Set<D> res = computeCallFlowFunction(function, d1, d2);
 
-					if (res != null && !res.isEmpty()) {
-						Collection<N> startPointsOf = icfg.getStartPointsOf(sCalledProcN);
-						// for each result node of the call-flow function
-						for (D d3 : res) {
-							if (memoryManager != null)
-								d3 = memoryManager.handleGeneratedMemoryObject(d2, d3);
-							if (d3 == null)
-								continue;
+						if (res != null && !res.isEmpty()) {
+							Collection<N> startPointsOf = icfg.getStartPointsOf(sCalledProcN);
+							// for each result node of the call-flow function
+							for (D d3 : res) {
+								if (memoryManager != null)
+									d3 = memoryManager.handleGeneratedMemoryObject(d2, d3);
+								if (d3 == null)
+									continue;
 
-							// for each callee's start point(s)
-							for (N sP : startPointsOf) {
-								// create initial self-loop
-								propagate(d3, sP, d3, n, false); // line 15
+								// for each callee's start point(s)
+								for (N sP : startPointsOf) {
+									// create initial self-loop
+									propagate(d3, sP, d3, n, false); // line 15
+								}
+
+								// register the fact that <sp,d3> has an incoming edge from
+								// <n,d2>
+								// line 15.1 of Naeem/Lhotak/Rodriguez
+								if (!addIncoming(sCalledProcN, d3, n, d1, d2))
+									continue;
+
+								applyEndSummaryOnCall(d1, n, d2, returnSiteNs, sCalledProcN, d3);
 							}
-
-							// register the fact that <sp,d3> has an incoming edge from
-							// <n,d2>
-							// line 15.1 of Naeem/Lhotak/Rodriguez
-							if (!addIncoming(sCalledProcN, d3, n, d1, d2))
-								continue;
-
-							applyEndSummaryOnCall(d1, n, d2, returnSiteNs, sCalledProcN, d3);
 						}
 					}
-				}
 
-			});
+				});
+			}
 		}
 
 		// line 17-19 of Naeem/Lhotak/Rodriguez
@@ -341,10 +343,20 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 		}
 	}
 
+	/**
+	 * Callback to notify derived classes that an end summary has been applied
+	 * 
+	 * @param n           The call site where the end summary has been applied
+	 * @param sCalledProc The callee
+	 * @param d3          The callee-side incoming taint abstraction
+	 */
+	protected void onEndSummaryApplied(N n, SootMethod sCalledProc, D d3) {
+	}
+
 	protected void applyEndSummaryOnCall(final D d1, final N n, final D d2, Collection<N> returnSiteNs,
 			SootMethod sCalledProcN, D d3) {
 		// line 15.2
-		Set<Pair<N, D>> endSumm = endSummary(sCalledProcN, d3);
+		Set<EndSummary<N, D>> endSumm = endSummary(sCalledProcN, d3);
 
 		// still line 15.2 of Naeem/Lhotak/Rodriguez
 		// for each already-queried exit value <eP,d4> reachable
@@ -352,9 +364,13 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 		// the return sites because we have observed a potentially
 		// new incoming edge into <sP,d3>
 		if (endSumm != null && !endSumm.isEmpty()) {
-			for (Pair<N, D> entry : endSumm) {
-				N eP = entry.getO1();
-				D d4 = entry.getO2();
+			for (EndSummary<N, D> entry : endSumm) {
+				N eP = entry.eP;
+				D d4 = entry.d4;
+
+				// We must acknowledge the incoming abstraction from the other path
+				entry.calleeD1.addNeighbor(d3);
+
 				// for each return site
 				for (N retSiteN : returnSiteNs) {
 					// compute return-flow function
@@ -390,6 +406,7 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 					}
 				}
 			}
+			onEndSummaryApplied(n, sCalledProcN, d3);
 		}
 	}
 
@@ -617,8 +634,10 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 		if (maxAbstractionPathLength >= 0 && targetVal.getPathLength() > maxAbstractionPathLength)
 			return;
 
-		final PathEdge<N, D> edge = new PathEdge<N, D>(sourceVal, target, targetVal);
-		final D existingVal = addFunction(edge);
+		D activeVal = targetVal.getActiveCopy();
+		PathEdge<N, D> activeEdge = new PathEdge<>(sourceVal, target, activeVal);
+		final PathEdge<N, D> edge = new PathEdge<>(sourceVal, target, targetVal);
+		final D existingVal = addFunction(activeEdge);
 		if (existingVal != null) {
 			if (existingVal != targetVal) {
 				// Check whether we need to retain this abstraction
@@ -634,14 +653,6 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 				}
 			}
 		} else {
-			// If this is an inactive abstraction and we have already processed
-			// its active counterpart, we can skip this one
-			D activeVal = targetVal.getActiveCopy();
-			if (activeVal != targetVal) {
-				PathEdge<N, D> activeEdge = new PathEdge<>(sourceVal, target, activeVal);
-				if (jumpFunctions.containsKey(activeEdge))
-					return;
-			}
 			scheduleEdgeProcessing(edge);
 		}
 	}
@@ -655,18 +666,24 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 		return jumpFunctions.putIfAbsent(edge, edge.factAtTarget());
 	}
 
-	protected Set<Pair<N, D>> endSummary(SootMethod m, D d3) {
-		Set<Pair<N, D>> map = endSummary.get(new Pair<SootMethod, D>(m, d3));
-		return map;
+	protected Set<EndSummary<N, D>> endSummary(SootMethod m, D d3) {
+		Map<EndSummary<N, D>, EndSummary<N, D>> map = endSummary.get(new Pair<>(m, d3));
+		return map == null ? null : map.keySet();
 	}
 
 	private boolean addEndSummary(SootMethod m, D d1, N eP, D d2) {
 		if (d1 == zeroValue)
 			return true;
 
-		Set<Pair<N, D>> summaries = endSummary.putIfAbsentElseGet(new Pair<SootMethod, D>(m, d1),
-				new ConcurrentHashSet<Pair<N, D>>());
-		return summaries.add(new Pair<N, D>(eP, d2));
+		Map<EndSummary<N, D>, EndSummary<N, D>> summaries = endSummary.putIfAbsentElseGet(new Pair<>(m, d1),
+				() -> new ConcurrentHashMap<>());
+		EndSummary<N, D> newSummary = new EndSummary<>(eP, d2, d1);
+		EndSummary<N, D> existingSummary = summaries.putIfAbsent(newSummary, newSummary);
+		if (existingSummary != null) {
+			existingSummary.calleeD1.addNeighbor(d2);
+			return false;
+		}
+		return true;
 	}
 
 	protected Map<N, Map<D, D>> incoming(D d1, SootMethod m) {
@@ -676,8 +693,8 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 
 	protected boolean addIncoming(SootMethod m, D d3, N n, D d1, D d2) {
 		MyConcurrentHashMap<N, Map<D, D>> summaries = incoming.putIfAbsentElseGet(new Pair<SootMethod, D>(m, d3),
-				new MyConcurrentHashMap<N, Map<D, D>>());
-		Map<D, D> set = summaries.putIfAbsentElseGet(n, new ConcurrentHashMap<D, D>());
+				() -> new MyConcurrentHashMap<N, Map<D, D>>());
+		Map<D, D> set = summaries.putIfAbsentElseGet(n, () -> new ConcurrentHashMap<D, D>());
 		return set.put(d1, d2) == null;
 	}
 
@@ -729,14 +746,15 @@ public class IFDSSolver<N, D extends FastSolverLinkedNode<D, N>, I extends BiDiI
 		}
 
 		public void run() {
-			if (icfg.isCallStmt(edge.getTarget())) {
+			final N target = edge.getTarget();
+			if (icfg.isCallStmt(target)) {
 				processCall(edge);
 			} else {
 				// note that some statements, such as "throw" may be
 				// both an exit statement and a "normal" statement
-				if (icfg.isExitStmt(edge.getTarget()))
+				if (icfg.isExitStmt(target))
 					processExit(edge);
-				if (!icfg.getSuccsOf(edge.getTarget()).isEmpty())
+				if (!icfg.getSuccsOf(target).isEmpty())
 					processNormalFlow(edge);
 			}
 		}

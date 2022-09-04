@@ -14,6 +14,56 @@ public class InfoflowConfiguration {
 	protected final static Logger logger = LoggerFactory.getLogger(InfoflowConfiguration.class);
 
 	/**
+	 * Enumeration containing the different ways in which Soot can be used
+	 * 
+	 * @author Steven Arzt
+	 *
+	 */
+	public static enum SootIntegrationMode {
+		/**
+		 * With this option, FlowDroid initializes and configures its own Soot instance.
+		 * This option is the default and the best choice in most cases.
+		 */
+		CreateNewInstance,
+
+		/**
+		 * With this option, FlowDroid uses the existing Soot instance, but generates
+		 * its own callgraph. Note that it is the responsibility of the caller to make
+		 * sure that pre-existing Soot instances are configured correctly for the use
+		 * with FlowDroid.
+		 */
+		UseExistingInstance,
+
+		/**
+		 * Use the existing Soot instance and existing callgraph. Do not generate
+		 * anything, the caller is responsible for providing a valid Soot instance and
+		 * callgraph.
+		 */
+		UseExistingCallgraph;
+
+		/**
+		 * Gets whether this integration mode requires FlowDroid to build its own
+		 * callgraph
+		 * 
+		 * @return True if FlowDroid must create its own callgraph, otherwise false
+		 */
+		public boolean needsToBuildCallgraph() {
+			return this == SootIntegrationMode.CreateNewInstance || this == SootIntegrationMode.UseExistingInstance;
+		}
+
+		/**
+		 * Checks whether this integration mode requires FlowDroid to initialize a fresh
+		 * Soot instance
+		 * 
+		 * @return True to initialize a fresh Soot instance, false otherwise
+		 */
+		public boolean needsToInitializeSoot() {
+			return this == CreateNewInstance;
+		}
+
+	}
+
+	/**
 	 * Enumeration containing the callgraph algorithms supported for the use with
 	 * the data flow tracker
 	 */
@@ -78,7 +128,24 @@ public class InfoflowConfiguration {
 		/**
 		 * Use a context-sensitive, but flow-insensitive solver
 		 */
-		FlowInsensitive
+		FlowInsensitive,
+
+		/**
+		 * Use the garbage-collecting solver
+		 */
+		GarbageCollecting
+	}
+
+	public static enum DataFlowDirection {
+		/**
+		 * Use the default forwards infoflow search
+		 */
+		Forwards,
+
+		/**
+		 * Use the backwards infoflow search
+		 */
+		Backwards
 	}
 
 	/**
@@ -209,6 +276,267 @@ public class InfoflowConfiguration {
 		 */
 		None
 	}
+
+	/**
+	 * The default mode how the filter shall treat source or sink categories that
+	 * have not been configured explicitly
+	 * 
+	 * @author Steven Arzt
+	 *
+	 */
+	public static enum SourceSinkFilterMode {
+		/**
+		 * Include all categories that have not been excluded explicitly
+		 */
+		UseAllButExcluded,
+
+		/**
+		 * Only include those categories that have been included explicitly and ignore
+		 * all others
+		 */
+		UseOnlyIncluded
+	}
+
+	/**
+	 * The modes (included or excludes) that a category can have for the data flow
+	 * analysis
+	 * 
+	 * @author Steven Arzt
+	 *
+	 */
+	public static enum CategoryMode {
+		/**
+		 * The sources and sinks from the current category shall be included in the data
+		 * flow analysis
+		 */
+		Include,
+
+		/**
+		 * The sources and sinks from the current category shall be excluded from the
+		 * data flow analysis
+		 */
+		Exclude
+	}
+
+	/**
+	 * Methods for deciding whether a parameter of a system callback is to be
+	 * treated as a source or not
+	 * 
+	 * @author Steven Arzt
+	 *
+	 */
+	public static enum CallbackSourceMode {
+		/**
+		 * Callback parameters are never treated as sources
+		 */
+		NoParametersAsSources,
+		/**
+		 * All callback parameters are sources
+		 */
+		AllParametersAsSources,
+		/**
+		 * Only parameters from callback methods explicitly defined as sources are
+		 * treated as sources
+		 */
+		SourceListOnly
+	}
+
+	/**
+	 * Possible modes for matching layout components as data flow sources
+	 * 
+	 * @author Steven Arzt
+	 */
+	public static enum LayoutMatchingMode {
+		/**
+		 * Do not use Android layout components as sources
+		 */
+		NoMatch,
+
+		/**
+		 * Use all layout components as sources
+		 */
+		MatchAll,
+
+		/**
+		 * Only use sensitive layout components (e.g. password fields) as sources
+		 */
+		MatchSensitiveOnly
+	}
+
+	/**
+	 * The configuration for the source and sink manager
+	 * 
+	 * @author Steven Arzt
+	 *
+	 */
+	public static class SourceSinkConfiguration {
+
+		private CallbackSourceMode callbackSourceMode = CallbackSourceMode.SourceListOnly;
+		private boolean enableLifecycleSources = false;
+		private LayoutMatchingMode layoutMatchingMode = LayoutMatchingMode.MatchSensitiveOnly;
+
+		private SourceSinkFilterMode sourceFilterMode = SourceSinkFilterMode.UseAllButExcluded;
+		private SourceSinkFilterMode sinkFilterMode = SourceSinkFilterMode.UseAllButExcluded;
+
+		/**
+		 * Copies the settings of the given configuration into this configuration object
+		 * 
+		 * @param iccConfig The other configuration object
+		 */
+		public void merge(SourceSinkConfiguration ssConfig) {
+			this.callbackSourceMode = ssConfig.callbackSourceMode;
+			this.enableLifecycleSources = ssConfig.enableLifecycleSources;
+			this.layoutMatchingMode = ssConfig.layoutMatchingMode;
+
+			this.sourceFilterMode = ssConfig.sourceFilterMode;
+			this.sinkFilterMode = ssConfig.sinkFilterMode;
+		}
+
+		/**
+		 * Sets the default mode for handling sources that have not been configured
+		 * explicitly
+		 * 
+		 * @param sourceFilterMode The default mode for handling sources that have not
+		 *                         been configured explicitly
+		 */
+		public void setSourceFilterMode(SourceSinkFilterMode sourceFilterMode) {
+			this.sourceFilterMode = sourceFilterMode;
+		}
+
+		/**
+		 * Gets the default mode for handling sinks that have not been configured
+		 * explicitly
+		 * 
+		 * @return The default mode for handling sinks that have not been configured
+		 *         explicitly
+		 */
+		public SourceSinkFilterMode getSinkFilterMode() {
+			return sinkFilterMode;
+		}
+
+		/**
+		 * Sets the default mode for handling sinks that have not been configured
+		 * explicitly
+		 * 
+		 * @param sourceFilterMode The default mode for handling sinks that have not
+		 *                         been configured explicitly
+		 */
+		public void setSinkFilterMode(SourceSinkFilterMode sinkFilterMode) {
+			this.sinkFilterMode = sinkFilterMode;
+		}
+
+		/**
+		 * Sets under which circumstances the parameters of callback methods shall be
+		 * treated as sources.
+		 * 
+		 * @param callbackSourceMode The strategy for deciding whether a certain
+		 *                           callback parameter is a data flow source or not
+		 */
+		public void setCallbackSourceMode(CallbackSourceMode callbackSourceMode) {
+			this.callbackSourceMode = callbackSourceMode;
+		}
+
+		/**
+		 * Sets under which circumstances the parameters of callback methods shall be
+		 * treated as sources.
+		 * 
+		 * @return The strategy for deciding whether a certain callback parameter is a
+		 *         data flow source or not
+		 */
+		public CallbackSourceMode getCallbackSourceMode() {
+			return this.callbackSourceMode;
+		}
+
+		/**
+		 * Sets whether the parameters of lifecycle methods shall be considered as
+		 * sources
+		 * 
+		 * @param enableLifecycleSoures True if the parameters of lifecycle methods
+		 *                              shall be considered as sources, otherwise false
+		 */
+		public void setEnableLifecycleSources(boolean enableLifecycleSources) {
+			this.enableLifecycleSources = enableLifecycleSources;
+		}
+
+		/**
+		 * Gets whether the parameters of lifecycle methods shall be considered as
+		 * sources
+		 * 
+		 * @return True if the parameters of lifecycle methods shall be considered as
+		 *         sources, otherwise false
+		 */
+		public boolean getEnableLifecycleSources() {
+			return this.enableLifecycleSources;
+		}
+
+		/**
+		 * Sets the mode to be used when deciding whether a UI control is a source or
+		 * not
+		 * 
+		 * @param mode The mode to be used for classifying UI controls as sources
+		 */
+		public void setLayoutMatchingMode(LayoutMatchingMode mode) {
+			this.layoutMatchingMode = mode;
+		}
+
+		/**
+		 * Gets the mode to be used when deciding whether a UI control is a source or
+		 * not
+		 * 
+		 * @return The mode to be used for classifying UI controls as sources
+		 */
+		public LayoutMatchingMode getLayoutMatchingMode() {
+			return this.layoutMatchingMode;
+		}
+
+		/**
+		 * Gets the default mode for handling sources that have not been configured
+		 * explicitly
+		 * 
+		 * @return The default mode for handling sources that have not been configured
+		 *         explicitly
+		 */
+		public SourceSinkFilterMode getSourceFilterMode() {
+			return sourceFilterMode;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((callbackSourceMode == null) ? 0 : callbackSourceMode.hashCode());
+			result = prime * result + (enableLifecycleSources ? 1231 : 1237);
+			result = prime * result + ((layoutMatchingMode == null) ? 0 : layoutMatchingMode.hashCode());
+			result = prime * result + ((sinkFilterMode == null) ? 0 : sinkFilterMode.hashCode());
+			result = prime * result + ((sourceFilterMode == null) ? 0 : sourceFilterMode.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			SourceSinkConfiguration other = (SourceSinkConfiguration) obj;
+			if (callbackSourceMode != other.callbackSourceMode)
+				return false;
+			if (enableLifecycleSources != other.enableLifecycleSources)
+				return false;
+			if (layoutMatchingMode != other.layoutMatchingMode)
+				return false;
+			if (sinkFilterMode != other.sinkFilterMode)
+				return false;
+			if (sourceFilterMode != other.sourceFilterMode)
+				return false;
+			return true;
+		}
+
+	}
+
+	private final SourceSinkConfiguration sourceSinkConfig = new SourceSinkConfiguration();
 
 	/**
 	 * The configuration that defines how FlowDroid shall handle between sources and
@@ -350,7 +678,7 @@ public class InfoflowConfiguration {
 		 * longer than this limit, the path reconstruction is aborted and the respective
 		 * path is skipped.
 		 * 
-		 * @param maxPathLength The maximum length of a taint propagtation path3
+		 * @param maxPathLenfgth The maximum length of a taint propagtation path3
 		 */
 		public void setMaxPathLength(int maxPathLength) {
 			this.maxPathLength = maxPathLength;
@@ -819,7 +1147,7 @@ public class InfoflowConfiguration {
 		 * Gets the maximum depth of the access paths. All paths will be truncated if
 		 * they exceed the given size.
 		 * 
-		 * @return  the maximum value of an access path.
+		 * @param accessPathLength the maximum value of an access path.
 		 */
 		public int getAccessPathLength() {
 			return accessPathLength;
@@ -953,6 +1281,8 @@ public class InfoflowConfiguration {
 	private boolean writeOutputFiles = false;
 	private boolean logSourcesAndSinks = false;
 	private boolean enableReflection = false;
+	private boolean enableLineNumbers = false;
+	private boolean enableOriginalNames = false;
 
 	private boolean inspectSources = false;
 	private boolean inspectSinks = false;
@@ -963,16 +1293,19 @@ public class InfoflowConfiguration {
 	private AccessPathConfiguration accessPathConfiguration = new AccessPathConfiguration();
 
 	private CallgraphAlgorithm callgraphAlgorithm = CallgraphAlgorithm.AutomaticSelection;
-//	private CallgraphAlgorithm callgraphAlgorithm = CallgraphAlgorithm.GEOM;
 	private AliasingAlgorithm aliasingAlgorithm = AliasingAlgorithm.FlowSensitive;
 	private CodeEliminationMode codeEliminationMode = CodeEliminationMode.PropagateConstants;
 	private StaticFieldTrackingMode staticFieldTrackingMode = StaticFieldTrackingMode.ContextFlowSensitive;
+	private SootIntegrationMode sootIntegrationMode = SootIntegrationMode.CreateNewInstance;
+	private DataFlowDirection dataFlowDirection = DataFlowDirection.Forwards;
 
 	private boolean taintAnalysisEnabled = true;
 	private boolean incrementalResultReporting = false;
 	private long dataFlowTimeout = 0;
 	private double memoryThreshold = 0.9d;
 	private boolean oneSourceAtATime = false;
+
+	private static String baseDirectory = "";
 
 	/**
 	 * Merges the given configuration options into this configuration object
@@ -993,6 +1326,8 @@ public class InfoflowConfiguration {
 		this.writeOutputFiles = config.writeOutputFiles;
 		this.logSourcesAndSinks = config.logSourcesAndSinks;
 		this.enableReflection = config.enableReflection;
+		this.enableLineNumbers = config.enableLineNumbers;
+		this.enableOriginalNames = config.enableOriginalNames;
 
 		this.pathConfiguration.merge(config.pathConfiguration);
 		this.outputConfiguration.merge(config.outputConfiguration);
@@ -1002,20 +1337,20 @@ public class InfoflowConfiguration {
 		this.callgraphAlgorithm = config.callgraphAlgorithm;
 		this.aliasingAlgorithm = config.aliasingAlgorithm;
 		this.codeEliminationMode = config.codeEliminationMode;
+		this.staticFieldTrackingMode = config.staticFieldTrackingMode;
+		this.sootIntegrationMode = config.sootIntegrationMode;
+		this.dataFlowDirection = config.dataFlowDirection;
 
 		this.inspectSources = config.inspectSources;
 		this.inspectSinks = config.inspectSinks;
-
-		this.callgraphAlgorithm = config.callgraphAlgorithm;
-		this.aliasingAlgorithm = config.aliasingAlgorithm;
-		this.codeEliminationMode = config.codeEliminationMode;
-		this.staticFieldTrackingMode = config.staticFieldTrackingMode;
 
 		this.taintAnalysisEnabled = config.writeOutputFiles;
 		this.incrementalResultReporting = config.incrementalResultReporting;
 		this.dataFlowTimeout = config.dataFlowTimeout;
 		this.memoryThreshold = config.memoryThreshold;
 		this.oneSourceAtATime = config.oneSourceAtATime;
+
+		this.baseDirectory = config.baseDirectory;
 	}
 
 	/**
@@ -1207,6 +1542,28 @@ public class InfoflowConfiguration {
 	}
 
 	/**
+	 * Sets how FlowDroid shall interact with the underlying Soot instance.
+	 * FlowDroid can either set up Soot on its own, or work with an existing
+	 * instance.
+	 * 
+	 * @param sootIntegrationMode The integration mode that FlowDroid shall use
+	 */
+	public void setSootIntegrationMode(SootIntegrationMode sootIntegrationMode) {
+		this.sootIntegrationMode = sootIntegrationMode;
+	}
+
+	/**
+	 * Gets how FloweDroid shall interact with the underlying Soot instance.
+	 * FlowDroid can either set up Soot on its own, or work with an existing
+	 * instance.
+	 * 
+	 * @return The integration mode that FlowDroid shall use
+	 */
+	public SootIntegrationMode getSootIntegrationMode() {
+		return this.sootIntegrationMode;
+	}
+
+	/**
 	 * Sets whether a flow sensitive aliasing algorithm shall be used
 	 * 
 	 * @param flowSensitiveAliasing True if a flow sensitive aliasing algorithm
@@ -1309,6 +1666,24 @@ public class InfoflowConfiguration {
 	 */
 	public AliasingAlgorithm getAliasingAlgorithm() {
 		return aliasingAlgorithm;
+	}
+
+	/**
+	 * Gets the data flow direction to be used for the taint analysis
+	 *
+	 * @return The data flow direction to be used for the taint analysis
+	 */
+	public DataFlowDirection getDataFlowDirection() {
+		return this.dataFlowDirection;
+	}
+
+	/**
+	 * Sets the data flow direction to be used for the taint analysis
+	 *
+	 * @param direction The data flow direction to be used for the taint analysis
+	 */
+	public void setDataFlowDirection(DataFlowDirection direction) {
+		this.dataFlowDirection = direction;
 	}
 
 	/**
@@ -1427,7 +1802,7 @@ public class InfoflowConfiguration {
 	 * Sets whether and how FlowDroid shall eliminate irrelevant code before running
 	 * the taint propagation
 	 * 
-	 * @param mode the mode of dead and irrelevant code eliminiation to be used
+	 * @param Mode the mode of dead and irrelevant code eliminiation to be used
 	 */
 	public void setCodeEliminationMode(CodeEliminationMode mode) {
 		this.codeEliminationMode = mode;
@@ -1483,6 +1858,47 @@ public class InfoflowConfiguration {
 	}
 
 	/**
+	 * Gets whether line numbers associated with sources and sinks should be output
+	 * in XML results
+	 * 
+	 * @return True if line number should be output, otherwise false
+	 */
+	public boolean getEnableLineNumbers() {
+		return this.enableLineNumbers;
+	}
+
+	/**
+	 * Sets whether line numbers associated with sources and sinks should be output
+	 * in XML results
+	 * 
+	 * @param enableLineNumbers True if line numbers associated with sources and
+	 *                          sinks should be output in XML results, otherwise
+	 *                          false
+	 */
+	public void setEnableLineNumbers(boolean enableLineNumbers) {
+		this.enableLineNumbers = enableLineNumbers;
+	}
+
+	/**
+	 * Gets whether the usage of original variablenames (if available) is enabled
+	 * 
+	 * @return True if the usage is enabled, otherwise false
+	 */
+	public boolean getEnableOriginalNames() {
+		return this.enableOriginalNames;
+	}
+
+	/**
+	 * Sets whether the usage of original variablenames (if available) is enabled
+	 * 
+	 * @param enableOriginalNames True if the usage of original variablenames (if
+	 *                            available) is enabled, otherwise false
+	 */
+	public void setEnableOriginalNames(boolean enableOriginalNames) {
+		this.enableOriginalNames = enableOriginalNames;
+	}
+
+	/**
 	 * Gets whether the taint analysis is enabled. If it is disabled, FlowDroid will
 	 * initialize the Soot instance and then return immediately.
 	 * 
@@ -1502,6 +1918,7 @@ public class InfoflowConfiguration {
 	public void setTaintAnalysisEnabled(boolean taintAnalysisEnabled) {
 		this.taintAnalysisEnabled = taintAnalysisEnabled;
 	}
+
 
 	/**
 	 * Gets whether the data flow results shall be reported incrementally instead of
@@ -1631,6 +2048,24 @@ public class InfoflowConfiguration {
 	}
 
 	/**
+	 * Gets the base directory used e.g. for SourcesSinks.xsd
+	 *
+	 * @return the base directory
+	 */
+	public static String getBaseDirectory() {
+		return baseDirectory;
+	}
+
+	/**
+	 * Sets the base directory used e.g. for SourcesSinks.xsd
+	 * 
+	 * @param baseDirectory path to the base directory as string
+	 */
+	public static void setBaseDirectory(String baseDirectory) {
+		InfoflowConfiguration.baseDirectory = baseDirectory;
+	}
+
+	/**
 	 * Prints a summary of this data flow configuration
 	 */
 	public void printSummary() {
@@ -1676,11 +2111,14 @@ public class InfoflowConfiguration {
 		result = prime * result + ((aliasingAlgorithm == null) ? 0 : aliasingAlgorithm.hashCode());
 		result = prime * result + ((callgraphAlgorithm == null) ? 0 : callgraphAlgorithm.hashCode());
 		result = prime * result + ((codeEliminationMode == null) ? 0 : codeEliminationMode.hashCode());
+		result = prime * result + ((dataFlowDirection == null) ? 0 : dataFlowDirection.hashCode());
 		result = prime * result + (int) (dataFlowTimeout ^ (dataFlowTimeout >>> 32));
 		result = prime * result + (enableArraySizeTainting ? 1231 : 1237);
 		result = prime * result + (enableArrays ? 1231 : 1237);
 		result = prime * result + (enableExceptions ? 1231 : 1237);
 		result = prime * result + (enableReflection ? 1231 : 1237);
+		result = prime * result + (enableLineNumbers ? 1231 : 1237);
+		result = prime * result + (enableOriginalNames ? 1231 : 1237);
 		result = prime * result + (enableTypeChecking ? 1231 : 1237);
 		result = prime * result + (excludeSootLibraryClasses ? 1231 : 1237);
 		result = prime * result + (flowSensitiveAliasing ? 1231 : 1237);
@@ -1699,6 +2137,7 @@ public class InfoflowConfiguration {
 		result = prime * result + ((pathConfiguration == null) ? 0 : pathConfiguration.hashCode());
 		result = prime * result + ((solverConfiguration == null) ? 0 : solverConfiguration.hashCode());
 		result = prime * result + ((staticFieldTrackingMode == null) ? 0 : staticFieldTrackingMode.hashCode());
+		result = prime * result + ((sootIntegrationMode == null) ? 0 : sootIntegrationMode.hashCode());
 		result = prime * result + stopAfterFirstKFlows;
 		result = prime * result + (taintAnalysisEnabled ? 1231 : 1237);
 		result = prime * result + (writeOutputFiles ? 1231 : 1237);
@@ -1725,6 +2164,8 @@ public class InfoflowConfiguration {
 			return false;
 		if (codeEliminationMode != other.codeEliminationMode)
 			return false;
+		if (dataFlowDirection != other.dataFlowDirection)
+			return false;
 		if (dataFlowTimeout != other.dataFlowTimeout)
 			return false;
 		if (enableArraySizeTainting != other.enableArraySizeTainting)
@@ -1734,6 +2175,10 @@ public class InfoflowConfiguration {
 		if (enableExceptions != other.enableExceptions)
 			return false;
 		if (enableReflection != other.enableReflection)
+			return false;
+		if (enableLineNumbers != other.enableLineNumbers)
+			return false;
+		if (enableOriginalNames != other.enableOriginalNames)
 			return false;
 		if (enableTypeChecking != other.enableTypeChecking)
 			return false;
@@ -1776,6 +2221,8 @@ public class InfoflowConfiguration {
 			return false;
 		if (staticFieldTrackingMode != other.staticFieldTrackingMode)
 			return false;
+		if (sootIntegrationMode != other.sootIntegrationMode)
+			return false;
 		if (stopAfterFirstKFlows != other.stopAfterFirstKFlows)
 			return false;
 		if (taintAnalysisEnabled != other.taintAnalysisEnabled)
@@ -1783,6 +2230,15 @@ public class InfoflowConfiguration {
 		if (writeOutputFiles != other.writeOutputFiles)
 			return false;
 		return true;
+	}
+
+	/**
+	 * Gets the configuration of the source/sink manager
+	 * 
+	 * @return The configuration of the source/sink manager
+	 */
+	public SourceSinkConfiguration getSourceSinkConfig() {
+		return sourceSinkConfig;
 	}
 
 }

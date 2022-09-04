@@ -316,11 +316,13 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 		private int maxCallbacksPerComponent = 100;
 		private int callbackAnalysisTimeout = 0;
 		private int maxCallbackAnalysisDepth = -1;
+		private boolean serializeCallbacks = false;
+		private String callbacksFile = "";
 
 		/**
 		 * Copies the settings of the given configuration into this configuration object
 		 * 
-		 * @param cbConfig The other configuration object
+		 * @param iccConfig The other configuration object
 		 */
 		public void merge(CallbackConfiguration cbConfig) {
 			this.enableCallbacks = cbConfig.enableCallbacks;
@@ -329,6 +331,8 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 			this.maxCallbacksPerComponent = cbConfig.maxCallbacksPerComponent;
 			this.callbackAnalysisTimeout = cbConfig.callbackAnalysisTimeout;
 			this.maxCallbackAnalysisDepth = cbConfig.maxCallbackAnalysisDepth;
+			this.serializeCallbacks = cbConfig.serializeCallbacks;
+			this.callbacksFile = cbConfig.callbacksFile;
 		}
 
 		/**
@@ -465,16 +469,58 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 			this.maxCallbackAnalysisDepth = maxCallbackAnalysisDepth;
 		}
 
+		/**
+		 * Gets whether the collected callbacks shall be serialized into a file
+		 * 
+		 * @return True to serialize the collected callbacks into a file, false
+		 *         otherwise
+		 */
+		public boolean isSerializeCallbacks() {
+			return serializeCallbacks;
+		}
+
+		/**
+		 * Sets whether the collected callbacks shall be serialized into a file
+		 * 
+		 * @param serializeCallbacks True to serialize the collected callbacks into a
+		 *                           file, false otherwise
+		 */
+		public void setSerializeCallbacks(boolean serializeCallbacks) {
+			this.serializeCallbacks = serializeCallbacks;
+		}
+
+		/**
+		 * Gets the full path and file name of the file to which the collected callback
+		 * shall be written, or from which they shall be read, respectively
+		 * 
+		 * @return The file for the collected callbacks
+		 */
+		public String getCallbacksFile() {
+			return callbacksFile;
+		}
+
+		/**
+		 * Sets the full path and file name of the file to which the collected callback
+		 * shall be written, or from which they shall be read, respectively
+		 * 
+		 * @param callbacksFile The file for the collected callbacks
+		 */
+		public void setCallbacksFile(String callbacksFile) {
+			this.callbacksFile = callbacksFile;
+		}
+
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
 			result = prime * result + callbackAnalysisTimeout;
 			result = prime * result + ((callbackAnalyzer == null) ? 0 : callbackAnalyzer.hashCode());
+			result = prime * result + ((callbacksFile == null) ? 0 : callbacksFile.hashCode());
 			result = prime * result + (enableCallbacks ? 1231 : 1237);
 			result = prime * result + (filterThreadCallbacks ? 1231 : 1237);
 			result = prime * result + maxCallbackAnalysisDepth;
 			result = prime * result + maxCallbacksPerComponent;
+			result = prime * result + (serializeCallbacks ? 1231 : 1237);
 			return result;
 		}
 
@@ -491,6 +537,11 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 				return false;
 			if (callbackAnalyzer != other.callbackAnalyzer)
 				return false;
+			if (callbacksFile == null) {
+				if (other.callbacksFile != null)
+					return false;
+			} else if (!callbacksFile.equals(other.callbacksFile))
+				return false;
 			if (enableCallbacks != other.enableCallbacks)
 				return false;
 			if (filterThreadCallbacks != other.filterThreadCallbacks)
@@ -499,50 +550,11 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 				return false;
 			if (maxCallbacksPerComponent != other.maxCallbacksPerComponent)
 				return false;
+			if (serializeCallbacks != other.serializeCallbacks)
+				return false;
 			return true;
 		}
 
-	}
-
-	/**
-	 * The default mode how the filter shall treat source or sink categories that
-	 * have not been configured explicitly
-	 * 
-	 * @author Steven Arzt
-	 *
-	 */
-	public static enum SourceSinkFilterMode {
-		/**
-		 * Include all categories that have not been excluded explicitly
-		 */
-		UseAllButExcluded,
-
-		/**
-		 * Only include those categories that have been included explicitly and ignore
-		 * all others
-		 */
-		UseOnlyIncluded
-	}
-
-	/**
-	 * The modes (included or excludes) that a category can have for the data flow
-	 * analysis
-	 * 
-	 * @author Steven Arzt
-	 *
-	 */
-	public static enum CategoryMode {
-		/**
-		 * The sources and sinks from the current category shall be included in the data
-		 * flow analysis
-		 */
-		Include,
-
-		/**
-		 * The sources and sinks from the current category shall be excluded from the
-		 * data flow analysis
-		 */
-		Exclude
 	}
 
 	/**
@@ -551,141 +563,16 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 	 * @author Steven Arzt
 	 *
 	 */
-	public static class SourceSinkConfiguration {
-
-		private CallbackSourceMode callbackSourceMode = CallbackSourceMode.SourceListOnly;
-		private boolean enableLifecycleSources = false;
-		private LayoutMatchingMode layoutMatchingMode = LayoutMatchingMode.MatchSensitiveOnly;
-
-		private SourceSinkFilterMode sourceFilterMode = SourceSinkFilterMode.UseAllButExcluded;
-		private SourceSinkFilterMode sinkFilterMode = SourceSinkFilterMode.UseAllButExcluded;
+	public static class SourceSinkConfiguration extends InfoflowConfiguration.SourceSinkConfiguration {
 
 		private Map<CategoryDefinition, CategoryMode> sourceCategories = new HashMap<>();
 		private Map<CategoryDefinition, CategoryMode> sinkCategories = new HashMap<>();
 
-		/**
-		 * Copies the settings of the given configuration into this configuration object
-		 * 
-		 * @param ssConfig The other configuration object
-		 */
 		public void merge(SourceSinkConfiguration ssConfig) {
-			this.callbackSourceMode = ssConfig.callbackSourceMode;
-			this.enableLifecycleSources = ssConfig.enableLifecycleSources;
-			this.layoutMatchingMode = ssConfig.layoutMatchingMode;
-
-			this.sourceFilterMode = ssConfig.sourceFilterMode;
-			this.sinkFilterMode = ssConfig.sinkFilterMode;
+			super.merge(ssConfig);
 
 			this.sourceCategories.putAll(ssConfig.sourceCategories);
 			this.sinkCategories.putAll(ssConfig.sinkCategories);
-		}
-
-		/**
-		 * Sets under which circumstances the parameters of callback methods shall be
-		 * treated as sources.
-		 * 
-		 * @param callbackSourceMode The strategy for deciding whether a certain
-		 *                           callback parameter is a data flow source or not
-		 */
-		public void setCallbackSourceMode(CallbackSourceMode callbackSourceMode) {
-			this.callbackSourceMode = callbackSourceMode;
-		}
-
-		/**
-		 * Sets under which circumstances the parameters of callback methods shall be
-		 * treated as sources.
-		 * 
-		 * @return The strategy for deciding whether a certain callback parameter is a
-		 *         data flow source or not
-		 */
-		public CallbackSourceMode getCallbackSourceMode() {
-			return this.callbackSourceMode;
-		}
-
-		/**
-		 * Sets whether the parameters of lifecycle methods shall be considered as
-		 * sources
-		 * 
-		 * @param enableLifecycleSources True if the parameters of lifecycle methods
-		 *                              shall be considered as sources, otherwise false
-		 */
-		public void setEnableLifecycleSources(boolean enableLifecycleSources) {
-			this.enableLifecycleSources = enableLifecycleSources;
-		}
-
-		/**
-		 * Gets whether the parameters of lifecycle methods shall be considered as
-		 * sources
-		 * 
-		 * @return True if the parameters of lifecycle methods shall be considered as
-		 *         sources, otherwise false
-		 */
-		public boolean getEnableLifecycleSources() {
-			return this.enableLifecycleSources;
-		}
-
-		/**
-		 * Sets the mode to be used when deciding whether a UI control is a source or
-		 * not
-		 * 
-		 * @param mode The mode to be used for classifying UI controls as sources
-		 */
-		public void setLayoutMatchingMode(LayoutMatchingMode mode) {
-			this.layoutMatchingMode = mode;
-		}
-
-		/**
-		 * Gets the mode to be used when deciding whether a UI control is a source or
-		 * not
-		 * 
-		 * @return The mode to be used for classifying UI controls as sources
-		 */
-		public LayoutMatchingMode getLayoutMatchingMode() {
-			return this.layoutMatchingMode;
-		}
-
-		/**
-		 * Gets the default mode for handling sources that have not been configured
-		 * explicitly
-		 * 
-		 * @return The default mode for handling sources that have not been configured
-		 *         explicitly
-		 */
-		public SourceSinkFilterMode getSourceFilterMode() {
-			return sourceFilterMode;
-		}
-
-		/**
-		 * Sets the default mode for handling sources that have not been configured
-		 * explicitly
-		 * 
-		 * @param sourceFilterMode The default mode for handling sources that have not
-		 *                         been configured explicitly
-		 */
-		public void setSourceFilterMode(SourceSinkFilterMode sourceFilterMode) {
-			this.sourceFilterMode = sourceFilterMode;
-		}
-
-		/**
-		 * Gets the default mode for handling sinks that have not been configured
-		 * explicitly
-		 * 
-		 * @return The default mode for handling sinks that have not been configured
-		 *         explicitly
-		 */
-		public SourceSinkFilterMode getSinkFilterMode() {
-			return sinkFilterMode;
-		}
-
-		/**
-		 * Sets the default mode for handling sinks that have not been configured
-		 * explicitly
-		 * 
-		 * @param sinkFilterMode The default mode for handling sinks that have not
-		 *                         been configured explicitly
-		 */
-		public void setSinkFilterMode(SourceSinkFilterMode sinkFilterMode) {
-			this.sinkFilterMode = sinkFilterMode;
 		}
 
 		/**
@@ -756,13 +643,9 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((callbackSourceMode == null) ? 0 : callbackSourceMode.hashCode());
-			result = prime * result + (enableLifecycleSources ? 1231 : 1237);
-			result = prime * result + ((layoutMatchingMode == null) ? 0 : layoutMatchingMode.hashCode());
+			result = prime * super.hashCode();
 			result = prime * result + ((sinkCategories == null) ? 0 : sinkCategories.hashCode());
-			result = prime * result + ((sinkFilterMode == null) ? 0 : sinkFilterMode.hashCode());
 			result = prime * result + ((sourceCategories == null) ? 0 : sourceCategories.hashCode());
-			result = prime * result + ((sourceFilterMode == null) ? 0 : sourceFilterMode.hashCode());
 			return result;
 		}
 
@@ -775,26 +658,19 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 			if (getClass() != obj.getClass())
 				return false;
 			SourceSinkConfiguration other = (SourceSinkConfiguration) obj;
-			if (callbackSourceMode != other.callbackSourceMode)
-				return false;
-			if (enableLifecycleSources != other.enableLifecycleSources)
-				return false;
-			if (layoutMatchingMode != other.layoutMatchingMode)
+			if (!super.equals(obj))
 				return false;
 			if (sinkCategories == null) {
 				if (other.sinkCategories != null)
 					return false;
 			} else if (!sinkCategories.equals(other.sinkCategories))
 				return false;
-			if (sinkFilterMode != other.sinkFilterMode)
-				return false;
 			if (sourceCategories == null) {
 				if (other.sourceCategories != null)
 					return false;
 			} else if (!sourceCategories.equals(other.sourceCategories))
 				return false;
-			if (sourceFilterMode != other.sourceFilterMode)
-				return false;
+
 			return true;
 		}
 
@@ -814,89 +690,6 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 		Fast
 	}
 
-	/**
-	 * Methods for deciding whether a parameter of a system callback is to be
-	 * treated as a source or not
-	 * 
-	 * @author Steven Arzt
-	 *
-	 */
-	public static enum CallbackSourceMode {
-		/**
-		 * Callback parameters are never treated as sources
-		 */
-		NoParametersAsSources,
-		/**
-		 * All callback parameters are sources
-		 */
-		AllParametersAsSources,
-		/**
-		 * Only parameters from callback methods explicitly defined as sources are
-		 * treated as sources
-		 */
-		SourceListOnly
-	}
-
-	/**
-	 * Possible modes for matching layout components as data flow sources
-	 * 
-	 * @author Steven Arzt
-	 */
-	public static enum LayoutMatchingMode {
-		/**
-		 * Do not use Android layout components as sources
-		 */
-		NoMatch,
-
-		/**
-		 * Use all layout components as sources
-		 */
-		MatchAll,
-
-		/**
-		 * Only use sensitive layout components (e.g. password fields) as sources
-		 */
-		MatchSensitiveOnly
-	}
-
-	/**
-	 * Enumeration containing the different ways in which Soot can be used
-	 * 
-	 * @author Steven Arzt
-	 *
-	 */
-	public static enum SootIntegrationMode {
-		/**
-		 * With this option, FlowDroid initializes and configures its own Soot instance.
-		 * This option is the default and the best choice in most cases.
-		 */
-		CreateNewInstace,
-
-		/**
-		 * With this option, FlowDroid uses the existing Soot instance, but generates
-		 * its own callgraph. Note that it is the responsibility of the caller to make
-		 * sure that pre-existing Soot instances are configured correctly for the use
-		 * with FlowDroid.
-		 */
-		UseExistingInstance,
-
-		/**
-		 * 
-		 */
-		UseExistingCallgraph;
-
-		/**
-		 * Gets whether this integration mode requires FlowDroid to build its own
-		 * callgraph
-		 * 
-		 * @return True if FlowDroid must create its own callgraph, otherwise false
-		 */
-		boolean needsToBuildCallgraph() {
-			return this == SootIntegrationMode.CreateNewInstace || this == SootIntegrationMode.UseExistingInstance;
-		}
-
-	}
-
 	private boolean oneComponentAtATime = false;
 
 	private final CallbackConfiguration callbackConfig = new CallbackConfiguration();
@@ -904,8 +697,8 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 	private final IccConfiguration iccConfig = new IccConfiguration();
 	private final AnalysisFileConfiguration analysisFileConfig = new AnalysisFileConfiguration();
 
-	private SootIntegrationMode sootIntegrationMode = SootIntegrationMode.CreateNewInstace;
-	private boolean mergeDexFiles = true;
+	private boolean mergeDexFiles = false;
+	private static boolean createActivityEntryMethods = true;
 
 	public InfoflowAndroidConfiguration() {
 		// We need to adapt some of the defaults. Most people don't care about
@@ -929,8 +722,8 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 			this.iccConfig.merge(androidConfig.iccConfig);
 			this.analysisFileConfig.merge(androidConfig.analysisFileConfig);
 
-			this.sootIntegrationMode = androidConfig.sootIntegrationMode;
 			this.mergeDexFiles = androidConfig.mergeDexFiles;
+			this.createActivityEntryMethods = androidConfig.createActivityEntryMethods;
 		}
 	}
 
@@ -994,28 +787,6 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 	}
 
 	/**
-	 * Sets how FloweDroid shall interact with the underlying Soot instance.
-	 * FlowDroid can either set up Soot on its own, or work with an existing
-	 * instance.
-	 * 
-	 * @param sootIntegrationMode The integration mode that FlowDroid shall use
-	 */
-	public void setSootIntegrationMode(SootIntegrationMode sootIntegrationMode) {
-		this.sootIntegrationMode = sootIntegrationMode;
-	}
-
-	/**
-	 * Gets how FloweDroid shall interact with the underlying Soot instance.
-	 * FlowDroid can either set up Soot on its own, or work with an existing
-	 * instance.
-	 * 
-	 * @return The integration mode that FlowDroid shall use
-	 */
-	public SootIntegrationMode getSootIntegrationMode() {
-		return this.sootIntegrationMode;
-	}
-
-	/**
 	 * Gets whether FlowDroid shall merge all dex files in the APK to get a full
 	 * picture of the app
 	 * 
@@ -1037,6 +808,27 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 		this.mergeDexFiles = mergeDexFiles;
 	}
 
+	/**
+	 * Gets if Flowdroid should create new Methods when creating the Activity Entry
+	 * point
+	 * 
+	 * @return true/false
+	 */
+	public static boolean getCreateActivityEntryMethods() {
+		return createActivityEntryMethods;
+	}
+
+	/**
+	 * Sets if Flow Flowdroid should create new Methods when creating the Activity
+	 * Entry point
+	 * 
+	 * @param createActivityEntryMethods boolean that is true if Methods should be
+	 *                                   created
+	 */
+	public static void setCreateActivityEntryMethods(boolean createActivityEntryMethods) {
+		InfoflowAndroidConfiguration.createActivityEntryMethods = createActivityEntryMethods;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -1046,7 +838,6 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 		result = prime * result + ((iccConfig == null) ? 0 : iccConfig.hashCode());
 		result = prime * result + (mergeDexFiles ? 1231 : 1237);
 		result = prime * result + (oneComponentAtATime ? 1231 : 1237);
-		result = prime * result + ((sootIntegrationMode == null) ? 0 : sootIntegrationMode.hashCode());
 		result = prime * result + ((sourceSinkConfig == null) ? 0 : sourceSinkConfig.hashCode());
 		return result;
 	}
@@ -1078,8 +869,6 @@ public class InfoflowAndroidConfiguration extends InfoflowConfiguration {
 		if (mergeDexFiles != other.mergeDexFiles)
 			return false;
 		if (oneComponentAtATime != other.oneComponentAtATime)
-			return false;
-		if (sootIntegrationMode != other.sootIntegrationMode)
 			return false;
 		if (sourceSinkConfig == null) {
 			if (other.sourceSinkConfig != null)

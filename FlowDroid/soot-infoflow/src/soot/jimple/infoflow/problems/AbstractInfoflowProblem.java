@@ -18,6 +18,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import soot.SootClass;
 import soot.SootMethod;
 import soot.Unit;
 import soot.jimple.CaughtExceptionRef;
@@ -30,6 +31,8 @@ import soot.jimple.infoflow.data.Abstraction;
 import soot.jimple.infoflow.handlers.TaintPropagationHandler;
 import soot.jimple.infoflow.handlers.TaintPropagationHandler.FlowFunctionType;
 import soot.jimple.infoflow.nativeCallHandler.INativeCallHandler;
+import soot.jimple.infoflow.problems.rules.IPropagationRuleManagerFactory;
+import soot.jimple.infoflow.problems.rules.PropagationRuleManager;
 import soot.jimple.infoflow.solver.IInfoflowSolver;
 import soot.jimple.infoflow.solver.cfg.IInfoflowCFG;
 import soot.jimple.infoflow.taintWrappers.ITaintPropagationWrapper;
@@ -39,8 +42,8 @@ import soot.jimple.toolkits.ide.icfg.BiDiInterproceduralCFG;
 
 /**
  * abstract super class which - concentrates functionality used by
- * InfoflowProblem and BackwardsInfoflowProblem - contains helper functions
- * which should not pollute the naturally large InfofflowProblems
+ * InfoflowProblem and AliasProblem - contains helper functions which should not
+ * pollute the naturally large InfofflowProblems
  *
  */
 public abstract class AbstractInfoflowProblem
@@ -62,9 +65,16 @@ public abstract class AbstractInfoflowProblem
 
 	private MyConcurrentHashMap<Unit, Set<Unit>> activationUnitsToCallSites = new MyConcurrentHashMap<Unit, Set<Unit>>();
 
-	public AbstractInfoflowProblem(InfoflowManager manager) {
+	protected final PropagationRuleManager propagationRules;
+	protected final TaintPropagationResults results;
+
+	public AbstractInfoflowProblem(InfoflowManager manager, Abstraction zeroValue,
+			IPropagationRuleManagerFactory ruleManagerFactory) {
 		super(manager.getICFG());
 		this.manager = manager;
+		this.zeroValue = zeroValue == null ? createZeroValue() : zeroValue;
+		this.results = new TaintPropagationResults(manager);
+		this.propagationRules = ruleManagerFactory.createRuleManager(manager, this.zeroValue, results);
 	}
 
 	public void setSolver(IInfoflowSolver solver) {
@@ -124,10 +134,6 @@ public abstract class AbstractInfoflowProblem
 		return initialSeeds;
 	}
 
-	/**
-	 * performance improvement: since we start directly at the sources, we do not
-	 * need to generate additional taints unconditionally
-	 */
 	@Override
 	public boolean autoAddZero() {
 		return false;
@@ -291,15 +297,37 @@ public abstract class AbstractInfoflowProblem
 			return false;
 
 		// We can exclude Soot library classes
-		if (manager.getConfig().getExcludeSootLibraryClasses() && sm.getDeclaringClass().isLibraryClass())
-			return true;
+		if (manager.getConfig().getExcludeSootLibraryClasses()) {
+			SootClass declClass = sm.getDeclaringClass();
+			if (declClass != null && declClass.isLibraryClass())
+				return true;
+		}
 
 		// We can ignore system classes according to FlowDroid's definition
-		if (manager.getConfig().getIgnoreFlowsInSystemPackages()
-				&& SystemClassHandler.isClassInSystemPackage(sm.getDeclaringClass().getName()))
-			return true;
+		if (manager.getConfig().getIgnoreFlowsInSystemPackages()) {
+			SootClass declClass = sm.getDeclaringClass();
+			if (declClass != null && SystemClassHandler.v().isClassInSystemPackage(declClass.getName()))
+				return true;
+		}
 
 		return false;
+	}
+
+	/**
+	 * Gets the results of the data flow analysis
+	 */
+	public TaintPropagationResults getResults() {
+		return this.results;
+	}
+
+	/**
+	 * Gets the rules that FlowDroid uses internally to conduct specific analysis
+	 * tasks such as handling sources or sinks
+	 * 
+	 * @return The propagation rule manager
+	 */
+	public PropagationRuleManager getPropagationRules() {
+		return propagationRules;
 	}
 
 }

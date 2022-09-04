@@ -6,7 +6,7 @@ import java.util.List;
 import soot.jimple.Stmt;
 import soot.jimple.infoflow.InfoflowConfiguration;
 import soot.jimple.infoflow.data.AccessPath;
-import soot.jimple.infoflow.sourcesSinks.definitions.SourceSinkDefinition;
+import soot.jimple.infoflow.sourcesSinks.definitions.ISourceSinkDefinition;
 import soot.tagkit.LineNumberTag;
 
 /**
@@ -17,20 +17,29 @@ import soot.tagkit.LineNumberTag;
 public class ResultSourceInfo extends AbstractResultSourceSinkInfo {
 	private final Stmt[] path;
 	private final AccessPath[] pathAPs;
+	private final Stmt[] pathCallSites;
 
-	public ResultSourceInfo(SourceSinkDefinition definition, AccessPath source, Stmt context) {
+	public ResultSourceInfo() {
+		this.path = null;
+		this.pathAPs = null;
+		this.pathCallSites = null;
+	}
+
+	public ResultSourceInfo(ISourceSinkDefinition definition, AccessPath source, Stmt context) {
 		super(definition, source, context);
 
 		this.path = null;
 		this.pathAPs = null;
+		this.pathCallSites = null;
 	}
 
-	public ResultSourceInfo(SourceSinkDefinition definition, AccessPath source, Stmt context, Object userData,
-			List<Stmt> path, List<AccessPath> pathAPs) {
+	public ResultSourceInfo(ISourceSinkDefinition definition, AccessPath source, Stmt context, Object userData,
+							List<Stmt> path, List<AccessPath> pathAPs, List<Stmt> pathCallSites) {
 		super(definition, source, context, userData);
 
 		this.path = path == null || path.isEmpty() ? null : path.toArray(new Stmt[path.size()]);
 		this.pathAPs = pathAPs == null || pathAPs.isEmpty() ? null : pathAPs.toArray(new AccessPath[pathAPs.size()]);
+		this.pathCallSites = pathCallSites == null || pathCallSites.isEmpty() ? null : pathCallSites.toArray(new Stmt[pathCallSites.size()]);
 	}
 
 	public Stmt[] getPath() {
@@ -40,6 +49,8 @@ public class ResultSourceInfo extends AbstractResultSourceSinkInfo {
 	public AccessPath[] getPathAccessPaths() {
 		return this.pathAPs;
 	}
+
+	public Stmt[] getPathCallSites() { return this.pathCallSites; }
 
 	@Override
 	public String toString() {
@@ -61,6 +72,8 @@ public class ResultSourceInfo extends AbstractResultSourceSinkInfo {
 				result += prime * Arrays.hashCode(this.path);
 			if (pathAPs != null)
 				result += prime * Arrays.hashCode(this.pathAPs);
+			if (pathCallSites != null)
+				result += prime * Arrays.hashCode(this.pathCallSites);
 		}
 
 		return result;
@@ -79,6 +92,8 @@ public class ResultSourceInfo extends AbstractResultSourceSinkInfo {
 			if (!Arrays.equals(path, other.path))
 				return false;
 			if (!Arrays.equals(pathAPs, other.pathAPs))
+				return false;
+			if (!Arrays.equals(pathCallSites, other.pathCallSites))
 				return false;
 		}
 		return true;

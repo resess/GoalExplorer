@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import soot.jimple.infoflow.android.axml.ApkHandler;
 
 /**
@@ -259,7 +260,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 		/**
 		 * Gets the resource with the given type
-		 *
+		 * 
 		 * @param type The type string for which to look, e.g., "string"
 		 * @return The resource type with the given identifier string, or null if no
 		 *         such type exists
@@ -274,7 +275,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 		/**
 		 * Adds all contents of the given package to this data object
-		 *
+		 * 
 		 * @param other The other package that shall be integrated into this one
 		 */
 		private void addAll(ResPackage other) {
@@ -342,7 +343,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 		/**
 		 * Adds all data from the given type into this type
-		 *
+		 * 
 		 * @param tp The type from which to add all data into this type
 		 */
 		private void addAll(ResType tp) {
@@ -354,9 +355,10 @@ public class ARSCFileParser extends AbstractResourceParser {
 					existingConfig.addAll(config);
 			}
 		}
+
 		/**
 		 * Gets the configuration object for the given settings
-		 *
+		 * 
 		 * @param config The settings to look for
 		 * @return The configuration object that is associated with the given settings,
 		 *         or <code>null</code> if no such configuration object exists
@@ -387,7 +389,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 		/**
 		 * Gets the names of all resources defined for this resource type
-		 *
+		 * 
 		 * @return The names of all resources in the current type
 		 */
 		public Collection<String> getAllResourceNames() {
@@ -398,8 +400,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 		/**
 		 * Gets all resource of the current type that have the given id
 		 * 
-		 * @param resourceID
-		 *            The resource id to look for
+		 * @param resourceID The resource id to look for
 		 * @return A list containing all resources with the given id
 		 */
 		public List<AbstractResource> getAllResources(int resourceID) {
@@ -415,8 +416,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 		 * Gets the first resource with the given name or null if no such resource
 		 * exists
 		 * 
-		 * @param resourceName
-		 *            The resource name to look for
+		 * @param resourceName The resource name to look for
 		 * @return The first resource with the given name or null if no such resource
 		 *         exists
 		 */
@@ -431,8 +431,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 		/**
 		 * Gets the first resource of the current type that has the given name
 		 * 
-		 * @param resourceName
-		 *            The resource name to look for
+		 * @param resourceName The resource name to look for
 		 * @return The resource with the given name if it exists, otherwise null
 		 */
 		public AbstractResource getFirstResource(String resourceName) {
@@ -446,8 +445,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 		/**
 		 * Gets the first resource of the current type with the given ID
 		 * 
-		 * @param resourceID
-		 *            The resource ID to look for
+		 * @param resourceID The resource ID to look for
 		 * @return The resource with the given ID if it exists, otherwise null
 		 */
 		public AbstractResource getFirstResource(int resourceID) {
@@ -512,7 +510,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 		/**
 		 * Adds all data from the given configuration into this data object
-		 *
+		 * 
 		 * @param other The configuration object from which to read the data
 		 */
 		private void addAll(ResConfig other) {
@@ -722,6 +720,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 				return false;
 			return true;
 		}
+
 	}
 
 	/**
@@ -1130,18 +1129,25 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 * Android resource containing complex map data.
 	 */
 	public static class ComplexResource extends AbstractResource {
-		private Map<String, AbstractResource> value;
+		private final String resType;
+		private final Map<String, AbstractResource> value;
 
-		public ComplexResource() {
-			this.value = new HashMap<String, AbstractResource>();
+		public ComplexResource(String resType) {
+			this.resType = resType;
+			this.value = new HashMap<>();
 		}
 
-		public ComplexResource(Map<String, AbstractResource> value) {
+		public ComplexResource(String resType, Map<String, AbstractResource> value) {
+			this.resType = resType;
 			this.value = value;
 		}
 
 		public Map<String, AbstractResource> getValue() {
 			return this.value;
+		}
+
+		public String getResType() {
+			return resType;
 		}
 
 		@Override
@@ -2055,10 +2061,8 @@ public class ARSCFileParser extends AbstractResourceParser {
 	/**
 	 * Parses the resource definition file in the given APK
 	 * 
-	 * @param apkFile
-	 *            The APK file in which to parse the resource definition file
-	 * @throws IOException
-	 *             Thrown if the given APK file cannot be opened
+	 * @param apkFile The APK file in which to parse the resource definition file
+	 * @throws IOException Thrown if the given APK file cannot be opened
 	 */
 	public void parse(String apkFile) throws IOException {
 		this.handleAndroidResourceFiles(apkFile, null, new IResourceHandler() {
@@ -2247,7 +2251,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 							// If this is a simple entry, the data structure is
 							// followed by RES_VALUE
 							if (entry.flagsComplex) {
-								ComplexResource cmpRes = new ComplexResource();
+								ComplexResource cmpRes = new ComplexResource(resType.typeName);
 								res = cmpRes;
 
 								for (int j = 0; j < ((ResTable_Map_Entry) entry).count; j++) {
@@ -2270,40 +2274,31 @@ public class ARSCFileParser extends AbstractResourceParser {
 										// We silently ignore inconsistencies at thze moment
 										if (existingResource instanceof ArrayResource)
 											((ArrayResource) existingResource).add(value);
-									} else
+									} else {
 										cmpRes.value.put(mapName, value);
+									}
 								}
 							} else {
 								Res_Value val = new Res_Value();
 								entryOffset = readValue(val, remainingData, entryOffset);
 								res = parseValue(val);
 								if (res == null) {
-									logger.error(String.format("Could not parse resource %s of type %s, skipping entry",
-											keyStrings.get(entry.key), Integer.toHexString(val.dataType)));
+									logger.error(
+											String.format("Could not parse resource %s of type 0x%x, skipping entry",
+													keyStrings.get(entry.key), val.dataType));
 									continue;
 								}
 							}
 
-							// Create the data object. For finding the correct
-							// ID, we
-							// must check whether the entry is really new - if
-							// so, it
+							// Create the data object. For finding the correct ID, we
+							// must check whether the entry is really new - if so, it
 							// gets a new ID, otherwise, we reuse the old one
-							if (keyStrings.containsKey(entry.key))
+							if (keyStrings.containsKey(entry.key)) {
 								res.resourceName = keyStrings.get(entry.key);
-							else
+							} else {
 								res.resourceName = "<INVALID RESOURCE>";
-
-							if (res.resourceName != null && res.resourceName.length() > 0) {
-								// Some obfuscated resources do only contain an
-								// empty string as resource name
-								// -> We only need to check the name if it is
-								// really present
-								AbstractResource r = resType.getResourceByName(res.resourceName);
-								if (r != null) {
-									res.resourceID = r.resourceID;
-								}
 							}
+
 							if (res.resourceID <= 0) {
 								res.resourceID = (packageTable.id << 24) + (typeTable.id << 16) + resourceIdx;
 							}
@@ -2315,17 +2310,16 @@ public class ARSCFileParser extends AbstractResourceParser {
 				}
 
 				// Create the data objects for the types in the package
-				if (logger.isDebugEnabled()) {
+				if (logger.isTraceEnabled()) {
 					for (ResType resType : resPackage.types) {
-						logger.debug(String.format("\t\tType %s (%d), configCount=%d, entryCount=%d", resType.typeName,
+						logger.trace("\t\tType {} ({}), configCount={}, entryCount={}", resType.typeName,
 								resType.id - 1, resType.configurations.size(),
-								resType.configurations.size() > 0 ? resType.configurations.get(0).resources.size()
-										: 0));
+								resType.configurations.size() > 0 ? resType.configurations.get(0).resources.size() : 0);
 						for (ResConfig resConfig : resType.configurations) {
-							logger.debug("\t\t\tconfig");
+							logger.trace("\t\t\tconfig");
 							for (AbstractResource res : resConfig.resources)
-								logger.debug(String.format("\t\t\t\tresource %s: %s",
-										Integer.toHexString(res.resourceID), res.resourceName));
+								logger.trace("\t\t\t\tresource {}: {}", Integer.toHexString(res.resourceID),
+										res.resourceName);
 						}
 					}
 				}
@@ -2342,8 +2336,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 * Checks whether the given complex map entry is one of the well-known
 	 * attributes.
 	 * 
-	 * @param map
-	 *            The map entry to check
+	 * @param map The map entry to check
 	 * @return True if the given entry is one of the well-known attributes,
 	 *         otherwise false.
 	 */
@@ -2409,6 +2402,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 				res = new FractionResource(FractionType.FractionParent, data);
 			break;
 		default:
+			logger.warn(String.format("Unsupported data type: 0x%x", val.dataType));
 			return null;
 		}
 		return res;
@@ -2580,9 +2574,12 @@ public class ARSCFileParser extends AbstractResourceParser {
 		if (remainingSize > 0) {
 			byte[] remainingBytes = new byte[remainingSize];
 			System.arraycopy(data, offset, remainingBytes, 0, remainingSize);
-			if (!(new BigInteger(1, remainingBytes).equals(BigInteger.ZERO))) {
-				logger.warn("Excessive non-null bytes in ResTable_Config ignored");
-				assert false;
+			BigInteger remainingData = new BigInteger(1, remainingBytes);
+			if (!(remainingData.equals(BigInteger.ZERO))) {
+				logger.debug("Excessive {} non-null bytes in ResTable_Config ignored", remainingSize);
+				if (logger.isTraceEnabled()) {
+					logger.trace("remaining data: 0x" + remainingData.toString(16));
+				}
 			}
 			offset += remainingSize;
 		}
@@ -2695,12 +2692,9 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 * Reads a chunk header from the input stream and stores the data in the given
 	 * object.
 	 * 
-	 * @param stream
-	 *            The stream from which to read the chunk header
-	 * @param nextChunkHeader
-	 *            The data object in which to put the chunk header
-	 * @throws IOException
-	 *             Thrown if an error occurs during read
+	 * @param stream          The stream from which to read the chunk header
+	 * @param nextChunkHeader The data object in which to put the chunk header
+	 * @throws IOException Thrown if an error occurs during read
 	 */
 	private void readChunkHeader(InputStream stream, ResChunk_Header nextChunkHeader) throws IOException {
 		byte[] header = new byte[8];
@@ -2712,14 +2706,10 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 * Reads a chunk header from the input stream and stores the data in the given
 	 * object.
 	 * 
-	 * @param nextChunkHeader
-	 *            The data object in which to put the chunk header
-	 * @param data
-	 *            The data array containing the structure
-	 * @param offset
-	 *            The offset from which to start reading
-	 * @throws IOException
-	 *             Thrown if an error occurs during read
+	 * @param nextChunkHeader The data object in which to put the chunk header
+	 * @param data            The data array containing the structure
+	 * @param offset          The offset from which to start reading
+	 * @throws IOException Thrown if an error occurs during read
 	 */
 	private int readChunkHeader(ResChunk_Header nextChunkHeader, byte[] data, int offset) throws IOException {
 		nextChunkHeader.type = readUInt16(data, offset);
@@ -2776,8 +2766,8 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 * Finds the resource with the given Android resource ID. This method is
 	 * configuration-agnostic and simply returns the first match it finds.
 	 * 
-	 * @param resourceId
-	 *            The Android resource ID for which to the find the resource object
+	 * @param resourceId The Android resource ID for which to the find the resource
+	 *                   object
 	 * @return The resource object with the given Android resource ID if it has been
 	 *         found, otherwise null.
 	 */
@@ -2798,8 +2788,8 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 * Finds all resources with the given Android resource ID. This method returns
 	 * all matching resources, regardless of their respective configuration.
 	 * 
-	 * @param resourceId
-	 *            The Android resource ID for which to the find the resource object
+	 * @param resourceId The Android resource ID for which to the find the resource
+	 *                   object
 	 * @return The resource object with the given Android resource ID if it has been
 	 *         found, otherwise null.
 	 */
@@ -2817,6 +2807,14 @@ public class ARSCFileParser extends AbstractResourceParser {
 		return resourceList;
 	}
 
+	/**
+	 * Gets the resource type with the package and type specified in the given
+	 * resource ID
+	 * 
+	 * @param resourceId The resource ID
+	 * @return The resource type with the given type and package ID, or null if no
+	 *         such type exists
+	 */
 	public ResType findResourceType(int resourceId) {
 		ResourceId id = parseResourceId(resourceId);
 		for (ResPackage resPackage : this.packages)
@@ -2833,8 +2831,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 	/**
 	 * Parses an Android resource ID into its components
 	 * 
-	 * @param resourceId
-	 *            The numeric resource ID to parse
+	 * @param resourceId The numeric resource ID to parse
 	 * @return The data contained in the given Android resource ID
 	 */
 	public ResourceId parseResourceId(int resourceId) {
@@ -2844,7 +2841,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 	/**
 	 * Gets the resource with the given name and type
-	 *
+	 * 
 	 * @param type         The type of the resource to retrieve, e.g., "string"
 	 * @param resourceName The name of the resource to retrieve
 	 * @return The resource with the given name and type if such a resource exists,
@@ -2865,7 +2862,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 	/**
 	 * Convenience method for loading a string resource with a given name
-	 *
+	 * 
 	 * @param resourceName The name of the resource to locate
 	 * @return The string contents of the resource with the given name, if such a
 	 *         resource exists and is of type "string", null otherwise
@@ -2881,7 +2878,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 
 	/**
 	 * Finds all resources that have the given type
-	 *
+	 * 
 	 * @param type The resource type to look for
 	 * @return All resources of the given type
 	 */
@@ -2896,9 +2893,28 @@ public class ARSCFileParser extends AbstractResourceParser {
 	}
 
 	/**
+	 * Creates a new instance of the {@link ARSCFileParser} class and parses the
+	 * Android resource database in the given APK file
+	 * 
+	 * @param apkFile The APK file in which to parse the resource database
+	 * @return The new {@link ARSCFileParser} instance, or <code>null</code> if the
+	 *         file could not be read
+	 * @throws IOException
+	 */
+	public static ARSCFileParser getInstance(File apkFile) throws IOException {
+		ARSCFileParser parser = new ARSCFileParser();
+		try (ApkHandler handler = new ApkHandler(apkFile); InputStream is = handler.getInputStream("resources.arsc")) {
+			if (is == null)
+				return null;
+			parser.parse(is);
+		}
+		return parser;
+	}
+
+	/**
 	 * Adds all resources loaded from another {@link ARSCFileParser} to this data
 	 * object
-	 *
+	 * 
 	 * @param otherParser The other parser
 	 */
 	public void addAll(ARSCFileParser otherParser) {
@@ -2914,4 +2930,5 @@ public class ARSCFileParser extends AbstractResourceParser {
 		// Merge the string table
 		stringTable.putAll(otherParser.stringTable);
 	}
+
 }
