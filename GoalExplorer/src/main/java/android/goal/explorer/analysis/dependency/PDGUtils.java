@@ -8,7 +8,9 @@ import soot.Local;
 import soot.SootMethod;
 import soot.Unit;
 import soot.Value;
+import soot.jimple.ConditionExpr;
 import soot.jimple.EqExpr;
+import soot.jimple.NeExpr;
 import soot.jimple.IfStmt;
 import soot.jimple.IntConstant;
 import soot.jimple.LookupSwitchStmt;
@@ -48,7 +50,7 @@ public class PDGUtils {
             if (iterator == null) continue;
 
             while (iterator.hasNext()) {
-                if (iterator.next().equals(u)) { node = n; break; }
+                if (iterator.next().equals(u) && (n.getType().equals(PDGNode.Type.CFGNODE))) { node = n; break; }
             }
 
             if (node != null) { break; }
@@ -73,7 +75,7 @@ public class PDGUtils {
 
             while (iterator.hasNext()) {
                 Unit u = iterator.next();
-                if (u instanceof Stmt) {
+                if (u instanceof Stmt && (n.getType().equals(PDGNode.Type.CFGNODE))) {
                     if (u.equals(stmt)) {
                         node = n;
                         break;
@@ -185,9 +187,10 @@ public class PDGUtils {
 
         // Get the direct dependents
         List<PDGNode> dependents = getDirectDependentPDGNode(srcNode, pdg);
+        //Logger.debug("Successor nodes {}", pdg.getSuccsOf(srcNode));
 
         // Find the resource id value of the conditional stmt
-        Unit conditionalUnit = getLastUnitOfPDGNode(srcNode);
+        Unit conditionalUnit = getLastUnitOfPDGNode(srcNode); //what if not in the same block
         if (conditionalUnit instanceof LookupSwitchStmt) {
             LookupSwitchStmt conditionalStmt = (LookupSwitchStmt) conditionalUnit;
             // Check the size of the look up switch should match the size of dependents
@@ -206,6 +209,18 @@ public class PDGUtils {
                 // Resource ID value
                 int lookupValue = conditionalStmt.getLookupValue(i);
                 PDGNode dependent = dependents.get(i);
+                /*for(PDGNode succ: succs){
+                    Logger.debug("Succ level 0 {}", succ);
+                    while(succ != null){
+                        List<PDGNode> succList = pdg.getSuccsOf(succ);
+                        if(succList != null && succList.size() > 0){
+                            succ = pdg.getSuccsOf(succ).get(0);
+                            Logger.debug("Succ internal : "+succ);
+                        }
+                        else 
+                            succ = null;
+                    }
+                }*/
 
                 // The dependents nodes
                 List<PDGNode> nodeQueue = getAllDependentsInclude(dependent, pdg);
@@ -218,16 +233,24 @@ public class PDGUtils {
                 Stmt stmt = (Stmt) unitIter.next();
                 if (stmt instanceof IfStmt) {
                     Value value = ((IfStmt) stmt).getCondition();
-                    if (value instanceof EqExpr) {
-                        Value lhv = ((EqExpr) value).getOp1();
-                        Value rhv = ((EqExpr) value).getOp2();
+                    Logger.debug("Found an if statement wit condition {} {}", value, value.getType());
+                    if (value instanceof EqExpr || value instanceof NeExpr) {
+                       
+                        Value lhv = ((ConditionExpr) value).getOp1();
+                        Value rhv = ((ConditionExpr) value).getOp2();
+                        Logger.debug("Found eq expr {} with leftOp {} and rightOp {}", ((ConditionExpr)value), lhv.getType(), rhv.getType());
+                        
+                        Stmt target = (value instanceof EqExpr)?((IfStmt)stmt).getTarget(): (unitIter.hasNext()?((Stmt)unitIter.next()): null);
+                        if (target == null)
+                            return results; //TO-DO deal with the neq case by extracting the ids with backstage and mapping everything that's left
+                        Logger.debug("Found target: {} ", target);
+                        PDGNode targetNode =  findNodeOf(((IfStmt) stmt).getTarget(), pdg);
                         if (lhv instanceof IntConstant) {
-                            PDGNode targetNode =  findNodeOf(((IfStmt) stmt).getTarget(), pdg);
+                            
                             // The dependents nodes
                             List<PDGNode> nodeQueue = getAllDependentsInclude(targetNode, pdg);
                             results.put(((IntConstant) lhv).value, nodeQueue);
                         } else if (rhv instanceof IntConstant) {
-                            PDGNode targetNode =  findNodeOf(((IfStmt) stmt).getTarget(), pdg);
                             List<PDGNode> nodeQueue = getAllDependentsInclude(targetNode, pdg);
                             results.put(((IntConstant) rhv).value, nodeQueue);
                         } else if (rhv instanceof Local) {
@@ -236,7 +259,7 @@ public class PDGUtils {
                             Set<Object> possibleValues = analysis.computeVariableValues(rhv, stmt);
                             for (Object possibleValue : possibleValues) {
                                 if (possibleValue instanceof Integer) {
-                                    PDGNode targetNode =  findNodeOf(((IfStmt) stmt).getTarget(), pdg);
+                                   
                                     List<PDGNode> nodeQueue = getAllDependentsInclude(targetNode, pdg);
                                     results.put((Integer)possibleValue, nodeQueue);
                                 }
@@ -247,6 +270,14 @@ public class PDGUtils {
             }
         }
         return results;
+    }
+
+    private static List<PDGNode> getAllDependentsRecursive(PDGNode srcNode, ProgramDependenceGraph pdg){
+        List<PDGNode> dependents = getDirectDependentPDGNode(srcNode, pdg);
+        for(PDGNode dependent: dependents){
+            dependents.addAll(getAllDependentsRecursive(dependent, pdg));
+        }
+        return dependents;
     }
 
     /**
@@ -262,10 +293,34 @@ public class PDGUtils {
         nodeQueue.add(dependent);
         result.add(dependent);
 
+
         while (unprocessedNodes.hasNext()) {
-            for (PDGNode directDependent : getDirectDependentPDGNode(unprocessedNodes.next(), pdg)) {
+            PDGNode next = unprocessedNodes.next();
+            for (PDGNode directDependent : getDirectDependentPDGNode(next, pdg)) {
                 nodeQueue.add(directDependent);
                 result.add(directDependent);
+            }
+        }
+        return result;
+    }
+
+    private static List<PDGNode> getAllDependentsAndSuccessorsInclude(PDGNode dependent, ProgramDependenceGraph pdg) {
+        ChunkedQueue<PDGNode> nodeQueue = new ChunkedQueue<>();
+        List<PDGNode> result = new ArrayList<>();
+        QueueReader<PDGNode> unprocessedNodes = nodeQueue.reader();
+        nodeQueue.add(dependent);
+        result.add(dependent);
+
+        while (unprocessedNodes.hasNext()) {
+            PDGNode next = unprocessedNodes.next();
+                for (PDGNode directDependent : getDirectDependentPDGNode(next, pdg)) {
+                Logger.debug("The node to add {}", directDependent);
+                nodeQueue.add(directDependent);
+                result.add(directDependent);
+            }
+            for (PDGNode successor: pdg.getSuccsOf(next)){
+                nodeQueue.add(successor);
+                result.add(successor);
             }
         }
         return result;

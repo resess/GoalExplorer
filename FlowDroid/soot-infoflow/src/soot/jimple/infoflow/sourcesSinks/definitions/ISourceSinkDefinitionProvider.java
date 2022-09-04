@@ -1,6 +1,6 @@
 package soot.jimple.infoflow.sourcesSinks.definitions;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * Common interface for all classes that support loading source and sink
@@ -10,24 +10,28 @@ import java.util.Set;
  *
  */
 public interface ISourceSinkDefinitionProvider {
-	
+
 	/**
 	 * Gets a set of all sources registered in the provider
+	 * 
 	 * @return A set of all sources registered in the provider
 	 */
-	public Set<SourceSinkDefinition> getSources();
-	
+	public Collection<? extends ISourceSinkDefinition> getSources();
+
 	/**
 	 * Gets a set of all sinks registered in the provider
+	 * 
 	 * @return A set of all sinks registered in the provider
 	 */
-	public Set<SourceSinkDefinition> getSinks();
-	
+	public Collection<? extends ISourceSinkDefinition> getSinks();
+
 	/**
 	 * Gets all methods for which there are source/sink definitions
+	 * 
 	 * @return A set containing all methods for which there is a source/sink
-	 * definition. This also includes methods explicitly labeled as "neither".
+	 *         definition. This also includes methods explicitly labeled as
+	 *         "neither".
 	 */
-	public Set<SourceSinkDefinition> getAllMethods();
-	
+	public Collection<? extends ISourceSinkDefinition> getAllMethods();
+
 }

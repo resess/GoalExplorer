@@ -141,7 +141,22 @@ public class SpecialXMLTag extends AppsUIElement {
 		
 		return str;
 	}
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		//what to do check the id here?
+		if (!super.equals(o)) return false;
+		SpecialXMLTag that = (SpecialXMLTag) o;
+		return Objects.equals(xmlFileIDs, that.xmlFileIDs);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), xmlFileIDs);
+	}
+
 	@Override
 	@Deprecated
 	public String attributesForSavingToString(String appAndScreenName){		

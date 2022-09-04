@@ -20,8 +20,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StmtSwitchForStrings extends MyStmtSwitch {
-	
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 //	private DynDecStringInfo searchedString;
 	
 	
@@ -67,6 +70,7 @@ public class StmtSwitchForStrings extends MyStmtSwitch {
 								InterProcInfo workingInfo = (InterProcInfo) resList.get(j);
 								DynDecStringInfo newInfo = (DynDecStringInfo) searchedString.clone();
 								newInfo.setUiEID(workingInfo.getValueOfSearchedReg());
+								newInfo.setInterProcIndex(paramIndex);
 								toAddInfos.add(newInfo);
 							}
 						}
@@ -102,6 +106,30 @@ public class StmtSwitchForStrings extends MyStmtSwitch {
 //		List<Info> resultInfos = getResultInfos();
 		Set<Info> toAddInfos = new LinkedHashSet<>();
 		Set<Info> toRemoveInfos = new LinkedHashSet<>();
+
+		if (stmt.containsInvokeExpr()) {
+			InvokeExpr invokeExpr = stmt.getInvokeExpr();
+			String declaringClass = invokeExpr.getMethod().getDeclaringClass().getName();
+			String signature = helpMethods.getSignatureOfInvokeExpr(invokeExpr);
+
+			if (signature.startsWith("<android.view.Menu: android.view.MenuItem add(")
+				|| signature.startsWith("<android.view.ContextMenu: android.view.MenuItem add(")) {
+				handleDynStringForDynMenuItems(invokeExpr);
+			}
+			/*else if(Helper.isClassInAppNameSpace(declaringClass) && invokeExpr.getMethod().hasActiveBody()) { //Could be a menu item declaration I guess
+				boolean returnsMenuItem = signature.contains(": android.view.MenuItem ");
+				if (returnsMenuItem){ //interprocedural
+
+					Unit lastUnitOfMethod = invokeExpr.getMethod().getActiveBody().getUnits().getLast();
+					String returnedValue = helpMethods.getReturnRegOfReturnStmt(lastUnitOfMethod);
+					DynDecStringInfo newInfo = new DynDecStringInfo()
+					StmtSwitchForStrings newStmtSwitch = new StmtSwitchForStrings(invokeExpr.getMethod());
+					iteratorHelper.runUnitsOverMethodBackwards(invokeExpr.getMethod().getActiveBody(), newStmtSwitch);
+					addAllToResultInfo(newStmtSwitch.getResultInfos());
+				}
+			}*/
+		}
+		
 		for (Info i: getResultInfos()){
 			if(Thread.currentThread().isInterrupted()){
 				return;
@@ -146,15 +174,25 @@ public class StmtSwitchForStrings extends MyStmtSwitch {
 						 }
 					 }
 				 }else
-					 if (methodSignature.equals("<android.content.res.Resources: CharSequence getTextFromElement(int)>") ||
+					 if (methodSignature.equals("<android.content.res.Resources: java.lang.CharSequence getTextFromElement(int)>") ||
+					 	methodSignature.equals("<android.content.res.Resources: java.lang.CharSequence getText(int)>") ||
 								methodSignature.equals("<android.content.res.Resources: java.lang.String getTextFromElement(int,CharSequence)>") ||
 								methodSignature.equals("<android.content.res.Resources: java.lang.String getString(int)>") ||
 							 	invokeExpr.getMethod().getSubSignature().startsWith("java.lang.String getString(int") ||
-								methodSignature.equals("<android.content.res.Resources: java.lang.String[] getStringArray(int)>")){
+								methodSignature.equals("<android.content.res.Resources: java.lang.String[] getStringArray(int)>")){ //need to add getText()
 									 if (searchedString.getTextReg().contains(leftReg)){
 											searchedString.removeTextReg(leftReg);
 											String text = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-											searchedString.addText(text);
+											if(checkMethods.checkIfValueIsVariable(text)){
+												//searchedString.setSearchedEReg(text);
+												searchedString.addTextReg(text);
+											}
+											else{
+												if(checkMethods.checkIfValueIsID(text)){
+													text = Content.getInstance().getStringValueFromStringId(text);
+												}
+												searchedString.addText(text);
+											}
 										}
 									 else if (searchedString.getSearchedPlaceHolders() != null && searchedString.getSearchedPlaceHolders().contains(leftReg)){
 										 searchedString.removeSearchedPlaceHolders(leftReg);
@@ -476,6 +514,7 @@ public class StmtSwitchForStrings extends MyStmtSwitch {
 		}
 //		System.out.println(stmt);
 		InvokeExpr invokeExpr = stmt.getInvokeExpr();
+		String methodSignature = helpMethods.getSignatureOfInvokeExpr(invokeExpr);
 		String method_name = helpMethods.getMethodNameOfInvokeStmt(invokeExpr);
 		
 		// call this method only if it is the first call and
@@ -543,8 +582,74 @@ public class StmtSwitchForStrings extends MyStmtSwitch {
 					addToResultInfo(searchedString);
 				}
 			}
+			else if(methodSignature.startsWith("<android.view.Menu: android.view.MenuItem add(")
+					|| methodSignature.startsWith("<android.view.ContextMenu: android.view.MenuItem add(")){
+				handleDynStringForDynMenuItems(invokeExpr);
+			}
 //		}
 	}
+
+	public void handleDynStringForDynMenuItems(InvokeExpr invokeExpr){
+		String methodSignature = helpMethods.getSignatureOfInvokeExpr(invokeExpr);
+		String method_name = helpMethods.getMethodNameOfInvokeStmt(invokeExpr);
+
+		//virtualinvoke $r5.<android.view.Menu: android.view.MenuItem add(int, int, int, String)>(0, 0, 0, $r5)
+		int numArgs = invokeExpr.getArgCount();
+		String typeOfParam = helpMethods.getParameterTypeOfInvokeStmt(invokeExpr, numArgs -1);
+		String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, numArgs - 1);
+		//if typeOfParam is int, then the text is set via the string id: e.g add(int, int, int, int)<0,0,0,213655675>
+		//Need to get param-pos2 if available
+		
+			/*if(menuItemId instanceof IntConstant){
+				searchedString.setUiEIDReg(uiEParam);
+				searchedString.setUiEID(uiEParam);
+			}
+			else{
+				searchedString.setUiEIDReg(uiEParam);
+				searchedString.setUiEID("");
+			}*/
+		DynDecStringInfo searchedString = null;
+		if (typeOfParam.equals("int")){
+			if (invokeExpr.getArg(numArgs - 1) instanceof IntConstant){
+				searchedString = new DynDecStringInfo(helpMethods.getCallerOfInvokeStmt(invokeExpr), getCurrentSootMethod());
+				String text= param;
+				if(checkMethods.checkIfValueIsID(text)){
+					text = Content.getInstance().getStringValueFromStringId(text);
+				}
+				searchedString.addText(text);
+				//addToResultInfo(searchedString);
+			}
+			else{
+				 searchedString = new DynDecStringInfo(helpMethods.getCallerOfInvokeStmt(invokeExpr), getCurrentSootMethod());
+					searchedString.addTextReg(param);
+				//addToResultInfo(searchedString);
+			}
+		}
+		else if (typeOfParam.equals("java.lang.CharSequence") || typeOfParam.equals("java.lang.String")){
+			searchedString = new DynDecStringInfo(helpMethods.getCallerOfInvokeStmt(invokeExpr), getCurrentSootMethod());
+
+			if (checkMethods.checkIfValueIsVariable(param)){
+				searchedString.addTextReg(param); //should we group them for the menu ?
+			}else{ //is string
+				searchedString.addText(param.replace("\"", ""));
+			}
+			//addToResultInfo(searchedString);
+		}
+		if(searchedString != null){
+			if (numArgs > 1){//extract menu item element registration
+				//Value menuItemId = invokeExpr.getArg(1);
+				String uiEParam = helpMethods.getParameterOfInvokeStmt(invokeExpr, 1);
+				searchedString.setUiEIDReg(uiEParam);
+				searchedString.setUiEID("");
+				searchedString.setUiEIDRegMutable(false);
+				logger.debug("Adding the string for dyn menu with uiEidReg {} .{}", uiEParam, searchedString);
+			}
+			addToResultInfo(searchedString);
+		}
+
+	}
+
+	
 	
 	
 //	private void checkIfStringIsFinished(){

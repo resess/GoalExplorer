@@ -1,5 +1,8 @@
 package st.cs.uni.saarland.de.searchDialogs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import soot.SootField;
 import soot.SootMethod;
 import soot.Unit;
@@ -18,6 +21,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class StmtSwitchForDialogs extends MyStmtSwitch {
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	//TODO by default, all text is capitalized, unless the setting is set to false (need to check lol)
 
 //	private DialogInfo diaInfo;
 	private String subSignatureOnClick = "void onClick(android.content.DialogInterface,int)";
@@ -187,122 +193,147 @@ public class StmtSwitchForDialogs extends MyStmtSwitch {
 //		}else if (diaInfo == null){
 //				shouldBreak = true;
 //		}else
-		for (Info i: getResultInfos()){
-			if(Thread.currentThread().isInterrupted()){
-				return;
+
+		//case 1: $r2 = virtualinvoke $r1.<android.app.AlertDialog$Builder: android.app.AlertDialog show()>();
+		if (getResultInfos().size() == 0){
+			if(methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog show()>")){ //we shouldn't have both show and create
+				DialogInfo diaInfo = new DialogInfo(helpMethods.getCallerOfInvokeStmt(invokeExpr));
+				diaInfo.setMethodSignature(getCurrentSootMethod().getSignature());
+				addToResultInfo(diaInfo);
 			}
-			DialogInfo diaInfo = (DialogInfo) i;
-		
-			// case 2a: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setNegativeButton(java.lang.CharSequence,android.content.DialogInterface$OnClickListener)>("No", $r5);
-				if (methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setNegativeButton") 
-					&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
-							diaInfo.setNegTextReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-						else 
-							diaInfo.addNegText(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-							
-						diaInfo.setNegListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
-	//					Listener l = new Listener("onClick", false, "void onClick(android.view.View)");
-	//					l.setListenerClass(helpMethods.getParameterTypeOfInvokeStmt(invokeExpr,1));
-	//					diaInfo.addNegativeListener(l);
-					}
-			}else
-				// case 2b: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setPositiveButton(java.lang.CharSequence,android.content.DialogInterface$OnClickListener)>("Yes", $r4);
-				if (methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setPositiveButton") 
+		}
+		else{
+			for (Info i: getResultInfos()){
+				if(Thread.currentThread().isInterrupted()){
+					return;
+				}
+				DialogInfo diaInfo = (DialogInfo) i;
+
+				// case 2a: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setNegativeButton(java.lang.CharSequence,android.content.DialogInterface$OnClickListener)>("No", $r5);
+					if ((methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setNegativeButton")
+							|| methodSignature.contains("<android.app.AlertDialogBuilder: void setButton(java.lang.CharSequence,android.content.DialogInterface$OnClickListener")) //TODO check 2nd argument
 						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
-							diaInfo.setPosTextReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-						else
-							diaInfo.addPosText(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-						diaInfo.setPosListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							//logger.debug("Setting negative button for diaInfo {} at {}", diaInfo, invokeExpr);
+							String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							//TODO remove null case
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
+								diaInfo.setNegTextReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+							else
+								diaInfo.addNegText(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+
+							//logger.debug("Setting negative text to {}", diaInfo.getNegText());
+							diaInfo.setNegListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
+		//					Listener l = new Listener("onClick", false, "void onClick(android.view.View)");
+		//					l.setListenerClass(helpMethods.getParameterTypeOfInvokeStmt(invokeExpr,1));
+		//					diaInfo.addNegativeListener(l);
+						}
+				}else
+					// case 2b: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setPositiveButton(java.lang.CharSequence,android.content.DialogInterface$OnClickListener)>("Yes", $r4);
+					if ((methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setPositiveButton")
+							|| methodSignature.contains("<android.app.AlertDialogBuilder: void setButton2(java.lang.CharSequence,android.content.DialogInterface$OnClickListener")) //TODO check 2nd argument
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							//logger.debug("Setting positive button for diaInfo at {}", diaInfo, invokeExpr);
+							String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
+								diaInfo.setPosTextReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+							else
+								diaInfo.addPosText(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+							//logger.debug("Setting positive text to {}", diaInfo.getPosText());
+							diaInfo.setPosListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
+						}
+				}else
+					// case 2c: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setPositiveButton(int,android.content.DialogInterface$OnClickListener)>(25145565.., $r4);
+					if ((methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setNeutralButton")
+							|| methodSignature.contains("<android.app.AlertDialogBuilder: void setButton3(java.lang.CharSequence,android.content.DialogInterface$OnClickListener"))
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
+								diaInfo.setNeutralTextReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+							else
+								diaInfo.addNeutralText(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+							diaInfo.setNeutralListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
+		//					Listener l = new Listener("onClick", false, "void onClick(android.view.View)");
+		//					l.setListenerClass(helpMethods.getParameterTypeOfInvokeStmt(invokeExpr,1));
+		//					diaInfo.addNeutralListener(l);
+						}
+				}else
+					if(methodSignature.contains("<android.app.AlertDialogBuilder: void setButton(int, java.lang.CharSequence")){
+					//need to switch on which button
+						logger.warn("Switch on dialog button type not handled yet ... {}", methodSignature);
+						//logger.debug("Switch on dialog button type not handled yet ... {}", methodSignature);
 					}
-			}else
-				// case 2c: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setPositiveButton(int,android.content.DialogInterface$OnClickListener)>(25145565.., $r4);
-				if (methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setNeutralButton") 
-						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
-							diaInfo.setNeutralTextReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-						else
-							diaInfo.addNeutralText(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-						diaInfo.setNeutralListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
-	//					Listener l = new Listener("onClick", false, "void onClick(android.view.View)");
-	//					l.setListenerClass(helpMethods.getParameterTypeOfInvokeStmt(invokeExpr,1));
-	//					diaInfo.addNeutralListener(l);
-					}
-			}else
-				// case 3: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMessage(java.lang.CharSequence)>("Sending SMS");
-				if (methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMessage") 
-						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
-							diaInfo.setMessageReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-						else
-							diaInfo.addMessage(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-					}
-			}else
-				// case 4: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setTitle(java.lang.CharSequence)>("Your Title");
-				if (methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setTitle") 
-						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
-							diaInfo.setTitleReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-						else
-							diaInfo.addTitle(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
-					}
-			}else
-				// case 5: specialinvoke $r2.<android.app.AlertDialog$Builder: void <init>(android.content.Context)>($r0);
-				if (methodSignature.equals("<android.app.AlertDialog$Builder: void <init>(android.content.Context)>") 
-						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						diaInfo.setActivityReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0));
-					}
-			}else
-	//			// case 6: virtualinvoke r7.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMultiChoiceItems(int,boolean[],android.content.DialogInterface$OnMultiChoiceClickListener)>(2130968576, null, r12);
-				if (methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMultiChoiceItems(int,boolean[],android.content.DialogInterface$OnMultiChoiceClickListener)>") 
-						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String idOfArray = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
-							diaInfo.setItemTextsArrayIDReg(idOfArray);
-						else
-							diaInfo.addItemTextsArrayID(idOfArray);
-						diaInfo.setItemListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 2));
-					}
-			} else
-//				<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setItems(int,android.content.DialogInterface$OnClickListener)>(
-				if (methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setItems(int,android.content.DialogInterface$OnClickListener)>") 
-						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String idOfArray = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(idOfArray)))
-							diaInfo.setItemTextsArrayIDReg(idOfArray);
-						else
-							diaInfo.addItemTextsArrayID(idOfArray);
-						diaInfo.setItemListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
-					}
-			} else
-				// TODO missing variable for stringIDs for items
-	//			// case 6: virtualinvoke r7.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setSingleChoiceItems(int,boolean[],android.content.DialogInterface$OnMultiChoiceClickListener)>(2130968576, null, r12);
-				if (methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setSingleChoiceItems(int,int,android.content.DialogInterface$OnClickListener)>") 
-						&& (diaInfo != null)){
-					if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
-						String idOfArray = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-						if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(idOfArray)))
-							diaInfo.setItemTextsArrayIDReg(idOfArray);
-						else
-							diaInfo.addItemTextsArrayID(idOfArray);
-						diaInfo.setItemListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 2));
-					}
-			} 
+					else
+					// case 3: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMessage(java.lang.CharSequence)>("Sending SMS");
+					if (methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMessage") 
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
+								diaInfo.setMessageReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+							else
+								diaInfo.addMessage(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+						}
+				}else
+					// case 4: virtualinvoke $r2.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setTitle(java.lang.CharSequence)>("Your Title");
+					if (methodSignature.contains("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setTitle") 
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
+								diaInfo.setTitleReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+							else
+								diaInfo.addTitle(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0).replace("\"", ""));
+						}
+				}else
+					// case 5: specialinvoke $r2.<android.app.AlertDialog$Builder: void <init>(android.content.Context)>($r0);
+					if (methodSignature.equals("<android.app.AlertDialog$Builder: void <init>(android.content.Context)>") 
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							diaInfo.setActivityReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0));
+						}
+				}else
+		//			// case 6: virtualinvoke r7.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMultiChoiceItems(int,boolean[],android.content.DialogInterface$OnMultiChoiceClickListener)>(2130968576, null, r12);
+					if (methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setMultiChoiceItems(int,boolean[],android.content.DialogInterface$OnMultiChoiceClickListener)>") 
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							String idOfArray = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							String param = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(param)))
+								diaInfo.setItemTextsArrayIDReg(idOfArray);
+							else
+								diaInfo.addItemTextsArrayID(idOfArray);
+							diaInfo.setItemListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 2));
+						}
+				} else
+	//				<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setItems(int,android.content.DialogInterface$OnClickListener)>(
+					if (methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setItems(int,android.content.DialogInterface$OnClickListener)>") 
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							String idOfArray = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(idOfArray)))
+								diaInfo.setItemTextsArrayIDReg(idOfArray);
+							else
+								diaInfo.addItemTextsArrayID(idOfArray);
+							diaInfo.setItemListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 1));
+						}
+				} else
+					// TODO missing variable for stringIDs for items
+		//			// case 6: virtualinvoke r7.<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setSingleChoiceItems(int,boolean[],android.content.DialogInterface$OnMultiChoiceClickListener)>(2130968576, null, r12);
+					if (methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog$Builder setSingleChoiceItems(int,int,android.content.DialogInterface$OnClickListener)>") 
+							&& (diaInfo != null)){
+						if (diaInfo.getSearchedEReg().equals(helpMethods.getCallerOfInvokeStmt(invokeExpr))){
+							String idOfArray = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
+							if (!((invokeExpr.getArg(0) instanceof IntConstant) || checkMethods.checkIfValueIsString(idOfArray)))
+								diaInfo.setItemTextsArrayIDReg(idOfArray);
+							else
+								diaInfo.addItemTextsArrayID(idOfArray);
+							diaInfo.setItemListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 2));
+						}
+				} 
+			}
 		}
 	}
 	
@@ -319,6 +350,9 @@ public class StmtSwitchForDialogs extends MyStmtSwitch {
 			if (getResultInfos().size() == 0){
 				if (methodSignature.equals("<android.app.AlertDialog$Builder: android.app.AlertDialog create()>")){
 					DialogInfo diaInfo = new DialogInfo(helpMethods.getCallerOfInvokeStmt(invokeExpr));
+					diaInfo.setMethodSignature(getCurrentSootMethod().getSignature());
+					/*logger.debug("Found a dialog builder create instance {}", stmt);
+					logger.debug("Adding info {} to set ", diaInfo);*/
 					addToResultInfo(diaInfo);
 				}
 			}else{
@@ -534,6 +568,7 @@ public class StmtSwitchForDialogs extends MyStmtSwitch {
 									
 									Unit workingUnit = fInfo.unitToStart;
 									DialogInfo newInfo = new DialogInfo("");
+									
 									newInfo.setPosListenerReg(fInfo.register.getName());
 									StmtSwitchForDialogs newStmtSwitch = new StmtSwitchForDialogs(newInfo, getCurrentSootMethod());
 									previousFields.forEach(x->newStmtSwitch.addPreviousField(x));

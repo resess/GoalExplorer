@@ -53,7 +53,7 @@ public class JimpleAnalyzer {
         // initialize soot and construct the callgraph
         constructCallgraph();
 
-        packageName = setupApplication.getPackageName();
+        packageName = setupApplication.getManifest().getPackageName();
 
         // initialize result writer
         if (logDir!=null)
@@ -80,7 +80,7 @@ public class JimpleAnalyzer {
         // initialize soot and construct the callgraph
         constructCallgraph();
 
-        packageName = setupApplication.getPackageName();
+        packageName = setupApplication.getManifest().getPackageName();
 
         // initialize result writer
         if (logDir!=null)
@@ -111,7 +111,7 @@ public class JimpleAnalyzer {
         // initialize soot and construct the callgraph
         constructCallgraph();
 
-        packageName = setupApplication.getPackageName();
+        packageName = setupApplication.getManifest().getPackageName();
 
         // initialize result writer
         if (logDir!=null)

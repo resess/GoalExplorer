@@ -1,7 +1,6 @@
 package st.cs.uni.saarland.de.helpClasses;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -9,12 +8,14 @@ public abstract class Info {
 	
 	protected String searchedEReg = "";
 	protected Set<String> text = new HashSet<String>();
+	protected String associatedLayoutIDForText;
 	protected Set<String> textReg = new HashSet<String>();
 	protected boolean shouldRunOnInitMethod;
 	
 	public Info(String reg) {
 		searchedEReg = reg;
 		shouldRunOnInitMethod = false;
+		associatedLayoutIDForText = "";
 	}
 
 	public String getSearchedEReg() {
@@ -28,6 +29,10 @@ public abstract class Info {
 	public String getText() {
 		return String.join("#", text);
 	}
+
+	public List<String> getTextAsList(){
+		return new ArrayList<>(text);
+	}
 	
 	public void addText(String ptext) {
 		if (!StringUtils.isBlank(ptext))
@@ -36,6 +41,14 @@ public abstract class Info {
 //		if (StringUtils.isBlank(ptext))
 //			return;
 //		text = StringUtils.isBlank(text) ? ptext : String.join("#", text, ptext);
+	}
+
+	public void setAssociatedLayoutIDForText(String layoutId){
+		this.associatedLayoutIDForText= layoutId;
+	}
+
+	public String getAssociatedLayoutIDForText(){
+		return associatedLayoutIDForText;
 	}
 		
 	public String toString() {

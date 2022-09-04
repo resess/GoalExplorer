@@ -55,6 +55,7 @@ public class ResourceValueProvider {
         // Collect the resource mappings
         for (ARSCFileParser.ResPackage resPackage : resPackages) {
             for (ARSCFileParser.ResType resType : resPackage.getDeclaredTypes()) {
+               // Logger.debug("Possible resource types {} {}", resType.getTypeName(), resType.getAllResourceNames());
                 switch (resType.getTypeName()) {
                     case "string":
                         // only keep English Strings
@@ -88,6 +89,7 @@ public class ResourceValueProvider {
                                 menuResId.put(resource.getResourceName(), resource.getResourceID());
                             }
                         }
+                    //add navigation ?
                 }
             }
         }
@@ -145,6 +147,18 @@ public class ResourceValueProvider {
             if (layoutResource.get(layoutString).equals(resId)) {
                 return layoutString;
             }
+        }
+        return null;
+    }
+
+    public Map<String, Integer> getMenuResId(){
+        return menuResId;
+    }
+
+    public String getMenuResourceName(Integer resId){
+        for (String menu: menuResId.keySet()){
+            if (menuResId.get(menu).equals(resId))
+                return menu;
         }
         return null;
     }

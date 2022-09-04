@@ -12,7 +12,7 @@ import soot.jimple.IntConstant
 import soot.jimple.InvokeStmt
 import soot.jimple.Stmt
 import soot.jimple.infoflow.android.SetupApplication
-import soot.jimple.infoflow.android.callbacks.CallbackDefinition
+import soot.jimple.infoflow.android.callbacks.AndroidCallbackDefinition
 import soot.jimple.infoflow.android.resources.controls.AndroidLayoutControl
 import java.lang.RuntimeException
 
@@ -23,7 +23,7 @@ class CallbackWidgetProvider(private val flowDroidAnalysis: SetupApplication) {
     /**
      * Store of previously computed results
      */
-    private val layoutControls = HashMap<SootMethod, AndroidLayoutControl?>()
+   /* private val layoutControls = HashMap<SootMethod, AndroidLayoutControl?>()
     private val userControls by lazy { flowDroidAnalysis.layoutFileParser.userControlsByID }
 
     /**
@@ -119,5 +119,5 @@ class CallbackWidgetProvider(private val flowDroidAnalysis: SetupApplication) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(CallbackWidgetProvider::class.java)
-    }
+    }*/
 }

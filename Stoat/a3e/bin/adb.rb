@@ -117,7 +117,7 @@ class ADB
   end
 
   def install(apk)
-    sync_msg("#{@acmd} install #{apk}", [@@SUCC])
+    sync_msg("#{@acmd} install #{apk} -g", [@@SUCC])
   end
 
 

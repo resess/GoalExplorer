@@ -8,6 +8,7 @@ public class Dialog extends AbstractEntity {
     private String parentActivity = "";
     private Set<Listener> posListeners = new HashSet<>();
     private Set<Listener> negListeners = new HashSet<>();
+    private Set<Listener> neutralListeners = new HashSet<>();
     private Set<Listener> itemListeners = new HashSet<>();
 
     public Dialog() {
@@ -89,6 +90,30 @@ public class Dialog extends AbstractEntity {
      */
     public void addNegListeners(Set<Listener> negListeners) {
         this.negListeners.addAll(negListeners);
+    }
+
+    /**
+     * Gets the neutral listeners
+     * @return The neutral listeners
+     */
+    public Set<Listener> getNeutralListeners() {
+        return neutralListeners;
+    }
+
+    /**
+     * Adds a neutral listener
+     * @param neutralListener The negative listener to be added
+     */
+    public void addNeutralListener(Listener neutralListener) {
+        this.neutralListeners.add(neutralListener);
+    }
+
+    /**
+     * Adds neutral listeners
+     * @param neutralListeners The negative listeners to be added
+     */
+    public void addNeutralListeners(Set<Listener> neutralListeners) {
+        this.neutralListeners.addAll(neutralListeners);
     }
 
     /**

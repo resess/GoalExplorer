@@ -9,14 +9,15 @@ import soot.jimple.infoflow.android.resources.controls.AndroidLayoutControl;
 import soot.util.HashMultiMap;
 import soot.util.MultiMap;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class LayoutManager {
+public class LayoutManager implements Serializable {
     private final MultiMap<Integer, AndroidLayoutControl> userControls;
     private final MultiMap<String, String> callbackMethods;
-    private final MultiMap<String, SootClass> fragments;
+    private final transient MultiMap<String, SootClass> fragments;
     private final Map<Integer, Menu> menus;
 
     /**
@@ -26,13 +27,20 @@ public class LayoutManager {
     public LayoutManager(LayoutFileParser lfp) {
         this.userControls = new HashMultiMap<>();
         this.menus = new HashMap<>();
-        this.callbackMethods = lfp.getCallbackMethods();
-        this.fragments = lfp.getFragments();
-        // put the user controls in (id, layout) map
-        for (String key : lfp.getUserControls().keySet()) {
-            this.userControls.putAll(ResourceValueProvider.v().
-                    getLayoutResourceId(key.substring(key.lastIndexOf("/")+1, key.lastIndexOf("."))),
-                    lfp.getUserControls().get(key));
+        if(lfp != null){
+            this.callbackMethods = lfp.getCallbackMethods();
+            this.fragments = lfp.getFragments();
+            // put the user controls in (id, layout) map
+            for (String key : lfp.getUserControls().keySet()) {
+                this.userControls.putAll(ResourceValueProvider.v().
+                        getLayoutResourceId(key.substring(key.lastIndexOf("/")+1, key.lastIndexOf("."))),
+                        lfp.getUserControls().get(key));
+            }
+        //Logger.debug("The user controls, fragments {} {}", userControls, fragments);
+        }
+        else{
+            this.callbackMethods =  new HashMultiMap<>();
+            this.fragments = new HashMultiMap<>();
         }
     }
 

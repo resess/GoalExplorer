@@ -19,7 +19,7 @@ public class MockRunner {
         long beforeRun = System.nanoTime();
         Settings settings = new Settings();
         initializeSootForUiAnalysis(settings.apkPath, settings.androidJar, settings.saveJimple, false);
-        AppController appResults = performUiAnalysis(settings);
+        AppController appResults = performUiAnalysis(settings, null);
         if(appResults == null){
             return;
         }

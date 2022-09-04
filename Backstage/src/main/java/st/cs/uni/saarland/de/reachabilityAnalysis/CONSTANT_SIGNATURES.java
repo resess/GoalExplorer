@@ -11,10 +11,14 @@ public class CONSTANT_SIGNATURES {
     public static final String buttonGetId="<android.view.View: int getId()>";
     public static final String optionMenuGetId="<android.view.MenuItem: int getItemId()>";
     public static final String buttonGetIdFullUnit="virtualinvoke $r1.<android.view.View: int getId()>()";
+    public static final String adapterViewGetId="<android.widget.AdapterView: int getItemId()>";
+    public static final String listViewGetId="<android.widget.ListView: int getItemId()>";
     public static final String executorServiceSubmitRunnable="java.util.concurrent.Future submit(java.lang.Runnable)";
 
     public static final String FRAGMENT_ON_CREATE_VIEW="android.view.View onCreateView(android.view.LayoutInflater,android.view.ViewGroup,android.os.Bundle)";
     public static final String FRAGMENT_ON_VIEW_CREATED="void onViewCreated(android.view.View,android.os.Bundle)";
+    public static final String FRAGMENT_ONCREATE_OPTIONS_MENU="void onCreateOptionsMenu(android.view.Menu,android.view.MenuInflater)";
+    public static final String FRAGMENT_ON_ACTIVITY_CREATED="void onActivityCreated(android.os.Bundle)";
     public static final String FRAGMENT_ON_ATTACH="void onAttach(android.os.Bundle)";
 
     public static final String ACTIVITY_ONCREATE = "void onCreate(android.os.Bundle)";
@@ -31,6 +35,7 @@ public class CONSTANT_SIGNATURES {
     public static final String ACTIVITY_ONDESTROY = "void onDestroy()";
     public static final String ACITVITY_ONCREATE_OPTIONS_MENU="boolean onCreateOptionsMenu(android.view.Menu)";
     public static final String ACTIVITY_ONCREATE_CONTEXT_MENU="void onCreateContextMenu(android.view.ContextMenu,android.view.View,android.view.ContextMenu$ContextMenuInfo)";
+    public static final String ACTIVITY_ONPREPARE_OPTIONS_MENU="boolean onPrepareOptionsMenu(android.view.Menu)";
 
     public static final String[] fragmentMethods = {ACTIVITY_ONCREATE,
             ACTIVITY_ONSTART,
@@ -38,8 +43,11 @@ public class CONSTANT_SIGNATURES {
             ACTIVITY_ONPOSTCREATE,
             ACITVITY_ONCREATE_OPTIONS_MENU,
             ACTIVITY_ONCREATE_CONTEXT_MENU,
+            ACTIVITY_ONPREPARE_OPTIONS_MENU,
             FRAGMENT_ON_CREATE_VIEW,
             FRAGMENT_ON_VIEW_CREATED,
+            FRAGMENT_ONCREATE_OPTIONS_MENU,
+            FRAGMENT_ON_ACTIVITY_CREATED,
             FRAGMENT_ON_ATTACH
     };
 
@@ -56,7 +64,8 @@ public class CONSTANT_SIGNATURES {
             ACTIVITY_ONPOSTCREATE,
             //ACTIVITY_ONPOSTRESUME,
             ACITVITY_ONCREATE_OPTIONS_MENU,
-            ACTIVITY_ONCREATE_CONTEXT_MENU
+            ACTIVITY_ONCREATE_CONTEXT_MENU,
+            ACTIVITY_ONPREPARE_OPTIONS_MENU
     };
 
 
@@ -69,7 +78,16 @@ public class CONSTANT_SIGNATURES {
 
     public static final List<String> optionMenuOnClicks = new ArrayList<String>(){{
         add("boolean onOptionsItemSelected(android.view.MenuItem)>");
+        add("boolean onContextItemSelected(android.view.MenuItem)>");
+        add("boolean onMenuItemSelected(int,android.view.MenuItem)>");
         add("boolean onMenuItemClick(android.view.MenuItem)>");
         add("boolean onActionItemClicked(android.view.ActionMode,android.view.MenuItem)>");
+        
+    }};
+
+    public static final List<String> listViewOnClicks = new ArrayList<String>(){{
+        add("void onItemClick(android.widget.AdapterView,android.view.View,int,long)>");
+        add("boolean onItemLongClick(android.widget.AdapterView,android.view.View,int,long)");
+        add("void onListItemClick(android.widget.ListView,android.view.View,int,long)>");
     }};
 }

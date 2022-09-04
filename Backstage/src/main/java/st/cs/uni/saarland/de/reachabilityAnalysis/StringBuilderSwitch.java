@@ -51,10 +51,10 @@ public class StringBuilderSwitch extends AbstractStmtSwitch {
                 //static invoke expt doesn't have use boxes
                 return;
             }
-            Value registerToCopmare = invokeExpr.getUseBoxes().get(stmt.getInvokeExpr().getUseBoxes().size() - 1).getValue();
+            Value registerToCopmare = invokeExpr.getUseBoxes().get(0).getValue();
             if(registerToCopmare.equals(registerOfStringBuilder) && invokeExpr.getMethod().getSignature().equals(STRING_BUILDER_CONSTANTS.APPEND)){
                 Value arg = invokeExpr.getArg(0);
-                StringPropagator stringPropagator = new StringPropagator(currentSootMethod, stmt, arg);
+                StringPropagator stringPropagator = new StringPropagator(currentSootMethod, stmt, arg, "");
                 stringPropagator.run();
                 String res = stringPropagator.getResult();
                 if(res != null){

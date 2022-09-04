@@ -97,7 +97,52 @@ module UTIL
 # end
 
   # naive method
-  def UTIL.get_login_info(screen_layout_file, actions)
+
+  def UTIL.get_menu_drawer_info(screen_layout_file)
+
+    #read the screen xml file
+    # to do, deal with the dialogs and tabs?
+    if File.exist?(screen_layout_file)
+      xml_data = Nokogiri::XML(File.open(screen_layout_file))
+
+      widget_hash = {}
+      widgets = xml_data.xpath('//node')
+      Log.print("Searching for visible menu and drawers")
+      widgets.each do |node|
+        id = node.attr('resource-id').to_s
+        content_desc = node.attr('content-desc').to_s
+        class_name = node.attr('class').to_s
+        
+          
+        if class_name =~ (/\Aandroid\.(\w+)DrawerLayout\Z/)
+          Log.print 'Drawer layout detected ...'
+          widget_hash[:drawer] = [false, class_name, ""]
+        elsif class_name == "android.widget.ImageButton"
+          if (content_desc == "More options" || content_desc == "Menu")
+            #should be a menu
+            Log.print 'Menu icon detected ...'
+            widget_hash[:menu] = [false, class_name, content_desc] #menu not visible since icon is present
+          elsif content_desc.include?("drawer") && content_desc.downcase.include?("open")
+            Log.print 'Open drawer icon detected, screen has no visible drawer yet ...'
+            if !widget_hash[:drawer].nil? #already found a drawer
+                widget_hash[:drawer][2] = content_desc
+            else
+              Log.print 'No matching drawer layout found'
+            end
+          elsif content_desc.include?("drawer") && content_desc.downcase.include?("close")
+            Log.print 'Close drawer icon detected, drawer is already visible'
+            #drawer not opened yet, need to remove it
+            widget_hash[:drawer] = [true, widget_hash[:drawer][1], content_desc]
+          end
+        end
+      end
+    widget_hash
+    else
+      {}
+    end
+  end
+
+  def UTIL.get_login_info(screen_layout_file, actions, login_type = "google")
 
     # read the screen xml file
     if File.exist?(screen_layout_file)
@@ -106,23 +151,29 @@ module UTIL
       widget_hash = {}
 
       widgets = xml_data.xpath('//node')
+      Log.print("Searching for login type #{login_type}")
       widgets.each do |node|
         id = node.attr('resource-id').to_s
         text = node.attr('text').to_s
-        if id =~(/(user|account|client|phone|card)[\s\_\-]*(name|id|number|#)/im) || id =~(/(log|sign)[\s\_\-]*in[\s\_\-]*(name|id|)/im) || id =~(/[e]mail/im)
+        if (id !~ /(pass|pin)[\s\_\-]*(word|code|)/im) && (id =~(/(user|account|client|phone|card)[\s\_\-]*(name|id|number|#)/im) || id =~(/(log|sign)[\s\_\-]*in[\s\_\-]*(name|id|)/im) || id =~(/[e]mail/im))
           action = find_action_by_text_resid(actions, text, id)
           unless action.nil?
             if get_action_type(action).eql? 'edit'
               Log.print 'Username widget detected...'
               widget_hash[:username] = [get_action_text(action), id]
             elsif get_action_type(action).eql? 'click'
-              Log.print 'Login button detected...'
-              widget_hash[:login] = [get_action_text(action), id]
+              Log.print("Login button detected... with id #{id}")
+              if id.include?("google") || text.include?("google")
+                widget_hash[:login] = [get_action_text(action), id] if login_type.eql?("google")
+              elsif id.include?("facebook") || id.include?("fb")
+                widget_hash[:login] = [get_action_text(action), id] if login_type.eql?("fb")
+              else
+                widget_hash[:login] = [get_action_text(action), id] if (widget_hash[:login].nil? || widget_hash[:login].empty?)
+              end
             end
             # UTIL.login(avd_serial, id, true)
           end
         end
-
         if id =~ /(pass|pin)[\s\_\-]*(word|code|)/im
           Log.print 'Password widget detected...'
           action = find_action_by_text_resid(actions, text, id)
@@ -140,6 +191,7 @@ module UTIL
     end
   end
 
+
   def UTIL.login(avd_serial, id, usr_name)
     puts 'Enter login info ...'
     if usr_name
@@ -153,6 +205,9 @@ module UTIL
     # execute_shell_cmd("gtimeout 2s python ./bin/events/click_by_resource_id.py #{avd_serial} 'com.fsck.k9:id/next'")
     # sleep 5
   end
+
+
+
 
   def UTIL.get_action_type(action)
     _, action_cmd = parseActionString(action)

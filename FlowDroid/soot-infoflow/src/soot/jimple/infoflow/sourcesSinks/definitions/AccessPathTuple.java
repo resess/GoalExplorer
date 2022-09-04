@@ -14,6 +14,7 @@ import soot.Value;
 import soot.jimple.infoflow.InfoflowManager;
 import soot.jimple.infoflow.data.AccessPath;
 import soot.jimple.infoflow.data.AccessPath.ArrayTaintType;
+import soot.jimple.infoflow.data.AccessPathFragment;
 import soot.jimple.infoflow.util.TypeUtils;
 
 /**
@@ -44,6 +45,14 @@ public class AccessPathTuple {
 		this.fields = fields;
 		this.fieldTypes = fieldTypes;
 		this.sinkSource = sinkSource;
+	}
+
+	AccessPathTuple(AccessPathTuple original) {
+		this.baseType = original.baseType;
+		this.fields = original.fields;
+		this.fieldTypes = original.fields;
+		this.sinkSource = original.sinkSource;
+		this.description = original.description;
 	}
 
 	/**
@@ -96,6 +105,11 @@ public class AccessPathTuple {
 		return new AccessPathTuple(fields, fieldTypes, SourceSinkType.fromFlags(isSink, isSource));
 	}
 
+	public static AccessPathTuple fromPathElements(String baseType, String[] fields, String[] fieldTypes,
+			boolean isSource, boolean isSink) {
+		return new AccessPathTuple(baseType, fields, fieldTypes, SourceSinkType.fromFlags(isSink, isSource));
+	}
+
 	public String getBaseType() {
 		return this.baseType;
 	}
@@ -119,7 +133,7 @@ public class AccessPathTuple {
 	 */
 	public static AccessPathTuple getBlankSourceTuple() {
 		if (SOURCE_TUPLE == null)
-			SOURCE_TUPLE = create(true, false);
+			SOURCE_TUPLE = new ImmutableAccessPathTuple(create(true, false));
 		return SOURCE_TUPLE;
 	}
 
@@ -130,7 +144,7 @@ public class AccessPathTuple {
 	 */
 	public static AccessPathTuple getBlankSinkTuple() {
 		if (SINK_TUPLE == null)
-			SINK_TUPLE = create(false, true);
+			SINK_TUPLE = new ImmutableAccessPathTuple(create(false, true));
 		return SINK_TUPLE;
 	}
 
@@ -229,19 +243,27 @@ public class AccessPathTuple {
 	 * @return The newly created access path
 	 */
 	public AccessPath toAccessPath(Value baseVal, InfoflowManager manager, boolean canHaveImmutableAliases) {
-		if (baseVal.getType() instanceof PrimType || fields == null || fields.length == 0)
+		if (baseVal.getType() instanceof PrimType || fields == null || fields.length == 0) {
 			// no immutable aliases, we overwrite the return values as a whole
-			return manager.getAccessPathFactory().createAccessPath(baseVal, null, null, null, true, false, true,
+			return manager.getAccessPathFactory().createAccessPath(baseVal, null, null, true, false, true,
 					ArrayTaintType.ContentsAndLength, canHaveImmutableAliases);
+		}
 
 		// Do we have a base type?
 		RefType baseType = this.baseType == null || this.baseType.isEmpty() ? null : RefType.v(this.baseType);
 		SootClass baseClass = baseType == null ? ((RefType) baseVal.getType()).getSootClass() : baseType.getSootClass();
 
-		SootField[] fields = new SootField[this.fields.length];
-		for (int i = 0; i < fields.length; i++) {
+		AccessPathFragment[] fragments = new AccessPathFragment[this.fields.length];
+		for (int i = 0; i < fragments.length; i++) {
 			final String fieldName = this.fields[i];
-			SootClass lastFieldClass = i == 0 ? baseClass : Scene.v().getSootClass(fieldTypes[i - 1]);
+
+			// Get the type and class of the previous entry in the access path
+			Type lastFieldType = i == 0 ? baseClass.getType() : TypeUtils.getTypeFromString(fieldTypes[i - 1]);
+			if (!(lastFieldType instanceof RefType))
+				throw new InvalidAccessPathException(String.format("Type %s cannot have fields (requested: %s)",
+						lastFieldType.toString(), fieldName));
+			SootClass lastFieldClass = ((RefType) lastFieldType).getSootClass();
+
 			Type fieldType = TypeUtils.getTypeFromString(fieldTypes[i]);
 			SootField fld = lastFieldClass.getFieldUnsafe(fieldName, fieldType);
 			if (fld == null) {
@@ -257,10 +279,10 @@ public class AccessPathTuple {
 			}
 			if (fld == null)
 				return null;
-			fields[i] = fld;
+			fragments[i] = new AccessPathFragment(fld, fieldType);
 		}
 
-		return manager.getAccessPathFactory().createAccessPath(baseVal, fields, baseType, null, true, false, true,
+		return manager.getAccessPathFactory().createAccessPath(baseVal, baseType, fragments, true, false, true,
 				ArrayTaintType.ContentsAndLength, canHaveImmutableAliases);
 	}
 
@@ -273,7 +295,8 @@ public class AccessPathTuple {
 					sb.append(".");
 				sb.append(fields[i]);
 			}
-		}
+		} else
+			sb.append("<empty>");
 
 		if (description != null && !description.isEmpty()) {
 			sb.append(" (");

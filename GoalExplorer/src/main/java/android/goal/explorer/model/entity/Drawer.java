@@ -2,11 +2,25 @@ package android.goal.explorer.model.entity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import soot.SootMethod;
+import soot.Unit;
+
 
 public class Drawer extends AbstractEntity {
 
-    private String button;
+    private String name;
+    private String button; //TO-DO: assign to menu resource id name and use for transition label
+
+    private Menu visibleMenu;
+    private st.cs.uni.saarland.de.entities.Menu backStageMenu;
+    
+    private String layoutFile;
+
     private List<Integer> items;
+
+    private String openDrawerDesc, closeDrawerDesc;
 
     public Drawer(Integer resId) {
         super(resId, Type.DRAWER);
@@ -18,12 +32,40 @@ public class Drawer extends AbstractEntity {
         this.items = items;
     }
 
+    public Drawer(Integer resId, st.cs.uni.saarland.de.entities.Menu menu){
+        super(resId, Type.DRAWER);
+    }
+
+    public Drawer(Integer resId, Menu menu, st.cs.uni.saarland.de.entities.Menu backstageMenu){
+        super(resId, Type.DRAWER);
+        this.backStageMenu = backstageMenu;
+        this.visibleMenu = menu;
+    }
+
+
+    public Drawer(Integer resId, Menu menu){
+        super(resId, Type.DRAWER); //here put menu.getResId ?
+        this.visibleMenu = menu;
+    }
+
+    public Menu getMenu(){
+        return this.visibleMenu;
+    }
+
+    public void setMenu(Menu menu){
+        this.visibleMenu = menu;
+    }
+
     /**
      * Gets the resource id of the items
      * @return The resource ids of the items
      */
     public List<Integer> getItems() {
         return items;
+    }
+
+    public Map<Integer, SootMethod> getMenuItemsCallbacks(){
+        return visibleMenu.getMenuItemsCallbacks();
     }
 
     /**
@@ -60,6 +102,21 @@ public class Drawer extends AbstractEntity {
         this.button = button;
     }
 
+    public String getOpenDrawerDesc(){
+        return this.openDrawerDesc;
+    }
+
+    public String getCloseDrawerDesc(){
+        return this.closeDrawerDesc;
+    }
+
+    public void setContentDescs(String openDrawerDesc, String closeDrawerDesc) {
+        setOpenEntityContentDesc(openDrawerDesc);
+        setCloseEntityContentDesc(closeDrawerDesc);
+        this.openDrawerDesc = openDrawerDesc;
+        this.closeDrawerDesc = closeDrawerDesc;
+    }
+
     @Override
     public int hashCode(){
         final int prime = 31;
@@ -70,7 +127,7 @@ public class Drawer extends AbstractEntity {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(Object obj) { //TO-UPDATE
         if (this == obj)
             return true;
         if (obj == null)
@@ -87,7 +144,12 @@ public class Drawer extends AbstractEntity {
                 return false;
         } else if (!items.equals(other.items))
             return false;
-
+        if (visibleMenu == null){
+            if(other.visibleMenu != null)
+                return false;
+        }
+        else if(!visibleMenu.equals(other.visibleMenu))
+            return false;
         if (button == null) {
             return other.button == null;
         } else return button.equals(other.button);
@@ -95,7 +157,8 @@ public class Drawer extends AbstractEntity {
 
     @Override
     public String toString(){
-        return "Drawer - button: " + button + " items: " + items;
+        return "Drawer - button: "+ button +" menu: "+visibleMenu;
+        //return "Drawer - button: " + button + " items: " + items;
     }
 
     @Override
@@ -103,8 +166,10 @@ public class Drawer extends AbstractEntity {
         Drawer drawer = new Drawer(getResId(), getItems());
         if (button != null) drawer.setButton(button);
         if (getItems() != null) drawer.addItems(items);
+        //if (visibleMenu != null) 
         if (getParentClass() != null) drawer.setParentClass(getParentClass());
         if (getCallbackMethods() != null) drawer.addCallbackMethods(getCallbackMethods());
+        if (visibleMenu != null) drawer.setMenu(visibleMenu);
         return drawer;
     }
 }

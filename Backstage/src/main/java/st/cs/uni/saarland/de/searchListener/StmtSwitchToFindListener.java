@@ -107,6 +107,7 @@ public class StmtSwitchToFindListener extends MyStmtSwitch {
 		// only do if a set..Listener method was found
 		if (possibleListenerMap.containsKey(methodName)){
 			Set<String> callBackMethod = possibleListenerMap.get(methodName);
+			
 						
 			// in BodyTransformer the listenerClass in a set..listener stmt is always View$OnClickListener
 			String uiElementReg = helpMethods.getCallerOfInvokeStmt(invokeExpr);
@@ -118,17 +119,17 @@ public class StmtSwitchToFindListener extends MyStmtSwitch {
 			// sort out the null/nulltype listener classes , and the android libary functions
 			
 			if (invokeExpr.getArgCount() > 0 && !(invokeExpr.getArg(0) instanceof NullConstant)){
-				ListenerInfo listenerInfo = new ListenerInfo(callBackMethod, uiElementReg, "",  actionPerformed, getCurrentSootMethod().getDeclaringClass().getName());
+				ListenerInfo listenerInfo = new ListenerInfo(callBackMethod, uiElementReg, helpMethods.getParameterOfInvokeStmt(invokeExpr, 0),  actionPerformed, getCurrentSootMethod().getDeclaringClass().getName());
 				addToResultInfo(listenerInfo);
 //				String listClass = invokeExpr.getArg(0).getType().toString();
 //					if (){
-					listenerInfo.setListenerReg(helpMethods.getParameterOfInvokeStmt(invokeExpr, 0));
+					//listenerInfo.setListenerReg();
 //					}else{
 //						listenerInfo.setListenerClass(listClass);
 //					}
 				if (methodName.equals("setAdapter")){
 					String classOfAdapter = helpMethods.getParameterTypeOfInvokeStmt(invokeExpr, 0);
-					if (!(classOfAdapter.equals("android.widget.ArrayAdapter") || classOfAdapter.equals("android.widget.ListAdapter"))){
+					if (!(classOfAdapter.equals("android.widget.ArrayAdapter") || classOfAdapter.equals("android.widget.ListAdapter"))){ //TODO add other types (subclasses)
 						listenerInfo.setIsAdapter();						
 					}else{
 						// don't process ArrayAdapter or ListAdapter here (-> DynDecStrings)
@@ -141,6 +142,7 @@ public class StmtSwitchToFindListener extends MyStmtSwitch {
 	}
 	
 
+	//IF the field is initialized in the same method, no need to complicate it?
 	public void caseAssignStmt(final AssignStmt stmt){
 		processAssignStmt(stmt);
 	}
@@ -183,7 +185,12 @@ public class StmtSwitchToFindListener extends MyStmtSwitch {
 							}else{
 								listenerInfo.setSearchedEIDReg(id);
 							}
-						}else{
+						}
+						else if ("getListView".equals(methodName) && listenerInfo.getSearchedEReg().equals(leftReg)){
+							listenerInfo.setSearchedEReg("");
+							listenerInfo.setSearchedEID(Integer.toString(AndroidRIdValues.getAndroidID("list")));
+						}
+						else{
 								if (listenerInfo.getSearchedEReg().equals(leftReg)){
 									listenerInfo.setSearchedEReg("");
 
@@ -275,6 +282,7 @@ public class StmtSwitchToFindListener extends MyStmtSwitch {
 											if(fInfo.methodToStart != null && fInfo.methodToStart.method().hasActiveBody()){
 												Unit workingUnit = fInfo.unitToStart;
 												ListenerInfo newInfo = new ListenerInfo(null, "", "", "", getCurrentSootMethod().getDeclaringClass().getName());
+												newInfo.setWhichActionPerformed(listenerInfo.getWhichAction());
 												newInfo.setSearchedEReg(fInfo.register.getName());
 												newInfo.addListenerClass(listenerInfo.getListenerClasses());
 												listenerInfo.getListenerMethods().forEach(newInfo::addListenerMethod);

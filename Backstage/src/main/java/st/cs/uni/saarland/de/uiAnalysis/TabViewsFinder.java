@@ -23,6 +23,6 @@ public class TabViewsFinder implements Runnable {
     @Override
     public void run() {
         backwardsWalker.run();
-        tabViews = backwardsWalker.getResultTabInfos();
+        tabViews = backwardsWalker.getResultTabViewInfos();
     }
 }

@@ -10,15 +10,8 @@
  ******************************************************************************/
 package soot.jimple.infoflow.solver.cfg;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.cache.CacheLoader;
@@ -30,6 +23,7 @@ import soot.RefType;
 import soot.Scene;
 import soot.SootField;
 import soot.SootMethod;
+import soot.Trap;
 import soot.Unit;
 import soot.Value;
 import soot.ValueBox;
@@ -42,11 +36,9 @@ import soot.jimple.VirtualInvokeExpr;
 import soot.jimple.toolkits.callgraph.Edge;
 import soot.jimple.toolkits.ide.icfg.BiDiInterproceduralCFG;
 import soot.jimple.toolkits.ide.icfg.JimpleBasedInterproceduralCFG;
-import soot.toolkits.graph.DirectedGraph;
-import soot.toolkits.graph.ExceptionalUnitGraph;
-import soot.toolkits.graph.MHGPostDominatorsFinder;
-import soot.util.HashMultiMap;
-import soot.util.MultiMap;
+import soot.toolkits.exceptions.ThrowableSet;
+import soot.toolkits.graph.*;
+import soot.toolkits.graph.ExceptionalUnitGraph.ExceptionDest;
 
 /**
  * Interprocedural control-flow graph for the infoflow solver
@@ -67,6 +59,22 @@ public class InfoflowCFG implements IInfoflowCFG {
 	protected final Map<SootMethod, Boolean> methodSideEffects = new ConcurrentHashMap<SootMethod, Boolean>();
 
 	protected final BiDiInterproceduralCFG<Unit, SootMethod> delegate;
+
+	protected final LoadingCache<Unit, UnitContainer> unitsToDominator = IDESolver.DEFAULT_CACHE_BUILDER
+			.build(new CacheLoader<Unit, UnitContainer>() {
+				@Override
+				public UnitContainer load(Unit unit) throws Exception {
+					SootMethod method = getMethodOf(unit);
+					DirectedGraph<Unit> graph = delegate.getOrCreateUnitGraph(method);
+
+					MHGDominatorsFinder<Unit> dominatorFinder = new MHGDominatorsFinder<Unit>(graph);
+					Unit dom = dominatorFinder.getImmediateDominator(unit);
+					if (dom == null)
+						return new UnitContainer(method);
+					else
+						return new UnitContainer(dom);
+				}
+			});
 
 	protected final LoadingCache<Unit, UnitContainer> unitToPostdominator = IDESolver.DEFAULT_CACHE_BUILDER
 			.build(new CacheLoader<Unit, UnitContainer>() {
@@ -143,6 +151,11 @@ public class InfoflowCFG implements IInfoflowCFG {
 	@Override
 	public UnitContainer getPostdominatorOf(Unit u) {
 		return unitToPostdominator.getUnchecked(u);
+	}
+
+	@Override
+	public UnitContainer getDominatorOf(Unit u) {
+		return unitsToDominator.getUnchecked(u);
 	}
 
 	// delegate methods follow
@@ -259,14 +272,13 @@ public class InfoflowCFG implements IInfoflowCFG {
 		return use == StaticFieldUse.Write || use == StaticFieldUse.ReadWrite || use == StaticFieldUse.Unknown;
 	}
 
-	private synchronized StaticFieldUse checkStaticFieldUsed(SootMethod smethod, SootField variable) {
+	protected synchronized StaticFieldUse checkStaticFieldUsed(SootMethod smethod, SootField variable) {
 		// Skip over phantom methods
-		if (!smethod.isConcrete())
+		if (!smethod.isConcrete() || !smethod.hasActiveBody())
 			return StaticFieldUse.Unused;
 
 		List<SootMethod> workList = new ArrayList<>();
 		workList.add(smethod);
-		MultiMap<SootMethod, SootMethod> methodToCallees = new HashMultiMap<>();
 		Map<SootMethod, StaticFieldUse> tempUses = new HashMap<>();
 
 		int processedMethods = 0;
@@ -334,7 +346,6 @@ public class InfoflowCFG implements IInfoflowCFG {
 
 								// Process the callee
 								workList.add(callee);
-								methodToCallees.put(method, callee);
 								hasInvocation = true;
 							} else {
 								reads |= calleeUse == StaticFieldUse.Read || calleeUse == StaticFieldUse.ReadWrite;
@@ -368,7 +379,7 @@ public class InfoflowCFG implements IInfoflowCFG {
 		return outerUse == null ? StaticFieldUse.Unknown : outerUse;
 	}
 
-	private void registerStaticVariableUse(SootMethod method, SootField variable, StaticFieldUse fieldUse) {
+	protected void registerStaticVariableUse(SootMethod method, SootField variable, StaticFieldUse fieldUse) {
 		Map<SootField, StaticFieldUse> entry = staticFieldUses.get(method);
 		StaticFieldUse oldUse;
 		synchronized (staticFieldUses) {
@@ -411,7 +422,7 @@ public class InfoflowCFG implements IInfoflowCFG {
 		return hasSideEffects(method, new HashSet<SootMethod>(), 0);
 	}
 
-	private boolean hasSideEffects(SootMethod method, Set<SootMethod> runList, int depth) {
+	protected boolean hasSideEffects(SootMethod method, Set<SootMethod> runList, int depth) {
 		// Without a body, we cannot say much
 		if (!method.hasActiveBody())
 			return false;
@@ -484,7 +495,7 @@ public class InfoflowCFG implements IInfoflowCFG {
 		SootMethod m1 = getMethodOf(u1);
 		SootMethod m2 = getMethodOf(u2);
 		if (m1 != m2)
-			throw new RuntimeException("Exceptional edges are only supported " + "inside the same method");
+			throw new RuntimeException("Exceptional edges are only supported inside the same method");
 		DirectedGraph<Unit> ug1 = getOrCreateUnitGraph(m1);
 
 		// Exception tracking might be disabled
@@ -492,7 +503,43 @@ public class InfoflowCFG implements IInfoflowCFG {
 			return false;
 
 		ExceptionalUnitGraph eug = (ExceptionalUnitGraph) ug1;
-		return eug.getExceptionalSuccsOf(u1).contains(u2);
+		if (!eug.getExceptionalSuccsOf(u1).contains(u2))
+			return false;
+
+		// The ExceptionalUnitGraph has edges from the predecessors of thrower
+		// statements to the respective catch block to model that the predecessor was
+		// potentially the last statement to be fully executed before arriving at the
+		// catch block. For our purposes, we don't want that edge, because there the
+		// thrower itself is at least attempted to be executed, before we end up in the
+		// exception handler.
+		Collection<ExceptionDest> dests = eug.getExceptionDests(u1);
+		if (dests != null && !dests.isEmpty()) {
+			ThrowableSet ts = Scene.v().getDefaultThrowAnalysis().mightThrow(u1);
+			if (ts != null) {
+				boolean hasTraps = false;
+				for (ExceptionDest dest : dests) {
+					Trap trap = dest.getTrap();
+					if (trap != null) {
+						hasTraps = true;
+						if (!ts.catchableAs(trap.getException().getType()))
+							return false;
+					}
+				}
+				if (!hasTraps)
+					return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public List<Unit> getConditionalBranchIntraprocedural(Unit callSite) {
+		return null;
+	}
+
+	@Override
+	public List<Unit> getConditionalBranchesInterprocedural(Unit unit) {
+		return null;
 	}
 
 	@Override
@@ -515,7 +562,7 @@ public class InfoflowCFG implements IInfoflowCFG {
 		if (ieSubSig.equals("void execute(java.lang.Runnable)") && calleeSubSig.equals("void run()"))
 			return true;
 
-		if (calleeSubSig.equals("java.lang.Object run()")) {
+		if (dest.getName().equals("run") && dest.getParameterCount() == 0 && dest.getReturnType() instanceof RefType) {
 			if (ieSubSig.equals("java.lang.Object doPrivileged(java.security.PrivilegedAction)"))
 				return true;
 			if (ieSubSig.equals("java.lang.Object doPrivileged(java.security.PrivilegedAction,"
@@ -576,6 +623,9 @@ public class InfoflowCFG implements IInfoflowCFG {
 
 		unitToPostdominator.invalidateAll();
 		unitToPostdominator.cleanUp();
+
+		unitsToDominator.invalidateAll();
+		unitsToDominator.cleanUp();
 	}
 
 }

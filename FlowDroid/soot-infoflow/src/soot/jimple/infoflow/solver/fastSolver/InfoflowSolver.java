@@ -15,15 +15,16 @@ import java.util.Map;
 import java.util.Set;
 
 import heros.FlowFunction;
-import heros.solver.Pair;
 import heros.solver.PathEdge;
 import soot.SootMethod;
 import soot.Unit;
 import soot.jimple.infoflow.collect.MyConcurrentHashMap;
 import soot.jimple.infoflow.data.Abstraction;
 import soot.jimple.infoflow.problems.AbstractInfoflowProblem;
+import soot.jimple.infoflow.solver.EndSummary;
 import soot.jimple.infoflow.solver.IFollowReturnsPastSeedsHandler;
 import soot.jimple.infoflow.solver.IInfoflowSolver;
+import soot.jimple.infoflow.solver.SolverPeerGroup;
 import soot.jimple.infoflow.solver.executors.InterruptableExecutor;
 import soot.jimple.infoflow.solver.functions.SolverCallFlowFunction;
 import soot.jimple.infoflow.solver.functions.SolverCallToReturnFlowFunction;
@@ -118,7 +119,7 @@ public class InfoflowSolver extends IFDSSolver<Unit, Abstraction, BiDiInterproce
 	}
 
 	@Override
-	public Set<Pair<Unit, Abstraction>> endSummary(SootMethod m, Abstraction d3) {
+	public Set<EndSummary<Unit, Abstraction>> endSummary(SootMethod m, Abstraction d3) {
 		return super.endSummary(m, d3);
 	}
 
@@ -152,6 +153,16 @@ public class InfoflowSolver extends IFDSSolver<Unit, Abstraction, BiDiInterproce
 	@Override
 	public AbstractInfoflowProblem getTabulationProblem() {
 		return problem;
+	}
+
+	@Override
+	public void setPeerGroup(SolverPeerGroup solverPeerGroup) {
+		// we don't need peers
+	}
+
+	@Override
+	public void terminate() {
+		// not required
 	}
 
 }

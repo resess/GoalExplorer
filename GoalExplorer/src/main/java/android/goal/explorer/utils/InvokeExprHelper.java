@@ -100,6 +100,12 @@ public class InvokeExprHelper {
         return false;
     }
 
+    //TO-DO: add invokesAddDrawerListener
+
+    public static boolean invokesAddDrawerListener(InvokeExpr inv){
+        return false;
+    }
+
     /**
      * Checks whether this invocation get the menu item id
      *

@@ -1,5 +1,6 @@
 package android.goal.explorer.model;
 
+import android.goal.explorer.analysis.CallbackWidgetProvider;
 import android.goal.explorer.data.value.ResourceValueProvider;
 import android.goal.explorer.model.component.Activity;
 import android.goal.explorer.model.component.Application;
@@ -10,26 +11,34 @@ import android.goal.explorer.model.component.Service;
 import android.goal.explorer.model.entity.Dialog;
 import android.goal.explorer.model.entity.Menu;
 import android.goal.explorer.utils.AxmlUtils;
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.pmw.tinylog.Logger;
 import soot.SootClass;
+import soot.SootMethod;
 import soot.jimple.infoflow.android.SetupApplication;
+import soot.jimple.infoflow.android.manifest.IAndroidApplication;
+import soot.jimple.infoflow.android.resources.LayoutFileParser;
 import soot.jimple.infoflow.android.axml.AXmlNode;
-import soot.jimple.infoflow.android.callbacks.CallbackDefinition;
+import soot.jimple.infoflow.android.callbacks.AndroidCallbackDefinition;
 import soot.jimple.infoflow.android.entryPointCreators.AndroidEntryPointUtils;
 import soot.jimple.infoflow.android.manifest.ProcessManifest;
 import soot.util.MultiMap;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
-public class App {
+public class App implements Serializable {
 
     // Instance of the class
 //    private static volatile App instance;
 
     // Manifest
-    private ProcessManifest manifest;
+    private transient ProcessManifest manifest;
 
     // Package name of the APK file
     private String packageName;
@@ -38,7 +47,8 @@ public class App {
     private Set<Activity> launchActivities;
 
     // application class
-    private Application application;
+    @XStreamOmitField
+    private transient Application application;
 
     // Android components
     private Set<Activity> activities;
@@ -47,10 +57,10 @@ public class App {
     private Set<ContentProvider> contentProviders;
 
     // Fragment class map to activity class
-    private MultiMap<SootClass, SootClass> fragmentClasses;
+    private transient MultiMap<SootClass, SootClass> fragmentClasses;
 
     // Callbacks
-    private MultiMap<SootClass, CallbackDefinition> callbackMethods;
+    private transient MultiMap<SootClass, AndroidCallbackDefinition> callbackMethods;
 
     // Other UI elements
     private Set<Fragment> fragments;
@@ -58,10 +68,18 @@ public class App {
     private Set<Dialog> dialogs;
 
     // layout parser
-    private LayoutManager layoutManager;
+    private transient LayoutManager layoutManager;
+
+    private static App instance;
 
     public App(){
         reset();
+    }
+
+    public synchronized static App v() {
+        if(instance == null)
+            instance = new App();
+        return instance;
     }
 
     /**
@@ -85,28 +103,40 @@ public class App {
     public void initializeAppModel(SetupApplication app) {
         Logger.debug("Initializing App Model for Application");
 
-        this.packageName = app.getPackageName();
+       this.packageName = app.getManifest().getPackageName();
         Logger.debug(String.format("Package name: %s", this.packageName));
 
-        this.manifest = app.getManifest();
+        this.manifest = (ProcessManifest) app.getManifest();
 
 
         // Callbacks and fragment classes collected by FlowDroid
         this.callbackMethods = app.getCallbackMethods();
-        this.fragmentClasses = app.getFragmentClasses();
+        this.fragmentClasses = app.getFragmentClasses(); 
+        //Logger.debug("The callback collected by FlowDroid {}", callbackMethods);
+        /*for (AndroidCallbackDefinition callback: callbackMethods.values()){
+            Logger.debug("The callback {} and its type {}", callback, callback.getCallbackType());
+        }
+        Logger.debug("The fragments identified by FlowDroid {}",fragmentClasses);*/
 
         // initialize the resources
         ResourceValueProvider.v().initializeResources(app.getResourcePackages());
 
         // initialize all the components
         app.printEntrypoints();
-        initializeComponents(app.getEntrypointClasses(), app.getManifest());
+        initializeComponents(app.getEntrypointClasses(), this.manifest);
 
         // set the launch activity according to the manifest
-        setLaunchActivities(app.getManifest().getLaunchableActivities());
+        setLaunchActivities(this.manifest.getLaunchableActivityNodes());
 
         // set layout manager
-        setLayoutManager(new LayoutManager(app.getLayoutFileParser()));
+        //Logger.debug("Here is the app : {}", app);
+        //Logger.debug("Here is the layout file parser: {}", app.getLayoutFileParser());
+        LayoutFileParser lfp = app.getLayoutFileParser();
+        setLayoutManager(new LayoutManager(lfp));
+
+        //initialize the widget provider
+        if (lfp != null)
+            CallbackWidgetProvider.v().initializeProvider(app, this.getLayoutManager());
     }
 
     /**
@@ -117,90 +147,110 @@ public class App {
     private void initializeComponents(Set<SootClass> entrypointClasses, ProcessManifest manifest) {
         // Process all entrypoints
         AndroidEntryPointUtils entryPointUtils = new AndroidEntryPointUtils();
-        for (SootClass comp : entrypointClasses) {
-            AndroidEntryPointUtils.ComponentType compType = entryPointUtils.getComponentType(comp);
+        Logger.debug("Manifest entry points {}", manifest.getEntryPointClasses());
+        if(entrypointClasses == null || entrypointClasses.isEmpty())
+            processManifestEntries(manifest);
+        else{
+            for (SootClass comp : entrypointClasses) {
+                AndroidEntryPointUtils.ComponentType compType = entryPointUtils.getComponentType(comp);
 
-            Logger.debug(String.format("Entry point class %s is component type %s",
-                    comp.getName(),
-                    compType.toString()));
+                Logger.debug(String.format("Entry point class %s is component type %s",
+                        comp.getName(),
+                        compType.toString()));
 
-            switch (compType) {
-                case Activity:
-                    AXmlNode activityNode = manifest.getActivity(comp.getName());
-                    if (activityNode != null)
-                        this.activities.add(new Activity(activityNode, comp, packageName));
-                    else
-                        Logger.error("Failed to find activity in the manifest: {}", comp.getName());
-                    break;
-                case Service:
-                    AXmlNode serviceNode = manifest.getService(comp.getName());
-                    if (serviceNode != null)
-                        this.services.add(new Service(serviceNode, comp, packageName));
-                    else
-                        Logger.error("Failed to find service in the manifest: {}", comp.getName());
-                    break;
-                case BroadcastReceiver:
-                    AXmlNode receiverNode = manifest.getReceiver(comp.getName());
-                    if (receiverNode != null)
-                        this.broadcastReceivers.add(new BroadcastReceiver(receiverNode,
-                            comp, packageName));
-                    else
-                        Logger.error("Failed to find broadcast receiver in the manifest: {}", comp.getName());
-                    break;
-                case ContentProvider:
-                    AXmlNode providerNode = manifest.getProvider(comp.getName());
-                    if (providerNode != null)
-                        this.contentProviders.add(new ContentProvider(providerNode, comp, packageName));
-                    else
-                        Logger.error("Failed to find content provider in the manifest: {}", comp.getName());
-                    break;
-                case Fragment:
-                    this.fragments.add(new Fragment(comp));
-                    AXmlNode newNode = manifest.getActivity(comp.getName());
-                    if (newNode != null)
-                        this.activities.add(new Activity(newNode, comp, packageName));
-                    break;
-                case Application:
-                    AXmlNode applicationNode = manifest.getApplication();
-                    if (applicationNode != null)
-                        this.application = new Application(applicationNode, comp, packageName);
-                    else
-                        Logger.error("Failed to find content provider in the manifest: {}", comp.getName());
-                    break;
-                case ServiceConnection:
-                    Logger.debug("This should not happen. Let's see what are those classes.");
-                    break;
-                case GCMBaseIntentService:
-                    Logger.debug("This should not happen. Let's see what are those classes.");
-                    break;
-                case GCMListenerService:
-                    Logger.debug("This should not happen. Let's see what are those classes.");
-                    break;
-                case Plain:
-                    AXmlNode plainNode = manifest.getActivity(comp.getName());
-                    if (plainNode != null) {
-                        this.activities.add(new Activity(plainNode, comp, packageName));
+                switch (compType) {
+                    case Activity:
+                        AXmlNode activityNode = manifest.getActivity(comp.getName());
+                        if (activityNode != null)
+                            this.activities.add(new Activity(activityNode, comp, packageName));
+                        else
+                            Logger.error("Failed to find activity in the manifest: {}", comp.getName());
                         break;
-                    } else {
-                        plainNode = manifest.getService(comp.getName());
+                    case Service:
+                        AXmlNode serviceNode = manifest.getService(comp.getName());
+                        if (serviceNode != null)
+                            this.services.add(new Service(serviceNode, comp, packageName));
+                        else
+                            Logger.error("Failed to find service in the manifest: {}", comp.getName());
+                        break;
+                    case BroadcastReceiver:
+                        AXmlNode receiverNode = manifest.getReceiver(comp.getName());
+                        if (receiverNode != null)
+                            this.broadcastReceivers.add(new BroadcastReceiver(receiverNode,
+                                comp, packageName));
+                        else
+                            Logger.error("Failed to find broadcast receiver in the manifest: {}", comp.getName());
+                        break;
+                    case ContentProvider:
+                        AXmlNode providerNode = manifest.getProvider(comp.getName());
+                        if (providerNode != null)
+                            this.contentProviders.add(new ContentProvider(providerNode, comp, packageName));
+                        else
+                            Logger.error("Failed to find content provider in the manifest: {}", comp.getName());
+                        break;
+                    case Fragment:
+                        this.fragments.add(new Fragment(comp));
+                        AXmlNode newNode = manifest.getActivity(comp.getName());
+                        if (newNode != null)
+                            this.activities.add(new Activity(newNode, comp, packageName));
+                        break;
+                    case Application:
+                        IAndroidApplication applicationNode = manifest.getApplication();
+                        if (applicationNode != null)
+                            this.application = new Application(comp.getName(), comp, packageName);
+                        else
+                            Logger.error("Failed to find content provider in the manifest: {}", comp.getName());
+                        break;
+                    case ServiceConnection:
+                        Logger.debug("This should not happen. Let's see what are those classes.");
+                        break;
+                    case GCMBaseIntentService:
+                        Logger.debug("This should not happen. Let's see what are those classes.");
+                        break;
+                    case GCMListenerService:
+                        Logger.debug("This should not happen. Let's see what are those classes.");
+                        break;
+                    case Plain:
+                        AXmlNode plainNode = manifest.getActivity(comp.getName());
                         if (plainNode != null) {
-                            this.services.add(new Service(plainNode, comp, packageName));
+                            this.activities.add(new Activity(plainNode, comp, packageName));
                             break;
                         } else {
-                            plainNode = manifest.getReceiver(comp.getName());
+                            plainNode = manifest.getService(comp.getName());
                             if (plainNode != null) {
-                                this.broadcastReceivers.add(new BroadcastReceiver(plainNode, comp, packageName));
+                                this.services.add(new Service(plainNode, comp, packageName));
                                 break;
+                            } else {
+                                plainNode = manifest.getReceiver(comp.getName());
+                                if (plainNode != null) {
+                                    this.broadcastReceivers.add(new BroadcastReceiver(plainNode, comp, packageName));
+                                    break;
+                                }
                             }
                         }
-                    }
+                }
+            }
+
+            // Process fragments
+            for(SootClass fragmentClass : fragmentClasses.values()) {
+                this.fragments.add(new Fragment(fragmentClass));
             }
         }
+    }
 
-        // Process fragments
-        for(SootClass fragmentClass : fragmentClasses.values()) {
-            this.fragments.add(new Fragment(fragmentClass));
-        }
+    private void processManifestEntries(ProcessManifest manifest){
+        manifest.getActivities().forEach(activity -> {
+            this.activities.add(new Activity(activity.getAXmlNode(), null, packageName));
+        });
+        manifest.getServices().forEach(service -> {
+            this.services.add(new Service(service.getAXmlNode(), null, packageName));
+        });
+        manifest.getContentProviders().forEach(contentProvider -> {
+            this.contentProviders.add(new ContentProvider(contentProvider.getAXmlNode(), null, packageName));
+        });
+        manifest.getBroadcastReceivers().forEach(broadcastReceiver -> {
+            this.broadcastReceivers.add(new BroadcastReceiver(broadcastReceiver.getAXmlNode(), null, packageName));
+        });
     }
 
     /* ====================================
@@ -235,7 +285,7 @@ public class App {
      * @return The number of activities
      */
     public Integer getNumActInManifest() {
-        return manifest.getActivities().size();
+        return manifest.getActivities().asList().size();
     }
 
     /**
@@ -243,7 +293,7 @@ public class App {
      * @return The number of services
      */
     public Integer getNumServiceInManifest() {
-        return manifest.getServices().size();
+        return manifest.getServices().asList().size();
     }
 
     /**
@@ -251,7 +301,7 @@ public class App {
      * @return The number of broadcast receivers
      */
     public Integer getNumReceiverInManifest() {
-        return manifest.getReceivers().size();
+        return manifest.getBroadcastReceivers().asList().size();
     }
 
     /**
@@ -275,6 +325,11 @@ public class App {
                 return activity;
         }
         return null;
+    }
+
+    public synchronized Set<Activity> getActivitiesExtending(String sootClass){
+        return activities.stream()
+            .filter(activity -> activity.getAddedClasses().stream().anyMatch(addedClass -> addedClass.getName().equals(sootClass))).collect(Collectors.toSet());
     }
 
     /**
@@ -494,6 +549,7 @@ public class App {
      * @param fragment The fragment to be added
      */
     public synchronized void addFragment(Fragment fragment) {
+        Logger.debug("Fragment {} was added to the app model", fragment);
         this.fragments.add(fragment);
     }
 
@@ -503,6 +559,7 @@ public class App {
      * @param parentActivity The parent activity of this fragment
      */
     public synchronized void createFragment(SootClass sootClass, Activity parentActivity) {
+        Logger.debug("Creating a new fragment model for parent activity {}", parentActivity);
         Fragment fragment = getFragmentByName(sootClass.getName());
         if (fragment==null) {
             fragment = new Fragment(sootClass, parentActivity);
@@ -521,12 +578,12 @@ public class App {
         fragment.AddParentActivity(parentActivity);
         parentActivity.addFragment(fragment);
     }
-
     /**
      * Creates a fragment to the model
      * @param sootClass The Soot class of the fragment to be added
      */
     public synchronized void createFragment(SootClass sootClass) {
+        Logger.debug("Creating a new fragment model for  {}", sootClass);
         Fragment fragment = getFragmentByName(sootClass.getName());
         if (fragment==null)
             addFragment(new Fragment(sootClass));
@@ -537,18 +594,40 @@ public class App {
      * @param sc The soot class of this fragment
      * @param resId The resource id of the fragment to be added
      */
-    public synchronized void createFragment(SootClass sc, Set<Integer> resId) {
+    public synchronized Fragment createFragment(SootClass sc, Set<Integer> resId) {
+        Logger.debug("Creating a new fragment model for {} with res id {}", sc, resId);
+        Fragment fragment = getFragmentByName(sc.getName());
+        if (fragment !=null) {
+            Logger.error("Fragment {} already exists ...", fragment);
+        }
+        fragment = new Fragment(sc, resId);
+        addFragment(fragment);
+        return fragment;
+    }
+
+    /**
+     * Creates a fragment to the model
+     * @param sc The soot class of this fragment
+     * @param resId The resource id of the fragment to be added
+     */
+    public synchronized void createFragment(SootClass sc, Activity parentActivity, Set<Integer> resId) {
+        Logger.debug("Creating a new fragment model for {} with res id {}", sc, resId);
         Fragment fragment = getFragmentByName(sc.getName());
         if (fragment==null)
             addFragment(new Fragment(sc, resId));
+        addFragmentToActivity(fragment, parentActivity);
     }
 
     /**
      * Gets all callbacks in form of a MultiMap
      * @return All callbacks mapped to SootClass where the callbacks are registered
      */
-    public synchronized MultiMap<SootClass, CallbackDefinition> getCallbackMethods() {
+    public synchronized MultiMap<SootClass, AndroidCallbackDefinition> getCallbackMethods() {
         return callbackMethods;
+    }
+
+    public boolean isCallbackMethod(SootMethod method){
+        return callbackMethods.values().stream().anyMatch(callback -> callback.getTargetMethod().equals(method));
     }
 
     /**
@@ -556,7 +635,7 @@ public class App {
      * @param sc The SootClass to look for callbacks
      * @return The callbacks in the given SootClass
      */
-    public synchronized Set<CallbackDefinition> getCallbacksInSootClass(SootClass sc) {
+    public synchronized Set<AndroidCallbackDefinition> getCallbacksInSootClass(SootClass sc) {
         return callbackMethods.get(sc);
     }
 

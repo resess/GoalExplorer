@@ -12,6 +12,7 @@ import java.util.Set;
  */
 public class ListenersFinder implements Runnable {
     private Set<ListenerInfo> listeners ;
+    //TODO: store dialogs found within those listeners as well
     private final BaseForwardWalker forwardWalker;
 
     public ListenersFinder(SootMethod currentSootMethod){

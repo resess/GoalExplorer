@@ -11,14 +11,15 @@ import org.slf4j.LoggerFactory;
 
 import soot.Body;
 import soot.Local;
+import soot.LocalGenerator;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
 import soot.Unit;
-import soot.javaToJimple.LocalGenerator;
 import soot.jimple.Jimple;
 import soot.jimple.Stmt;
 import soot.jimple.infoflow.android.entryPointCreators.components.ComponentEntryPointCollection;
+import soot.jimple.infoflow.entryPointCreators.SimulatedCodeElementTag;
 import soot.jimple.infoflow.handlers.PreAnalysisHandler;
 import soot.util.Chain;
 import soot.util.HashMultiMap;
@@ -72,12 +73,7 @@ public class IccInstrumenter implements PreAnalysisHandler {
 		}
 
 		// Remove any potential leftovers from the last last instrumentation
-		for (Body body : instrumentedUnits.keySet()) {
-			for (Unit u : instrumentedUnits.get(body)) {
-				body.getUnits().remove(u);
-			}
-		}
-		instrumentedUnits.clear();
+		undoInstrumentation();
 
 		// Instrument the messenger class
 		instrumentMessenger();
@@ -86,6 +82,18 @@ public class IccInstrumenter implements PreAnalysisHandler {
 		processedMethods.clear();
 
 		logger.info("[IccTA] ...End ICC Redirection Creation");
+	}
+
+	/**
+	 * Removes all units generated through instrumentation
+	 */
+	protected void undoInstrumentation() {
+		for (Body body : instrumentedUnits.keySet()) {
+			for (Unit u : instrumentedUnits.get(body)) {
+				body.getUnits().remove(u);
+			}
+		}
+		instrumentedUnits.clear();
 	}
 
 	protected void instrumentMessenger() {
@@ -101,7 +109,7 @@ public class IccInstrumenter implements PreAnalysisHandler {
 			for (SootMethod sootMethod : methodCopyList) {
 				if (sootMethod.isConcrete()) {
 					final Body body = sootMethod.retrieveActiveBody();
-					final LocalGenerator lg = new LocalGenerator(body);
+					final LocalGenerator lg = Scene.v().createLocalGenerator(body);
 
 					// Mark the method as processed
 					if (!processedMethods.add(sootMethod))
@@ -121,18 +129,21 @@ public class IccInstrumenter implements PreAnalysisHandler {
 
 									Unit newU = Jimple.v().newAssignStmt(handlerLocal,
 											Jimple.v().newNewExpr(handler.getType()));
+									newU.addTag(SimulatedCodeElementTag.TAG);
 									body.getUnits().insertAfter(newU, stmt);
 									instrumentedUnits.put(body, newU);
 
 									SootMethod initMethod = handler.getMethod("void <init>()");
 									Unit initU = Jimple.v().newInvokeStmt(
 											Jimple.v().newSpecialInvokeExpr(handlerLocal, initMethod.makeRef()));
+									initU.addTag(SimulatedCodeElementTag.TAG);
 									body.getUnits().insertAfter(initU, newU);
 									instrumentedUnits.put(body, initU);
 
 									SootMethod hmMethod = handler.getMethod("void handleMessage(android.os.Message)");
 									Unit callHMU = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(
 											handlerLocal, hmMethod.makeRef(), stmt.getInvokeExpr().getArg(0)));
+									callHMU.addTag(SimulatedCodeElementTag.TAG);
 									body.getUnits().insertAfter(callHMU, initU);
 									instrumentedUnits.put(body, callHMU);
 								}

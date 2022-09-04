@@ -1,4 +1,4 @@
-STOAT_PATH=/home/bowenluo/workspace/goalexplorer/implementation/Executor/Stoat
+STOAT_PATH=/data/sunjingy/projects/bug-repro-project/implementation/Stoat
 
 ruby $STOAT_PATH/a3e/bin/rec.rb \
     --avd=stoat \

@@ -5,15 +5,13 @@ import soot.SootMethod;
 import soot.Unit;
 import soot.jimple.*;
 import st.cs.uni.saarland.de.entities.FieldInfo;
-import st.cs.uni.saarland.de.helpClasses.Helper;
-import st.cs.uni.saarland.de.helpClasses.Info;
-import st.cs.uni.saarland.de.helpClasses.InterProcInfo;
-import st.cs.uni.saarland.de.helpClasses.MyStmtSwitch;
+import st.cs.uni.saarland.de.helpClasses.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class StmtSwitchForContextMenus extends MyStmtSwitch {
@@ -24,6 +22,10 @@ public class StmtSwitchForContextMenus extends MyStmtSwitch {
 	
 	public StmtSwitchForContextMenus(SootMethod currentSootMethod) {
 		super(currentSootMethod);
+	}
+
+	public StmtSwitchForContextMenus(SootMethod currentSootMethod, Map<String, String> dynStrings) {
+		super(currentSootMethod, dynStrings);
 	}
 
 
@@ -114,6 +116,8 @@ public class StmtSwitchForContextMenus extends MyStmtSwitch {
 			String leftReg = helpMethods.getLeftRegOfAssignStmt(stmt);
 			
 			if (stmt.containsInvokeExpr()){
+				//TODO deal with lsit views and layouts
+				//TODO deal with fields as well?
 				InvokeExpr invokeExpr = stmt.getInvokeExpr();
 				String methodSignature = helpMethods.getSignatureOfInvokeExpr(stmt.getInvokeExpr());
 				if (methodSignature.equals("<android.app.Activity: android.view.View findViewById(int)>")
@@ -187,6 +191,9 @@ public class StmtSwitchForContextMenus extends MyStmtSwitch {
 									}
 								}
 							}
+						}
+						else if(methodSignature.contains(": android.widget.ExpandableListView getExpandableListView()") || methodSignature.contains("android.widget.ListView getListView()")){
+							menuInfo.setLayoutID(Integer.toString(AndroidRIdValues.getAndroidID("list")));
 						}
 					}
 			}

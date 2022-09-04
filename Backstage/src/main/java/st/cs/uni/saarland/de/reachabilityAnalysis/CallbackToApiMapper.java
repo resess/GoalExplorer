@@ -1,5 +1,6 @@
 package st.cs.uni.saarland.de.reachabilityAnalysis;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import soot.*;
@@ -11,6 +12,7 @@ import st.cs.uni.saarland.de.helpClasses.Helper;
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.stream.IntStream;
 
 /**
  * Class that is responsible for finding all APIs that are reachable from a given callback maethod
@@ -20,6 +22,7 @@ public class CallbackToApiMapper implements Callable<Void> {
 	
 	private final SootMethod callbackToStart;
 	private final List<ApiInfoForForward> apisFound;
+	private String declaringSootClass;
 	private SootClass newSootActivityClass;
 	private final Logger logger;
 	private final int currentId;
@@ -31,7 +34,7 @@ public class CallbackToApiMapper implements Callable<Void> {
 	private final List<String> asyncTaskMethods;
 	private final String elementId;
 	private Set<String> sourcesAndSinksSignatures;
-    private final List<SootMethod> visitedMethods;
+    private final Set<SootMethod> visitedMethods;
 	private final int maxDepthMethodLevel;
 	private final boolean trackCallStack;
 	private final boolean limitByPackageName;
@@ -55,7 +58,9 @@ public class CallbackToApiMapper implements Callable<Void> {
 		this.trackCallStack = trackStack;
 		this.callStack = new HashMap<>();
 		this.specialMethods = new ArrayList<>();
-		//specialMethods.add("android.os.AsyncTask execute(java.lang.Object[])");
+		specialMethods.add("android.os.AsyncTask execute(");
+		//specialMethods.add("android.os.AsyncTask execute(java.lang.Runnable)");
+		//TODO there's one more with special parameters
 		specialMethods.add("android.os.AsyncTask executeOnExecutor(java.util.concurrent.Executor,java.lang.Object[])");
 		runnable = "void <init>";
 		runnableMethods = new ArrayList<>();
@@ -66,10 +71,15 @@ public class CallbackToApiMapper implements Callable<Void> {
 		
 		asyncTaskMethods = new ArrayList<>();
 		asyncTaskMethods.add("doInBackground");
+		asyncTaskMethods.add("onPostExecute");
 
-        this.visitedMethods = new ArrayList<>();
+        this.visitedMethods = new HashSet<>();
 		this.sourcesAndSinksSignatures = new HashSet<>();
 		newSootActivityClass = null;
+	}
+
+	public void setDeclaringSootClass(String declaringSootClass) {
+		this.declaringSootClass = declaringSootClass;
 	}
 
 	public void setSourcesAndSinks(Set<String> sourcesAndSinks) {
@@ -93,8 +103,15 @@ public class CallbackToApiMapper implements Callable<Void> {
 	}
 
 	private Set<CallSite> getCallsInMenuOnClick(SootMethod optionMenuOnItemSelected, int depthMethodLevel){
+		//logger.debug("Checking calls in menu on click for {} {} {}",optionMenuOnItemSelected, elementId, depthMethodLevel);
 		Set<CallSite> callSites = new HashSet<>();
-		ForwardReachabilityAnalysisForClicksSwitch reachabilitySwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, optionMenuOnItemSelected, callSites, "", CONSTANT_SIGNATURES.optionMenuGetId);
+		ForwardReachabilityAnalysisForClicksSwitch reachabilitySwitch = null;
+		if(optionMenuOnItemSelected.getActiveBody().toString().contains(CONSTANT_SIGNATURES.optionMenuGetId)) {
+			reachabilitySwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, optionMenuOnItemSelected, callSites, "", CONSTANT_SIGNATURES.optionMenuGetId);
+		}
+		else{
+			reachabilitySwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, optionMenuOnItemSelected, callSites, CONSTANT_SIGNATURES.optionMenuGetId );
+		}
 		for (final Unit u : optionMenuOnItemSelected.getActiveBody().getUnits()){
 			u.apply(reachabilitySwitch);
 			if(reachabilitySwitch.isReady()){
@@ -102,6 +119,48 @@ public class CallbackToApiMapper implements Callable<Void> {
 			}
 		}
 		addUriToResults(reachabilitySwitch.getUris(), depthMethodLevel);
+		return callSites;
+	}
+
+	private Set<CallSite> getCallsInListViewOnClick(SootMethod listViewItemSelected, int depthMethodLevel){
+		//logger.debug("Checking calls in list view on click for {} {}", listViewItemSelected, depthMethodLevel);
+		Set<CallSite> callSites = new HashSet<>();
+		//Either we switch over the pos of the item or we switch over the listview itself
+		ForwardReachabilityAnalysisForClicksSwitch reachabilitySwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, listViewItemSelected, callSites, "@parameter2", CONSTANT_SIGNATURES.adapterViewGetId); //todo replace with param2?
+		for (final Unit u : listViewItemSelected.getActiveBody().getUnits()){
+			u.apply(reachabilitySwitch);
+			if(reachabilitySwitch.isReady()){
+				break;
+			}
+		}
+		addUriToResults(reachabilitySwitch.getUris(), depthMethodLevel);
+		return callSites;
+	}
+
+	private Set<CallSite> getCallsInAuxMethod(SootMethod auxMethod, int depthMethodLevel, String registerToSwitchOver, boolean isRegisterFullObject, String getIdMethod){
+		Set<CallSite> callSites = new HashSet<>();
+		ForwardReachabilityAnalysisForClicksSwitch reachabilitySwitch = null;
+		if(!isRegisterFullObject) {
+			reachabilitySwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, auxMethod, callSites, registerToSwitchOver, "");
+		}
+		else{
+			//If it's a full object, we can either switch over it or get the id?
+			//String getIdMethod = 
+			//TODO deal with objects switch as well
+			if(!StringUtils.isBlank(getIdMethod) && auxMethod.getActiveBody().toString().contains(getIdMethod)){
+				reachabilitySwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, auxMethod, callSites, "", getIdMethod);
+			}
+			//TODO (more interprocedural calls)
+			else reachabilitySwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, registerToSwitchOver, auxMethod, callSites, getIdMethod);
+		} 
+		for (final Unit u : auxMethod.getActiveBody().getUnits()){
+			//logger.debug("Current analyzed unit in aux method for {} {} in {}", elementId, u, auxMethod);
+			u.apply(reachabilitySwitch);
+			if(reachabilitySwitch.isReady()){
+				break;
+			}
+		}
+        addUriToResults(reachabilitySwitch.getUris(), depthMethodLevel);
 		return callSites;
 	}
 	
@@ -112,7 +171,7 @@ public class CallbackToApiMapper implements Callable<Void> {
 			reachabilitySwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, buttonClick, callSites, "", CONSTANT_SIGNATURES.buttonGetId);
 		}
 		else{
-			reachabilitySwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, buttonClick, callSites);
+			reachabilitySwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, buttonClick, callSites, CONSTANT_SIGNATURES.buttonGetId);
 		}
 		for (final Unit u : buttonClick.getActiveBody().getUnits()){
 			u.apply(reachabilitySwitch);
@@ -123,6 +182,8 @@ public class CallbackToApiMapper implements Callable<Void> {
         addUriToResults(reachabilitySwitch.getUris(), depthMethodLevel);
 		return callSites;
 	}
+
+
 	
 	private Set<CallSite> getCallsInButtonOnClickDialogs(SootMethod buttonClick, int currentDepthMethodLevel){
 		Set<CallSite> callSites = new HashSet<>();
@@ -136,14 +197,45 @@ public class CallbackToApiMapper implements Callable<Void> {
         addUriToResults(reachabilitySwitch.getUris(), currentDepthMethodLevel);
 		return callSites;
 	}
+
+	private Set<CallSite> getCallsInMethod(CallSite cs, int depthMethodLevel) {
+		SootMethod method = cs.method;
+		String registerOfButtonId = cs.registerToSwitchOver;
+		boolean isRegisterFullObject = cs.isFullObject;
+
+		if (!method.hasActiveBody()) {
+			try{
+				method.retrieveActiveBody();
+				//logger.debug("Retrieved missing active body for {} {}", declaringSootClass, method);
+			}
+			catch (Exception e) {
+				logger.warn("Skipping method with empty body {} {} for {}", declaringSootClass, method, elementId);
+				return Collections.synchronizedSet(new HashSet<>());
+			}
+
+		}
+
+		if(registerOfButtonId != null && !registerOfButtonId.isEmpty()){
+			//Propagate switch to next method
+			return getCallsInAuxMethod(method, depthMethodLevel, registerOfButtonId, isRegisterFullObject, cs.getIdMethod);
+		}
+		return getCallsInMethod(method, depthMethodLevel);
+	}
 	
 	private Set<CallSite> getCallsInMethod(SootMethod method, int depthMethodLevel) {
 		Set<CallSite> callSites = Collections.synchronizedSet(new HashSet<>());
 
 		if (!method.hasActiveBody()) {
-			return callSites;
-		}
+			try{
+				method.retrieveActiveBody();
+				//logger.debug("Retrieved missing active body for {} {}", declaringSootClass, method);
+			}
+			catch (Exception e) {
+				logger.warn("Skipping method with empty body {} {} for {}", declaringSootClass, method, elementId);
+				return callSites;
+			}
 
+		}
 		if (CONSTANT_SIGNATURES.buttonOnClickSignatures.stream().filter(x -> Helper.getSignatureOfSootMethod(method).endsWith(x)).findAny().isPresent()) {
 			return getCallsInButtonOnClick(method, depthMethodLevel);
 		}
@@ -151,8 +243,14 @@ public class CallbackToApiMapper implements Callable<Void> {
 			return getCallsInButtonOnClickDialogs(method, depthMethodLevel);
 		}
 
+		//Here should be the current method or supermethod ?
+		//Here we can check if the callback is menu onclick as well, or store the register
 		if (CONSTANT_SIGNATURES.optionMenuOnClicks.stream().filter(x -> Helper.getSignatureOfSootMethod(method).endsWith(x)).findAny().isPresent()) {
 			return getCallsInMenuOnClick(method, depthMethodLevel);
+		}
+
+		if (CONSTANT_SIGNATURES.listViewOnClicks.stream().filter(x -> Helper.getSignatureOfSootMethod(method).endsWith(x)).findAny().isPresent()) {
+			return getCallsInListViewOnClick(method, depthMethodLevel);
 		}
 
 		if (RAHelper.callSitesForMethods.containsKey(method)) {
@@ -183,6 +281,70 @@ public class CallbackToApiMapper implements Callable<Void> {
 		}
 		RAHelper.callSitesForMethods.put(method, callSites);
 		return callSites;
+	}
+
+
+	
+
+	public static void processUnit(final SootMethod method, Set<CallSite> callSites, Stmt stmt, String registerOfButtonId, String getIdMethod, boolean isFullObject){
+		InvokeExpr invokeExpr = stmt.getInvokeExpr();
+		SootMethod auxMethod = invokeExpr.getMethod();
+		String className = auxMethod.getDeclaringClass().getName();
+
+		if(!RAHelper.isClassInSystemPackage(className) && !registerOfButtonId.isEmpty()){
+			//TODO add: if invokeExpr and one of the parameters is the id registrer, need to do the same analysis on it?
+			int arg = -1;
+			//logger.debug("The invoked expr {} and register {}", invokeExpr, registerOfButtonId);
+			
+			//String reg = registerOfButtonId.substring(0,2);
+			//boolean isRef = reg.equals("$r");
+			int indexOfRegister = IntStream.range(0, invokeExpr.getArgCount())
+											.filter(i -> invokeExpr.getArg(i).toString().equals(registerOfButtonId))
+											.findFirst()
+											.orElse(-1);
+			if(indexOfRegister != -1){
+				String newRegister = "@parameter"+indexOfRegister;
+				//We want to add a callsite here
+				final Iterator<Edge> invocations = Scene.v().getCallGraph().edgesOutOf(stmt);
+				if (!invocations.hasNext()) {
+					//call graph didn't manage to correctly resolve the edge
+					CallSite cs = new CallSite();
+					cs.method = auxMethod;
+					cs.classOfInvokeExpr = invokeExpr.getMethodRef().declaringClass();
+					cs.unit = stmt;
+					cs.caller = method;
+					cs.registerToSwitchOver = newRegister;
+					cs.isFullObject = isFullObject;
+					cs.getIdMethod = getIdMethod;
+					callSites.add(cs);
+
+					return;
+        		}
+				while (invocations.hasNext()) {
+					Edge invocation = invocations.next();
+					if (invocation.getTgt().method() == null || invocation.srcUnit() == null) {
+						continue;
+					}
+					CallSite cs = new CallSite();
+					cs.method = invocation.getTgt().method();
+					cs.unit = invocation.srcUnit();
+					cs.caller = method;
+					cs.registerToSwitchOver = newRegister;
+					cs.isFullObject = isFullObject;
+					cs.getIdMethod = getIdMethod;
+
+					if (!((Stmt) invocation.srcUnit()).containsInvokeExpr()) {
+						cs.classOfInvokeExpr = invocation.getTgt().method().getDeclaringClass();
+					} else {
+						cs.classOfInvokeExpr = ((Stmt) invocation.srcUnit()).getInvokeExpr().getMethodRef().declaringClass();
+					}
+					callSites.add(cs);
+				}
+				return;
+			}
+			//TODO mark as visited and increase the depth
+		}
+		CallbackToApiMapper.processUnit(method, callSites, stmt);
 	}
 
 	public static void processUnit(final SootMethod method, Set<CallSite> callSites, final Unit u) {
@@ -221,7 +383,7 @@ public class CallbackToApiMapper implements Callable<Void> {
                     while (curUnit != null){
                         if(((Stmt)curUnit).containsInvokeExpr() && ((Stmt)curUnit).getInvokeExpr().getMethod().getSignature().equals("<java.lang.Thread: void <init>(java.lang.Runnable)>")){
                             InvokeExpr invokeExpr =  ((Stmt)curUnit).getInvokeExpr();
-                            Value regOfThreadLocal = invokeExpr.getUseBoxes().get(invokeExpr.getUseBoxes().size() - 1).getValue();
+                            Value regOfThreadLocal = invokeExpr.getUseBoxes().get(0).getValue();
                             if(regOfThread.equals(regOfThreadLocal)){
                                 cs.classOfInvokeExpr = Scene.v().getSootClass(curUnit.getUseBoxes().get(0).getValue().getType().toString());
 								if(cs.classOfInvokeExpr.getMethods().stream().filter(x->x.getSubSignature().equals(cs.method.getSubSignature())).findFirst().isPresent()){
@@ -285,10 +447,10 @@ public class CallbackToApiMapper implements Callable<Void> {
 
 		boolean processNormallCalls = true;
 		
-		if(this.specialMethods.stream().anyMatch(x->cSite.method.getSubSignature().equals(x)) && cSite.classOfInvokeExpr != null){
+		if(this.specialMethods.stream().anyMatch(x->cSite.method.getSubSignature().startsWith(x)) && cSite.classOfInvokeExpr != null){
 			//AsyncTask etc..
             cSite.classOfInvokeExpr.getMethods().stream().filter(m -> asyncTaskMethods.stream()
-                    .anyMatch(x -> m.getName().equals(x)) && m.hasActiveBody())
+                    .anyMatch(x -> m.getName().equals(x)) /*&& m.hasActiveBody()*/)
                     .forEach(m -> callSites.addAll(getCallsInMethod(m, currentMethodDepthLevel+1)));
 			processNormallCalls = false;
 		}
@@ -300,32 +462,60 @@ public class CallbackToApiMapper implements Callable<Void> {
 				Value runnable = ((Stmt)cSite.unit).getInvokeExpr().getArg(0);
 				String classOfReg = runnable.getType().toString();
 				Scene.v().getSootClass(classOfReg).getMethods().stream()
-						.filter(m -> runnableMethods.stream().anyMatch(x -> m.getName().equals(x)) && m.hasActiveBody())
+						.filter(m -> runnableMethods.stream().anyMatch(x -> m.getName().equals(x)) /*&& m.hasActiveBody()*/)
 						.forEach(m -> callSites.addAll(getCallsInMethod(m, currentMethodDepthLevel+1)));
 				processNormallCalls = false;
 			}
 		}
 		if(processNormallCalls){
-			if(limitByPackageName && cSite.method.getDeclaringClass() != null && !cSite.method.getDeclaringClass().getName().startsWith(Helper.getPackageName())){
+			//TODO: change this since the activities could have a different package name compared to the app
+			if(limitByPackageName && cSite.method.getDeclaringClass() != null && !Helper.isClassInAppNameSpace(cSite.method.getDeclaringClass().getName())){
 				return;
 			}
-			callSites.addAll(getCallsInMethod(cSite.method, currentMethodDepthLevel));
+			callSites.addAll(getCallsInMethod(cSite, currentMethodDepthLevel));
 		}
+		//logger.debug("All callsites for {} {} {}", cSite, elementId, callSites);
 		for(CallSite targetCall : callSites){
 			if(visitedMethods.contains(targetCall.method)){
 				continue;
 			}
-			
-			if(sourcesAndSinksSignatures.contains(Helper.getSignatureOfSootMethod(targetCall.method))){
+			if(sourcesAndSinksSignatures.contains(Helper.getSignatureOfSootMethod(targetCall.method)) || START_ACTIVITY_CONSTANTS.getStartActivityMethods().contains(targetCall.method.getSubSignature())){
 				ApiInfoForForward info = null;
 				//Check for the startActivity
 				if(START_ACTIVITY_CONSTANTS.getStartActivityMethods().contains(targetCall.method.getSubSignature())){
 					//we should collect more data about the startActivity
-					AnalyzeIntents intentAnalyzer = new AnalyzeIntents(targetCall.method, targetCall.unit, targetCall.caller);
+					logger.debug("Found startActivity for {} {} in {} at {}", declaringSootClass, elementId, targetCall, cSite);
+					if(targetCall != null && !targetCall.caller.hasActiveBody()){
+						try {
+							targetCall.caller.retrieveActiveBody();
+						}
+						catch (Exception e){
+							logger.error("Could not retrieve active body for {}", targetCall.method);
+							//continue;
+						}
+					}
+					AnalyzeIntents intentAnalyzer = new AnalyzeIntents(targetCall.method, targetCall.unit, targetCall.caller, elementId);
 					intentAnalyzer.run();
 					info = intentAnalyzer.getIntentInfo();
+					logger.debug("Info from intent analyzer {} {} {} {}", declaringSootClass, elementId, info, ((IntentInfo)info).getClassName());
 					String clnName = ((IntentInfo)info).getClassName();
+					Map<String, String> contextSensitiveClassNames = ((IntentInfo)info).getContextSensitiveClassNames();
 					if(clnName != null){
+						if(contextSensitiveClassNames != null && contextSensitiveClassNames.size() > 1) {
+							if(declaringSootClass != null && contextSensitiveClassNames.containsKey(declaringSootClass)) {
+								clnName = contextSensitiveClassNames.get(declaringSootClass);
+								logger.debug("{} actual destination for {}", clnName, declaringSootClass);
+							}
+							else if(declaringSootClass != null){
+								logger.warn("Adding target sootClass for non identified source {}, {}", declaringSootClass, clnName);
+							}
+							//TODO deal with the case where the class is not in there?
+						}
+						if(clnName.contains("#")) {
+							logger.warn("Multiple destinations for intent found, defaulting to first {}", clnName);
+							//logger.error("Multiple destinations for intent found, defaulting to first {}", clnName);
+							clnName = clnName.split("#")[0];
+						}
 						clnName = clnName.replace("/" ,".");
 						if (clnName.startsWith("L")) {
 							clnName = clnName.substring(1);
@@ -336,6 +526,7 @@ public class CallbackToApiMapper implements Callable<Void> {
 						if(Scene.v().getSootClassUnsafe(clnName) != null) {
 							SootClass classOfTarget = Scene.v().getSootClass(clnName);
 							setNewSootActivityClass(classOfTarget);
+							//logger.debug("New soot activity for ui {} {}", elementId, newSootActivityClass);
 							if(targetCall.method.getSubSignature().equals(LifecycleConstants.SERVICE_BIND)){
 								while (!classOfTarget.getName().equals("java.lang.Object")) {
 									if (classOfTarget.getMethodByNameUnsafe("onBind") != null) {
@@ -361,7 +552,12 @@ public class CallbackToApiMapper implements Callable<Void> {
 											break;
 										}
 									}
-									classOfTarget = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget).get(0);
+									List<SootClass> superClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget);
+									if(superClasses == null || superClasses.isEmpty()){
+										logger.warn("No superclass found for {}, likely issue", classOfTarget);
+										break;
+									}
+									classOfTarget = superClasses.get(0);
 								}
 								classOfTarget = Scene.v().getSootClass(clnName);
 								while (!classOfTarget.getName().equals("java.lang.Object")) {
@@ -388,7 +584,12 @@ public class CallbackToApiMapper implements Callable<Void> {
 											break;
 										}
 									}
-									classOfTarget = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget).get(0);
+									List<SootClass> superClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget);
+									if(superClasses == null || superClasses.isEmpty()){
+										logger.warn("No superclass found for {}, likely issue", classOfTarget);
+										break;
+									}
+									classOfTarget = superClasses.get(0);
 								}
 							} else if(targetCall.method.getSubSignature().equals(LifecycleConstants.SERVICE_START)){
 								while (!classOfTarget.getName().equals("java.lang.Object")) {
@@ -415,7 +616,13 @@ public class CallbackToApiMapper implements Callable<Void> {
 											break;
 										}
 									}
-									classOfTarget = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget).get(0);
+									//TODO if no superclass then exist?
+									List<SootClass> superClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget);
+									if(superClasses == null || superClasses.isEmpty()){
+										logger.warn("No superclass found for {}, likely issue", classOfTarget);
+										break;
+									}
+									classOfTarget = superClasses.get(0);
 								}
 								classOfTarget = Scene.v().getSootClass(clnName);
 								while (!classOfTarget.getName().equals("java.lang.Object")) {
@@ -442,16 +649,19 @@ public class CallbackToApiMapper implements Callable<Void> {
 											break;
 										}
 									}
-									classOfTarget = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget).get(0);
+									List<SootClass> superClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget);
+									if(superClasses == null || superClasses.isEmpty()){
+										logger.warn("No superclass found for {}, likely issue", classOfTarget);
+										break;
+									}
+									classOfTarget = superClasses.get(0);
 								}
-							} else {
-								//add connection to the OnCreate
-								while (!classOfTarget.getName().equals("java.lang.Object")) {
-									if (classOfTarget.getMethodUnsafe(CONSTANT_SIGNATURES.ACTIVITY_ONCREATE) != null) {
-										SootMethod onCreate = classOfTarget.getMethod(CONSTANT_SIGNATURES.ACTIVITY_ONCREATE);
-										if (onCreate.getSubSignature().equals(CONSTANT_SIGNATURES.ACTIVITY_ONCREATE)) {
+								while (!classOfTarget.getName().equals("java.lang.Object")) { //to parse content defined in IntentService
+									if (classOfTarget.getMethodByNameUnsafe("onHandleIntent") != null) {
+										SootMethod onHandleIntent = classOfTarget.getMethodByName("onHandleIntent");
+										if (onHandleIntent.getSubSignature().equals(LifecycleConstants.INTENT_SERVICE_ONHANDLEINTENT)) {
 											SootMethod caller = targetCall.method;
-											targetCall.method = onCreate;
+											targetCall.method = onHandleIntent;
 											targetCall.unit = null;
 											targetCall.classOfInvokeExpr = classOfTarget;
 											targetCall.caller = caller;
@@ -470,9 +680,46 @@ public class CallbackToApiMapper implements Callable<Void> {
 											break;
 										}
 									}
+									List<SootClass> superClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget);
+									if(superClasses == null || superClasses.isEmpty()){
+										logger.warn("No superclass found for {}, likely issue", classOfTarget);
+										break;
+									}
+									classOfTarget = superClasses.get(0);
+								}
+
+							} else {
+								//add connection to the OnCreate
+								while (!classOfTarget.getName().equals("java.lang.Object")) {
+									if (classOfTarget.getMethodUnsafe(CONSTANT_SIGNATURES.ACTIVITY_ONCREATE) != null) {
+										//logger.debug("Found onCreate method for {} {}", elementId, classOfTarget);
+										SootMethod onCreate = classOfTarget.getMethod(CONSTANT_SIGNATURES.ACTIVITY_ONCREATE);
+										if (onCreate.getSubSignature().equals(CONSTANT_SIGNATURES.ACTIVITY_ONCREATE)) {
+											SootMethod caller = targetCall.method;
+											CallSite onCreateSite = new CallSite();
+											onCreateSite.method = onCreate;
+											onCreateSite.unit = null;
+											onCreateSite.classOfInvokeExpr = classOfTarget;
+											onCreateSite.caller = caller;
+
+											callStack.remove(callStack.size() - 1);
+											SootMethod newMethod = Scene.v().getMethod("<CustomIntercomponentClass: void newActivity()>");
+											callStack.add(newMethod);
+											findAllReachableApis(onCreateSite, callStack);
+
+											callStack.clear();
+											callStack.addAll(localCallStack);
+
+											if (Thread.currentThread().isInterrupted()) {
+												return;
+											}
+											break;
+										}
+									}
 									if(Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget).size() == 0){
 										break;
 									}
+									
 									classOfTarget = Scene.v().getActiveHierarchy().getSuperclassesOf(classOfTarget).get(0);
 								}
 							}
@@ -489,7 +736,7 @@ public class CallbackToApiMapper implements Callable<Void> {
 				info.signature = Helper.getSignatureOfSootMethod(targetCall.method);
 				info.depthMethodLevel = currentMethodDepthLevel;
 				info.depthComponentLevel = (int) callStack.stream().filter(x -> x.getSignature().equals("<CustomIntercomponentClass: void newActivity()>")).count();
-				info.callerMethod = cSite.method;
+				info.callerMethod = cSite.method; //should this not be updated?
 				info.callerSignature = info.callerMethod.getSignature();
 
 				if(!this.apisFound.contains(info)){
@@ -519,6 +766,7 @@ public class CallbackToApiMapper implements Callable<Void> {
 						this.apisFound.add(info);
 					}
 				}
+				//logger.debug("All the apis found so far {} {}", elementId, apisFound);
 				callStack.clear();
 				callStack.addAll(localCallStack);
 

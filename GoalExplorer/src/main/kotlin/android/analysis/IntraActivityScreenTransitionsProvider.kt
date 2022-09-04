@@ -4,7 +4,7 @@ import android.model.Edge
 import android.model.Screen
 import android.soot.FragmentChangeAnalysis
 import soot.jimple.infoflow.android.SetupApplication
-import soot.jimple.infoflow.android.callbacks.CallbackDefinition
+import soot.jimple.infoflow.android.callbacks.AndroidCallbackDefinition
 import soot.util.HashMultiMap
 import soot.util.MultiMap
 import java.util.LinkedList
@@ -23,7 +23,7 @@ class IntraActivityScreenTransitionsProvider(private val flowDroidAnalysis: Setu
     /**
      * All screens within graph
      */
-    val screens: Set<Screen> get() = transitions.screen
+   /* val screens: Set<Screen> get() = transitions.screen
     /**
      * In edges for screen - edges where the screen is the tgt
      */
@@ -83,5 +83,5 @@ class IntraActivityScreenTransitionsProvider(private val flowDroidAnalysis: Setu
                 Edge(screen, tgt, cb, widget)
             }
         }
-    }
+    }*/
 }

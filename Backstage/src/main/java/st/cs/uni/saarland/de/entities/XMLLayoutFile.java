@@ -1,5 +1,6 @@
 package st.cs.uni.saarland.de.entities;
 
+import java.io.Serializable;
 import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 import st.cs.uni.saarland.de.testApps.Content;
 
-public class XMLLayoutFile {
+public class XMLLayoutFile implements Serializable {
 
 	// name of the xml layout file as extracted from the file name of the xml file,
 	// and also the name variable which represents the id of this file
@@ -52,6 +53,10 @@ public class XMLLayoutFile {
 			this.id = id;
 		else
 			logger.error("someone tried to replace the id of an XMLLayoutFile in " + name);
+	}
+
+	public boolean isEmpty(){
+		return this.name.isEmpty() && this.id == 0 && this.elementIDs.isEmpty();
 	}
 
 	// return true if the element with that id, is located inside this layout file (included layouts are not processed)
@@ -124,13 +129,23 @@ public class XMLLayoutFile {
 	}
 
 	// included layouts are not considered
-	public Collection<Listener> getElementListeners(Map<Integer, AppsUIElement> uiElements){
-		Collection<Listener> listeners = new HashSet<Listener>();
+	public Set<Listener> getElementListeners(Map<Integer, AppsUIElement> uiElements){
+		Set<Listener> listeners = new HashSet<Listener>();
 		for (int eID : elementIDs){
 			listeners.addAll(uiElements.get(eID).getListernersFromElement());
 		}
 		return listeners;
 	}
+
+	//ADDED
+	public Map<Integer, List<Listener>> getElementListenersMap(Map<Integer, AppsUIElement> uiElements){
+		Map<Integer, List<Listener>> listenersMap = new HashMap<>();
+		for (int eID: elementIDs){
+			listenersMap.put(eID, uiElements.get(eID).getListernersFromElement());
+		}
+		return listenersMap;
+	}
+	
 	public boolean hasElementListeners(Map<Integer, AppsUIElement> uiElements){
 		for (int eID : elementIDs){
 			boolean res = uiElements.get(eID).hasElementListener();

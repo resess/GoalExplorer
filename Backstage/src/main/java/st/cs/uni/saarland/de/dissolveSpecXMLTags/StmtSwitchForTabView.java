@@ -40,7 +40,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 
 	public StmtSwitchForTabView(TabViewInfo newInfo, SootMethod currentSootMethod) {
 		super(currentSootMethod);
-		addToResultedTabs(newInfo);
+		addToResultedTabsViews(newInfo);
 	}
 
 	public StmtSwitchForTabView(SootMethod currentSootMethod) {
@@ -75,7 +75,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 		}
 		
 		Set<TabViewInfo> toAddInfos = new LinkedHashSet<>();
-		for (TabViewInfo info : getResultedTabs()){
+		for (TabViewInfo info : getResultedTabsViews()){
 			if(Thread.currentThread().isInterrupted()){
 				return;
 			}
@@ -129,7 +129,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 				
 			}
 		}
-		addAllToResultedTabs(toAddInfos);
+		addAllToResultedTabsViews(toAddInfos);
 	}
 	
 	public void caseAssignStmt(AssignStmt stmt){
@@ -147,7 +147,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 			
 			if ("<android.app.ActionBar$Tab: android.app.ActionBar$Tab setTabListener(android.app.ActionBar$TabListener)>".equals(methodSignature)){
 				String listenerReg = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-				for (TabViewInfo i : getResultedTabs()){
+				for (TabViewInfo i : getResultedTabsViews()){
 					if (i.getSearchedEReg().equals(caller)){
 						i.setListenerReg(listenerReg);
 					}
@@ -156,7 +156,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 			}else if ("<android.app.ActionBar$Tab: android.app.ActionBar$Tab setText(java.lang.CharSequence)>".equals(methodSignature) ||
 					"<android.app.ActionBar$Tab: android.app.ActionBar$Tab setText(int)>".equals(methodSignature)){
 				TabViewInfo tabInfo = null;
-				for (TabViewInfo i : getResultedTabs()){
+				for (TabViewInfo i : getResultedTabsViews()){
 					if (i.getSearchedEReg().equals(caller)){
 						tabInfo = i;
 						break;
@@ -172,7 +172,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 				}
 			}else if ("<android.app.ActionBar: android.app.ActionBar$Tab newTab()>".equals(methodSignature)){
 				if (actionBarReg.equals(caller)){
-					for (TabViewInfo i : getResultedTabs()){
+					for (TabViewInfo i : getResultedTabsViews()){
 						if (i.getSearchedEReg().equals(leftReg)){
 							i.setSearchedEReg("");
 						}
@@ -212,7 +212,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 						}
 					}else{
 						Set<TabViewInfo> toAddInfos = new LinkedHashSet<>();
-						for (TabViewInfo info: getResultedTabs()){
+						for (TabViewInfo info: getResultedTabsViews()){
 							// TODO will never come back with results, unless this stmtSwitch is used in a chaned version
 //							if (info.getSearchedEReg().equals(leftReg)){
 //								info.setSearchedEReg("");
@@ -270,14 +270,14 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 								}
 							}
 						}
-						addAllToResultedTabs(toAddInfos);
+						addAllToResultedTabsViews(toAddInfos);
 					}
 			}
 		}else{
 			Set<TabViewInfo> toAddedInfos = new LinkedHashSet<>();
 			Set<TabViewInfo> toRemoveInfos = new LinkedHashSet<>();
 			// TODO check if variable are here possible
-			for (TabViewInfo infos : getResultedTabs()){
+			for (TabViewInfo infos : getResultedTabsViews()){
 				if(Thread.currentThread().isInterrupted()){
 					return;
 				}
@@ -420,7 +420,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 									StmtSwitchForTabView newStmtSwitch  = new StmtSwitchForTabView(newInfo, getCurrentSootMethod());
 									previousFields.forEach(x->newStmtSwitch.addPreviousField(x));
 									iteratorHelper.runOverToFindSpecValuesBackwards(fInfo.methodToStart.method().getActiveBody(), workingUnit, newStmtSwitch);
-									Set<TabViewInfo> initInfos = newStmtSwitch.getResultedTabs();
+									Set<TabViewInfo> initInfos = newStmtSwitch.getResultedTabsViews();
 									if (initInfos.size() > 0) {
 										List<Info> listInfo = initInfos.stream().collect(Collectors.toList());
 										if(listInfo.indexOf(newInfo) == -1){
@@ -441,7 +441,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 				}
 			}			
 			removeAllFromResultedTabs(toRemoveInfos);
-			addAllToResultedTabs(toAddedInfos);
+			addAllToResultedTabsViews(toAddedInfos);
 		}
 	}
 	
@@ -455,7 +455,7 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 //		methodSignature is : <com.example.Testapp.TabListener: void <init>(android.app.Activity,java.lang.String,java.lang.Class)>
 		if (methodSignature.contains(": void <init>(android.app.Activity,java.lang.String,java.lang.Class)>")){
 			String callerReg = helpMethods.getCallerOfInvokeStmt(invokeExpr);
-			for (TabViewInfo info : getResultedTabs()){
+			for (TabViewInfo info : getResultedTabsViews()){
 				if(Thread.currentThread().isInterrupted()){
 					return;
 				}
@@ -491,13 +491,13 @@ public class StmtSwitchForTabView extends MyStmtSwitchForResultLists {
 				else if (!actionBarReg.equals(caller))
 					logger.warn("ActionBar was not the one that was found earlier: found AB: " + caller + ", earlier found AB: " + actionBarReg);
 				String tabReg = helpMethods.getParameterOfInvokeStmt(invokeExpr, 0);
-				addToResultedTabs(new TabViewInfo(tabReg));
+				addToResultedTabsViews(new TabViewInfo(tabReg));
 			}
 	}
 	
 	private void checkLineUp() {
 		if (isNavigationMode2 && isActionBar && (!activityClassName.equals(""))){
-			for (TabViewInfo info : getResultedTabs()){
+			for (TabViewInfo info : getResultedTabsViews()){
 				info.addActivityClassName(activityClassName);
 			}
 		}else{

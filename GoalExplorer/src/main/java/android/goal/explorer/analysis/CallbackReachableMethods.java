@@ -27,7 +27,7 @@ public class CallbackReachableMethods extends ComponentReachableMethods {
      * Creates a new instance of the {@link ComponentReachableMethods} class
      *
      * @param config            The configuration of the data flow solver
-     * @param originalComponent The original component or which we are looking for callback
+     * @param originalComponent The original component for which we are looking for callback
      *                          registrations. This information is used to more precisely model
      *                          calls to abstract methods.
      * @param entryPoint The method to look for reachable methods
@@ -57,7 +57,7 @@ public class CallbackReachableMethods extends ComponentReachableMethods {
      */
     private void addMethodFromEdge(MethodOrMethodContext m, Edge e) {
         // Filter out methods in system classes
-        if (!SystemClassHandler.isClassInSystemPackage(m.method().getDeclaringClass().getName())) {
+        if (!SystemClassHandler.v().isClassInSystemPackage(m.method().getDeclaringClass().getName())) {
             MethodOrMethodContext src = e.getSrc();
             if (set.add(m)) {
                 reachables.add(m);

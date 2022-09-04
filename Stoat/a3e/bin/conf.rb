@@ -9,6 +9,7 @@ class CONF
     # Login related
     @USERNAME
     @PASSWORD
+    @LOGIN_TYPE
 
     # the android sdk dir
     @ANDROID_SDK_DIR
@@ -133,7 +134,9 @@ class CONF
                # set the instrumented app
                @TARGET_INSTRUMENTED_APK_FILE = app_dir
                
-               @FSM_BUILDING_DIR = app_dir_name + "-output" + "/" + "stoat_fsm_output"
+               @APP_OUTPUT_DIR = app_dir_name + "-output"
+
+               @FSM_BUILDING_DIR = @APP_OUTPUT_DIR + "/" + "stoat_fsm_output"
                
                # remove the old output dir
                `rm -rf #{@FSM_BUILDING_DIR}`
@@ -265,6 +268,8 @@ class CONF
                     @USERNAME = res[1].strip
                 elsif entry_name.eql?("PASSWORD") then
                     @PASSWORD = res[1].strip
+                elsif entry_name.eql?("LOGIN_TYPE") then
+                    @LOGIN_TYPE = res[1].strip
                 else 
                     puts "#{@@DEBUG_STRING} I: undefined configuration entry - #{entry_name}"
                 end
@@ -285,6 +290,10 @@ class CONF
 
     def get_password()
         @PASSWORD
+    end
+
+    def get_login_type()
+        @LOGIN_TYPE
     end
     
     def get_ella_tool_dir()
@@ -311,6 +320,10 @@ class CONF
     def get_max_fsm_building_events ()
         # convert string to integer
         @MAX_FSM_BUILDING_EVENTS.to_i
+    end
+
+    def get_app_output_dir ()
+        @APP_OUTPUT_DIR
     end
     
     def get_fsm_building_dir ()

@@ -6,10 +6,9 @@ import com.beust.jcommander.ParameterException;
 import com.thoughtworks.xstream.XStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import soot.PackManager;
-import soot.Scene;
-import soot.SootClass;
-import soot.SootMethod;
+import soot.*;
+import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
+import soot.jimple.infoflow.android.SetupApplication;
 import soot.options.Options;
 import st.cs.uni.saarland.de.entities.Application;
 import st.cs.uni.saarland.de.entities.AppsUIElement;
@@ -96,6 +95,7 @@ public class TestApp {
             }
             Helper.saveToStatisticalFile("UI Analysis has run for " + (System.nanoTime() - beforeRun) / 1E9 + " seconds");
             PackManager.v().writeOutput();
+            
         }
 
         if (settings.performReachabilityAnalysis) {
@@ -117,8 +117,19 @@ public class TestApp {
     }
 
     public static AppController performUiAnalysis(Settings settings) {
+        InfoflowAndroidConfiguration config = new InfoflowAndroidConfiguration();
+        config.getAnalysisFileConfig().setTargetAPKFile(settings.apkPath);
+        config.getAnalysisFileConfig().setAndroidPlatformDir(settings.androidJar);
+
+        SetupApplication setupApplication = new SetupApplication(config);
+        setupApplication.constructCallgraph();
+
+        return performUiAnalysis(settings, setupApplication);
+    }
+
+    public static AppController performUiAnalysis(Settings settings, SetupApplication setupApplication) {
         boolean resultToken = new Main_UI_Analysis(settings.tTimeoutUnit, settings.tTimeoutValue, settings.numThreads,
-                settings.processMenus, settings.maxDepthMethodLevel ,settings.isTest).runAnalysisForOneApp(new File(settings.apkToolOutputPath), settings.process_images);
+                settings.processMenus, settings.maxDepthMethodLevel ,settings.isTest).runAnalysisForOneApp(new File(settings.apkToolOutputPath), settings.process_images, setupApplication);
         if(!resultToken){
             return null;
         }
@@ -164,15 +175,24 @@ public class TestApp {
             Options.v().set_output_format(Options.output_format_none);
         }
         Options.v().set_exclude(Helper.excludedPrefixes);
+
+        Options.v().set_no_bodies_for_excluded(true);
+        Options.v().set_allow_phantom_refs(true);
+
         Options.v().set_force_android_jar(androidJar);
         Options.v().set_android_jars(androidJar);
-        Options.v().set_allow_phantom_refs(true);
+
         Options.v().set_process_dir(Collections.singletonList(apkPath));
         Options.v().set_soot_classpath(androidJar);
         Options.v().set_process_multiple_dex(true);
         if(!loadUiResults) {
             Options.v().set_whole_program(true);
             Options.v().setPhaseOption("cg", "all-reachable:true");
+            Options.v().setPhaseOption("cg.spark", "on");
+            Options.v().setPhaseOption("cg.spark", "verbose:true");
+            Options.v().setPhaseOption("cg.spark", "string-constants:true");
+            //Options.v().setPhaseOption("cg.spark", "on-fly-cg:false");
+            //Options.v().setPhaseOption("cg.spark", "vta:true");
         }
         /*Options.v().set_whole_program(true);
         Options.v().setPhaseOption("cg", "trim-clinit:false");*/
@@ -180,7 +200,8 @@ public class TestApp {
         Scene.v().loadNecessaryClasses();
     }
 
-    public static void initializeSoot(String appPath, String libPath, Collection<String> classes, CallGraphAlgorithms cgAlgo) {
+
+    public static void initializeSoot(String appPath, String libPath, Collection<String> classes, CallGraphAlgorithms cgAlgo){
         // reset Soot:
         logger.info("Resetting Soot...");
         soot.G.reset();
@@ -199,6 +220,7 @@ public class TestApp {
         Options.v().set_soot_classpath(appendClasspath(appPath, libPath));
 
         Options.v().set_whole_program(true);
+        Options.v().set_ignore_resolution_errors(true);
 
         Options.v().set_src_prec(Options.src_prec_apk);
         soot.options.Options.v().set_force_android_jar(libPath);
@@ -240,15 +262,57 @@ public class TestApp {
             System.exit(1);
         }
     }
+    public static void initializeSoot(String appPath, String libPath, Collection<String> classes, CallGraphAlgorithms cgAlgo, SetupApplication setupApplication) {
+        // reset Soot:
+        logger.info("Resetting Soot...");
+        soot.G.reset();
 
-    public static void runReachabilityAnalysis(List<UiElement> uiElements, List<String> activityNames, Settings settings) {
+        //Options.v().set_exclude(Helper.excludedPrefixes);
+        beforeRun = System.nanoTime();
+        setupApplication.constructCallgraph();
+        Helper.saveToStatisticalFile("CallGraph has built for " + (System.nanoTime() - beforeRun) / 1E9 + " seconds");
+
+        String cgSizeInfo = String.format("CallGraph has %s edges", Scene.v().getCallGraph().size());
+        logger.info(cgSizeInfo);
+        Helper.saveToStatisticalFile(cgSizeInfo);
+
+        //TODO, method bodies are missing for fragments
+
+        // load all entryPoint classes with their bodies
+        /*for (String className : classes)
+            Scene.v().addBasicClass(className, SootClass.BODIES);
+        Scene.v().loadNecessaryClasses();
+        logger.info("Basic class loading done.");
+
+        boolean hasClasses = false;
+        for (String className : classes) {
+            SootClass c = Scene.v().forceResolve(className, SootClass.BODIES);
+            if (c != null) {
+                c.setApplicationClass();
+                if (!c.isPhantomClass() && !c.isPhantom()) {
+                    hasClasses = true;
+                }
+            }
+        }
+        if (!hasClasses) {
+            logger.error("Only phantom classes loaded, skipping analysis...");
+            Helper.saveToStatisticalFile("Only phantom classes loaded, skipping analysis...");
+            System.exit(1);
+        }*/
+    }
+
+    public static void runReachabilityAnalysis(List<UiElement> uiElements, List<String> activityNames, Settings settings){
+        runReachabilityAnalysis(uiElements,activityNames, settings, null);
+    }
+
+    public static void runReachabilityAnalysis(List<UiElement> uiElements, List<String> activityNames, Settings settings, SetupApplication setupApplication) {
 
         Helper.clearCache();
 
         final Iterator<UiElement> uiElementIterator = uiElements.iterator();
         while (uiElementIterator.hasNext()) {
             UiElement uiElem = uiElementIterator.next();
-            if (!uiElem.handlerMethod.getDeclaringClass().getName().startsWith(Helper.getPackageName()) ||
+            if (!Helper.isClassInAppNameSpace(uiElem.handlerMethod.getDeclaringClass().getName()) ||
                     uiElem.handlerMethod.getDeclaringClass().isPhantom()) {
                 uiElementIterator.remove();
             }
@@ -266,10 +330,10 @@ public class TestApp {
             //superClasses
             classes.addAll(Scene.v().getActiveHierarchy().getSuperclassesOf(uiEl.handlerMethod.getDeclaringClass()).
                     stream().filter(x ->
-                    x.getName().startsWith(Helper.getPackageName())).map(x -> x.getName()).collect(Collectors.toList()));
+                            Helper.isClassInAppNameSpace(x.getName())).map(x -> x.getName()).collect(Collectors.toList()));
             //interfaces
             classes.addAll(uiEl.handlerMethod.getDeclaringClass().getInterfaces().stream().filter(x ->
-                    x.getName().startsWith(Helper.getPackageName()))
+                            Helper.isClassInAppNameSpace(x.getName()))
                     .map(x -> x.getName()).collect(Collectors.toList()));
         }
 
@@ -279,7 +343,7 @@ public class TestApp {
         //Activities
         for (String activityName : activityNames) {
             SootClass sc = Scene.v().getSootClassUnsafe(activityName);
-            if(!sc.getName().startsWith(Helper.getPackageName()))
+            if(!Helper.isClassInAppNameSpace(sc.getName()))
                 continue;
 
             if (sc != null && !sc.isPhantom()) {
@@ -288,9 +352,9 @@ public class TestApp {
                 //superClasses
                 classes.addAll(Scene.v().getActiveHierarchy().getSuperclassesOf(sc).
                         stream().filter(x ->
-                        x.getName().startsWith(Helper.getPackageName())).map(x -> x.getName()).collect(Collectors.toList()));
+                                Helper.isClassInAppNameSpace(x.getName())).map(x -> x.getName()).collect(Collectors.toList()));
                 //interfaces
-                classes.addAll(sc.getInterfaces().stream().filter(x -> x.getName().startsWith(Helper.getPackageName()))
+                classes.addAll(sc.getInterfaces().stream().filter(x -> Helper.isClassInAppNameSpace(x.getName()))
                         .map(x -> x.getName()).collect(Collectors.toList()));
             }
         }
@@ -298,7 +362,7 @@ public class TestApp {
         Set<String> serviceMethodsToAdd = new HashSet<>();
         if(!Scene.v().getSootClass(START_ACTIVITY_CONSTANTS.ANDROID_APP_SERVICE).isPhantom() && Scene.v().getSootClass(START_ACTIVITY_CONSTANTS.ANDROID_APP_SERVICE).resolvingLevel() != 0) {
             for (SootClass serviceExtender : Scene.v().getActiveHierarchy().getDirectSubclassesOf(Scene.v().getSootClass(START_ACTIVITY_CONSTANTS.ANDROID_APP_SERVICE))) {
-                if (!serviceExtender.getPackageName().startsWith(Helper.getPackageName())) {
+                if (!Helper.isClassInAppNameSpace(serviceExtender.getPackageName())) {
                     continue;
                 }
 
@@ -315,10 +379,10 @@ public class TestApp {
         }
         Set<String> runnableMethodsToAdd = new HashSet<>();
         //TODO: runnable
-        if(!Scene.v().getSootClass("java.lang.Runnable").isPhantom() && Scene.v().getSootClass("java.lang.Runnable").resolvingLevel() != 0) {
+        if(/*!Scene.v().getSootClass("java.lang.Runnable").isPhantom() &&*/ Scene.v().getSootClass("java.lang.Runnable").resolvingLevel() != 0) {
             Set<SootClass> runnableImplementers = Scene.v().getActiveHierarchy().getImplementersOf(Scene.v().
                     getSootClass("java.lang.Runnable")).stream().filter(x ->
-                    x.getName().startsWith(Helper.getPackageName())).collect(Collectors.toSet());
+                    Helper.isClassInAppNameSpace(x.getName())).collect(Collectors.toSet());
 
             for (SootClass runnable : runnableImplementers) {
                 classes.add(runnable.getName());
@@ -329,20 +393,20 @@ public class TestApp {
 
         Set<String> asyncMethodsToAdd = new HashSet<>();
         //TODO: Async Tasks
-        if(!Scene.v().getSootClass("android.os.AsyncTask").isPhantom() && Scene.v().getSootClass("android.os.AsyncTask").resolvingLevel() != 0) {
+        /*if(!Scene.v().getSootClass("android.os.AsyncTask").isPhantom() && Scene.v().getSootClass("android.os.AsyncTask").resolvingLevel() != 0) {
             Set<SootClass> asyncTaskExtenders = Scene.v().getActiveHierarchy().getSubclassesOf(Scene.v().
                     getSootClass("android.os.AsyncTask")).stream().filter(x ->
-                    x.getName().startsWith(Helper.getPackageName())).collect(Collectors.toSet());
+                    Helper.isClassInAppNameSpace(x.getName())).collect(Collectors.toSet());
 
             for (SootClass async : asyncTaskExtenders) {
                 classes.add(async.getName());
 
                 asyncMethodsToAdd.addAll(async.getMethods().stream().filter(x->x.getName().equals("doInBackground")).map(x -> x.getSignature()).collect(Collectors.toList()));
             }
-        }
+        }*/
 
 
-        initializeSoot(settings.apkPath, settings.androidJar, classes, settings.cgAlgo);
+        //initializeSoot(settings.apkPath, settings.androidJar, classes, settings.cgAlgo, setupApplication);
         //refresh SootMethods
         uiElements.forEach(uiEl -> uiEl.handlerMethod = Scene.v().getMethod(uiEl.handlerMethod.getSignature()));
 
@@ -350,14 +414,14 @@ public class TestApp {
         Set<SootMethod> callbackMethods = new HashSet<>();
 
         //add service methods
-        serviceMethodsToAdd.stream().filter(x->Scene.v().containsMethod(x)).forEach(serviceMethod -> callbackMethods.add(Scene.v().getMethod(serviceMethod)));
+        /*serviceMethodsToAdd.stream().filter(x->Scene.v().containsMethod(x)).forEach(serviceMethod -> callbackMethods.add(Scene.v().getMethod(serviceMethod)));
 
         //add async methods
         asyncMethodsToAdd.stream().filter(x->Scene.v().containsMethod(x)).forEach(asyncMethod -> callbackMethods.add(Scene.v().getMethod(asyncMethod)));
 
         //add runnable methods
         runnableMethodsToAdd.stream().filter(x->Scene.v().containsMethod(x)).forEach(runnableMethod -> callbackMethods.add(Scene.v().getMethod(runnableMethod)));
-
+*/
         //resolve interfaces and superclasses of callbacks for RA
         List<UiElement> uiElementsToAdd = new ArrayList<>();
         callbackMethods.addAll(uiElements.stream().map(uiEl -> uiEl.handlerMethod).collect(Collectors.toList()));
@@ -390,12 +454,13 @@ public class TestApp {
         }
 
 
-        Scene.v().setEntryPoints(new ArrayList<>(callbackMethods));
+//        Scene.v().setEntryPoints(new ArrayList<>(callbackMethods));
 
         logger.info("Entry points calculation is done");
         Helper.saveToStatisticalFile("Entry point creation has run for " + (System.nanoTime() - beforeRun) / 1E9 + " seconds");
 
-        beforeRun = System.nanoTime();
+        /*
+         beforeRun = System.nanoTime();
         try {
             // Run the soot-based operations
             PackManager.v().getPack("wjpp").apply();
@@ -403,6 +468,7 @@ public class TestApp {
             PackManager.v().getPack("wjtp").apply();
         }
         catch (Exception e){
+            logger.error(e.toString());
             e.printStackTrace();
             Helper.saveToStatisticalFile(Helper.exceptionStacktraceToString(e));
             return;
@@ -410,9 +476,11 @@ public class TestApp {
 
         Helper.saveToStatisticalFile("CallGraph has built for " + (System.nanoTime() - beforeRun) / 1E9 + " seconds");
 
-        String cgSizeInfo = String.format("CallGraph has %s edges", Scene.v().getCallGraph().size());
+
         logger.info(cgSizeInfo);
         Helper.saveToStatisticalFile(cgSizeInfo);
+         */
+        String cgSizeInfo = String.format("CallGraph has %s edges", Scene.v().getCallGraph().size());
 
         beforeRun = System.nanoTime();
 
@@ -424,17 +492,20 @@ public class TestApp {
         rAnalysis.addResultsSaver(new XmlResultsSaver());
         rAnalysis.run();
         Helper.saveToStatisticalFile("Reachability Analysis has run for " + (System.nanoTime() - beforeRun) / 1E9 + " seconds");
+        logger.info("Reachability analysis done ");
     }
 
     private static void addToUiElements(List<UiElement> uiElements, Set<SootMethod> callbackMethods, String acClass, SootMethod sm, boolean callBackMethodsIncluded) {
         if (sm != null) {
             callbackMethods.add(sm);
-            if(callBackMethodsIncluded) {
+            if(callBackMethodsIncluded) { //THAT's what we want!!!!
                 UiElement uiElement = new UiElement();
                 uiElement.handlerMethod = sm;
                 uiElement.signature = Helper.getSignatureOfSootMethod(sm);
                 uiElement.kindOfElement = "ActivityLifecycleMethod";
-                uiElement.elementId = acClass;
+                uiElement.globalId = Content.getNewUniqueID();
+                uiElement.elementId = Integer.toString(uiElement.globalId);
+                uiElement.declaringSootClass = acClass;
                 uiElements.add(uiElement);
             }
         }

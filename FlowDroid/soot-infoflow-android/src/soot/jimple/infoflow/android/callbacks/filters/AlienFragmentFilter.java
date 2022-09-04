@@ -21,7 +21,7 @@ public class AlienFragmentFilter extends AbstractCallbackFilter {
 	/**
 	 * Creates a new instance of the {@link AlienFragmentFilter} class
 	 * 
-	 * @param fragmentToActivity
+	 * @param A
 	 *            mapping from fragments to the activities containing them
 	 */
 	public AlienFragmentFilter(MultiMap<SootClass, SootClass> fragmentToActivity) {

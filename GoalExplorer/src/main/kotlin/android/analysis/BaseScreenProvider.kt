@@ -27,7 +27,7 @@ import soot.jimple.infoflow.android.SetupApplication
  *   3. onResume
  */
 class BaseScreenProvider(private val flowDroidAnalysis: SetupApplication) {
-    val baseScreens: Map<SootClass, Set<Screen>> by lazy { findBaseScreens() }
+    /*val baseScreens: Map<SootClass, Set<Screen>> by lazy { findBaseScreens() }
 
     private fun findBaseScreens(): HashMap<SootClass, HashSet<Screen>> {
         val baseScreens = HashMap<SootClass, HashSet<Screen>>()
@@ -54,7 +54,7 @@ class BaseScreenProvider(private val flowDroidAnalysis: SetupApplication) {
 
     private fun findLifecycleMethodsInCallbacks(activity: SootClass): List<SootMethod> {
         val methods = mutableListOf<SootMethod>()
-        val callbacks = flowDroidAnalysis.callbackMethods.get(activity)
+        val callbacks = flowDroidAnalysis.callbackMethods.get(activity) //extended classes ?
             .map { it.targetMethod }
 
         for (lifecycleMethod in launchLifecycleMethods) {
@@ -73,5 +73,5 @@ class BaseScreenProvider(private val flowDroidAnalysis: SetupApplication) {
             MethodSignatures.ActivityLifecycleMethods.ON_START,
             MethodSignatures.ActivityLifecycleMethods.ON_RESUME
         )
-    }
+    }*/
 }

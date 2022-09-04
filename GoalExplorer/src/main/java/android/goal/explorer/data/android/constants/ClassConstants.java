@@ -22,6 +22,15 @@ public class ClassConstants {
     public static final String FRAGMENTMANAGERCLASS = "android.app.FragmentManager";
     public static final String FRAGMENTSUPPORTTRANSACTIONCLASS = "android.support.v4.app.FragmentTransaction";
     public static final String FRAGMENTSUPPORTMANAGERCLASS = "android.support.v4.app.FragmentManager";
+    public static final String DIALOGFRAGMENTCLASS = "android.app.DialogFragment";
+    public static final String SUPPORTDIALOGFRAGMENTCLASS = "android.support.v4.app.DialogFragment";
+    public static final String APPCOMPATDIALOGFRAGMENTCLASS = "android.support.v7.app.AppCompatDialogFragment";
+    public static final String FRAGMENTPAGERADAPTERCLASS = "android.support.v4.app.FragmentPagerAdapter";
+    public static final String FRAGMENTSTATEPAGERADAPTERCLASS = "android.support.v4.app.FragmentStatePagerAdapter";
+    public static final String SUPPORTVIEWPAGERADAPTER = "android.support.v4.view.ViewPager";
+
+    public static final String SUPPORTACTIONBARDRAWERTOGGLE = "android.support.v7.app.ActionBarDrawerToggle";
+    public static final String SUPPORTNAVIGATIONVIEW = "android.support.design.widget.NavigationView";
 
     // Service
     public static final String SERVICECLASS = "android.app.Service";
@@ -44,6 +53,11 @@ public class ClassConstants {
 
     // Intent
     public static final String INTENTCLASS = "android.content.Intent";
+
+    // Async
+    public static final String ASYNCTASKCLASS = "android.os.AsyncTask";
+    public static final String RUNNABLECLASS = "java.lang.Runnable";
+    public static final String EXECUTORSERVICECLASS = "java.util.concurrent.ExecutorService";
 
     public static final String PREFERENCEACTIVITY = "android.preference.PreferenceActivity";
 

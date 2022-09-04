@@ -1,0 +1,3898 @@
+name: "com.google.android.apps.chromecast.app"
+version: 12920200
+permissions {
+  name: "com.google.android.apps.chromecast.app.permission.C2D_MESSAGE"
+  level: SIGNATURE
+}
+used_permissions: "android.permission.GET_ACCOUNTS"
+used_permissions: "android.permission.BLUETOOTH_ADMIN"
+used_permissions: "android.permission.RECEIVE_BOOT_COMPLETED"
+used_permissions: "android.permission.ACCESS_FINE_LOCATION"
+used_permissions: "android.permission.CHANGE_WIFI_STATE"
+used_permissions: "android.permission.INTERNET"
+used_permissions: "com.google.android.apps.chromecast.app.permission.C2D_MESSAGE"
+used_permissions: "android.permission.ACCESS_NETWORK_STATE"
+used_permissions: "android.permission.CHANGE_NETWORK_STATE"
+used_permissions: "android.permission.WAKE_LOCK"
+used_permissions: "android.permission.ACCESS_WIFI_STATE"
+used_permissions: "android.permission.BLUETOOTH"
+used_permissions: "android.permission.MANAGE_ACCOUNTS"
+used_permissions: "com.google.android.c2dm.permission.RECEIVE"
+used_permissions: "com.google.android.providers.gsf.permission.READ_GSERVICES"
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.mediaservices.OobeMediaActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.remotecontrol.GroupVolumeControlActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r1.<com.google.android.apps.chromecast.app.remotecontrol.GroupVolumeControlActivity: void startActivity(android.content.Intent)>($r8)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.t"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.t: void onClick(android.view.View)>"
+      id: 12
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/setup/DeviceSettingsActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+}
+components {
+  name: "com.google.android.libraries.social.licenses.LicenseMenuActivity"
+  kind: ACTIVITY
+  exported: true
+}
+components {
+  name: "com.google.android.gms.analytics.AnalyticsReceiver"
+  kind: RECEIVER
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r11.<android.content.Context: android.content.ComponentName startService(android.content.Intent)>(r14)"
+      class_name: "com.google.android.gms.analytics.internal.ai"
+      method: "<com.google.android.gms.analytics.internal.ai: void a(android.content.Context,android.content.Intent)>"
+      id: 21
+    }
+    kind: SERVICE
+    intents {
+      attributes {
+        kind: ACTION
+        value: "com.google.android.gms.analytics.ANALYTICS_DISPATCH"
+      }
+      attributes {
+        kind: CLASS
+        value: "com.google.android.gms.analytics.AnalyticsService"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.debug.DebugActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivityForResult(android.content.Intent,int)>($r22, 2)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 62
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/setup/DeviceSettingsActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivityForResult(android.content.Intent,int)>($r8, 3)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 72
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/stereopairing/settings/StereoPairSettingsActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r30)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 34
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r34)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 22
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r23)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void a(java.lang.String,com.google.d.b.g.ag,int)>"
+      id: 32
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: PACKAGE
+        value: "NULL-CONSTANT"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r38)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 12
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r26)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void E()>"
+      id: 29
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/setup/DeviceSettingsActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r4)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void o()>"
+      id: 6
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.libraries.hats20.SurveyPromptActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.gms.auth.api.signin.RevocationBoundService"
+  kind: SERVICE
+  exported: true
+  permission: "com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+}
+components {
+  name: "com.google.android.gms.gcm.GcmReceiver"
+  kind: RECEIVER
+  exported: true
+  permission: "com.google.android.c2dm.permission.SEND"
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.c2dm.intent.RECEIVE"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "com.google.android.apps.chromecast.app"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.DiscoveryActivity"
+  kind: ACTIVITY
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.BROWSABLE"
+      value: "android.intent.category.DEFAULT"
+    }
+    attributes {
+      kind: HOST
+      value: "madeby.google.com"
+    }
+    attributes {
+      kind: PATH
+      value: "/get-app/watch"
+    }
+    attributes {
+      kind: SCHEME
+      value: "https"
+    }
+    attributes {
+      kind: HOST
+      value: "madeby.google.com"
+    }
+    attributes {
+      kind: PATH
+      value: "/get-app/discover"
+    }
+    attributes {
+      kind: SCHEME
+      value: "https"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.BROWSABLE"
+      value: "android.intent.category.DEFAULT"
+    }
+    attributes {
+      kind: HOST
+      value: "email-prefs"
+    }
+    attributes {
+      kind: SCHEME
+      value: "googlehome"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.DEFAULT"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.BROWSABLE"
+      value: "android.intent.category.DEFAULT"
+    }
+    attributes {
+      kind: HOST
+      value: "chromecast.com"
+    }
+    attributes {
+      kind: SCHEME
+      value: "comgooglecast"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.BROWSABLE"
+      value: "android.intent.category.DEFAULT"
+    }
+    attributes {
+      kind: HOST
+      value: "device"
+    }
+    attributes {
+      kind: PATH
+      value: "/remotecontrol(.*)"
+    }
+    attributes {
+      kind: SCHEME
+      value: "googlehome"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.apps.chromecast.app.CREATE_GROUP"
+      value: "com.google.android.apps.chromecast.app.DEVICE_SETUP"
+      value: "com.google.android.apps.chromecast.app.DEVICES"
+      value: "com.google.android.apps.chromecast.app.DEVICE_SETTINGS"
+      value: "com.google.android.apps.chromecast.app.BACKDROP_SETTINGS"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.DEFAULT"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.MAIN"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.LAUNCHER"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.apps.chromecast.app.DEVICE_NOTIFICATION"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.BROWSABLE"
+      value: "android.intent.category.DEFAULT"
+    }
+    attributes {
+      kind: HOST
+      value: "controller"
+    }
+    attributes {
+      kind: SCHEME
+      value: "googlehome"
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r10.<com.google.android.apps.chromecast.app.DiscoveryActivity: void startActivity(android.content.Intent)>($r8)"
+      class_name: "com.google.android.apps.chromecast.app.e"
+      method: "<com.google.android.apps.chromecast.app.e: void a(boolean)>"
+      id: 9
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.DiscoveryActivity: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.DiscoveryActivity"
+      method: "<com.google.android.apps.chromecast.app.DiscoveryActivity: void a()>"
+      id: 8
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.gms.cast.framework.ReconnectionService"
+  kind: SERVICE
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.widget.genericerror.GenericErrorActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.gcm.CastGcmListenerService"
+  kind: SERVICE
+  exported: false
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.c2dm.intent.RECEIVE"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.search.SearchActivity"
+  kind: ACTIVITY
+  exported: false
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.SEARCH"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.mirror.CastScreenActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity: void startActivity(android.content.Intent)>($r3)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 10
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity: void startActivity(android.content.Intent)>($r21)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity: void g()>"
+      id: 45
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.offers.OfferRedemptionActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r10.<com.google.android.apps.chromecast.app.homemanagement.cm: void startActivity(android.content.Intent)>($r7)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.cn"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.cn: void onClick(android.view.View)>"
+      id: 10
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r230.<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void startActivity(android.content.Intent)>(r232)"
+      class_name: "com.google.android.apps.chromecast.app.setup.DeviceSetupActivity"
+      method: "<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void a(com.google.android.apps.chromecast.app.setup.common.bq)>"
+      id: 544
+    }
+    kind: ACTIVITY
+    intents {
+    }
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/postsetup/cast/PostSetupWizardActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.contentdiscovery.offers.OfferRedemptionActivity: void startActivity(android.content.Intent)>(r1)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.offers.OfferRedemptionActivity"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.offers.OfferRedemptionActivity: void a(android.content.Intent)>"
+      id: 4
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.widget.activities.InterstitialActivity: void startActivity(android.content.Intent)>(r5)"
+      class_name: "com.google.android.apps.chromecast.app.widget.activities.InterstitialActivity"
+      method: "<com.google.android.apps.chromecast.app.widget.activities.InterstitialActivity: void onClick(android.view.View)>"
+      id: 13
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r230.<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void startActivity(android.content.Intent)>($r82)"
+      class_name: "com.google.android.apps.chromecast.app.setup.DeviceSetupActivity"
+      method: "<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void a(com.google.android.apps.chromecast.app.setup.common.bq)>"
+      id: 445
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/postsetup/gae/GAEWizardActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "$z0 = virtualinvoke $r3.<android.content.Context: boolean bindService(android.content.Intent,android.content.ServiceConnection,int)>($r2, $r1, 0)"
+      class_name: "com.google.android.apps.chromecast.app.web.a"
+      method: "<com.google.android.apps.chromecast.app.web.a: boolean a()>"
+      id: 4
+    }
+    kind: SERVICE
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<com.google.android.apps.chromecast.app.homemanagement.l: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.m"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.m: void onClick(android.view.View)>"
+      id: 6
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r10.<com.google.android.apps.chromecast.app.homemanagement.cm: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.cn"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.cn: void onClick(android.view.View)>"
+      id: 15
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r14.<com.google.android.apps.chromecast.app.learn.LearnTutorialCompleteActivity: void startActivity(android.content.Intent)>($r15)"
+      class_name: "com.google.android.apps.chromecast.app.learn.ac"
+      method: "<com.google.android.apps.chromecast.app.learn.ac: void onClick(android.view.View)>"
+      id: 20
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity: void startActivity(android.content.Intent)>($r21)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.leanback.LeanbackPagerActivity: void g()>"
+      id: 45
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r11.<android.content.Context: void startActivity(android.content.Intent)>(r13)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.shared.c"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.shared.c: void onClick(android.view.View)>"
+      id: 15
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: ACTION
+        value: "android.intent.action.VIEW"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r23)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void a(java.lang.String,com.google.d.b.g.ag,int)>"
+      id: 32
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: PACKAGE
+        value: "NULL-CONSTANT"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<com.google.android.apps.chromecast.app.homemanagement.o: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.p"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.p: void onClick(android.view.View)>"
+      id: 6
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r2.<android.support.v4.app.v: void startActivity(android.content.Intent)>(r4)"
+      class_name: "com.google.android.apps.chromecast.app.setup.t"
+      method: "<com.google.android.apps.chromecast.app.setup.t: void onClick(android.view.View)>"
+      id: 5
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r8.<android.content.Context: void startActivity(android.content.Intent)>(r2)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.shared.ai"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.shared.ai: void b(com.google.d.b.d.a.es,int)>"
+      id: 11
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: ACTION
+        value: "android.intent.action.VIEW"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r10.<com.google.android.apps.chromecast.app.homemanagement.ch: void startActivity(android.content.Intent)>($r7)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.ci"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.ci: void onClick(android.view.View)>"
+      id: 10
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<android.support.v4.app.v: void startActivity(android.content.Intent)>(r6)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.leanback.c"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.leanback.c: void onClick(android.view.View)>"
+      id: 9
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: ACTION
+        value: "(.*)"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r26)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void E()>"
+      id: 29
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/setup/DeviceSettingsActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r1.<com.google.android.apps.chromecast.app.remotecontrol.GroupVolumeControlActivity: void startActivity(android.content.Intent)>($r8)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.t"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.t: void onClick(android.view.View)>"
+      id: 12
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/setup/DeviceSettingsActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<com.google.android.apps.chromecast.app.homemanagement.c.a: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.c.c"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.c.c: void onClick(android.view.View)>"
+      id: 7
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r13.<android.support.v4.app.v: void startActivity(android.content.Intent)>(r1)"
+      class_name: "com.google.android.apps.chromecast.app.setup.r"
+      method: "<com.google.android.apps.chromecast.app.setup.r: void r()>"
+      id: 16
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/setup/NotificationSoundsActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.MainActivity: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.core.MainActivity"
+      method: "<com.google.android.apps.chromecast.app.core.MainActivity: void r()>"
+      id: 16
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r10.<com.google.android.apps.chromecast.app.homemanagement.ch: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.ci"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.ci: void onClick(android.view.View)>"
+      id: 15
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+      method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void q()>"
+      id: 16
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<android.support.v4.app.v: void startActivity(android.content.Intent)>(r6)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.details.e"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.details.e: void onClick(android.view.View)>"
+      id: 9
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: ACTION
+        value: "(.*)"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.contentdiscovery.offers.OfferRedemptionActivity: void startActivity(android.content.Intent)>($r3)"
+      class_name: "com.google.android.apps.chromecast.app.contentdiscovery.offers.OfferRedemptionActivity"
+      method: "<com.google.android.apps.chromecast.app.contentdiscovery.offers.OfferRedemptionActivity: void i()>"
+      id: 12
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r11.<android.content.Context: void startActivity(android.content.Intent)>(r15)"
+      class_name: "com.google.android.apps.chromecast.app.backdrop.al"
+      method: "<com.google.android.apps.chromecast.app.backdrop.al: void a(com.google.d.b.f.a.ba)>"
+      id: 25
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: PACKAGE
+        value: "NULL-CONSTANT"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.homemanagement.a: void startActivity(android.content.Intent)>(r43)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.a"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.a: void c(int)>"
+      id: 50
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/room/wizardcomponents/StandaloneRoomWizardActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.homemanagement.ThirdPartyDeviceEntityActivity: void startActivity(android.content.Intent)>($r3)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.ThirdPartyDeviceEntityActivity"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.ThirdPartyDeviceEntityActivity: void m()>"
+      id: 4
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<com.google.android.apps.chromecast.app.setup.fa: void startActivity(android.content.Intent)>($r2)"
+      class_name: "com.google.android.apps.chromecast.app.setup.ff"
+      method: "<com.google.android.apps.chromecast.app.setup.ff: void onClick(android.content.DialogInterface,int)>"
+      id: 5
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "specialinvoke r0.<a.a.a.a: void startActivity(android.content.Intent,android.os.Bundle)>(r1, r2)"
+      class_name: "com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity"
+      method: "<com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity: void startActivity(android.content.Intent,android.os.Bundle)>"
+      id: 5
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void startActivity(android.content.Intent)>($r4)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.RemoteControlActivity: void o()>"
+      id: 6
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.cast.PostSetupWizardActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.postsetup.cast.PostSetupWizardActivity: void startActivity(android.content.Intent)>($r12)"
+      class_name: "com.google.android.apps.chromecast.app.postsetup.cast.PostSetupWizardActivity"
+      method: "<com.google.android.apps.chromecast.app.postsetup.cast.PostSetupWizardActivity: void finish()>"
+      id: 5
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "specialinvoke r0.<com.google.android.apps.chromecast.app.widget.f.h: void startActivity(android.content.Intent,android.os.Bundle)>(r1, r2)"
+      class_name: "com.google.android.apps.chromecast.app.postsetup.c.aq"
+      method: "<com.google.android.apps.chromecast.app.postsetup.c.aq: void startActivity(android.content.Intent,android.os.Bundle)>"
+      id: 4
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.orchestration.LinkedUsersActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.gms.cast.framework.media.MediaIntentReceiver"
+  kind: RECEIVER
+  exported: false
+}
+components {
+  name: "com.facebook.FacebookActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.feedback.HelpActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.feedback.HelpActivity: void startActivity(android.content.Intent)>(r12)"
+      class_name: "com.google.android.apps.chromecast.app.feedback.HelpActivity"
+      method: "<com.google.android.apps.chromecast.app.feedback.HelpActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 12
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: ACTION
+        value: "android.intent.action.VIEW"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.feedback.HelpActivity: void startActivity(android.content.Intent)>($r3)"
+      class_name: "com.google.android.apps.chromecast.app.feedback.HelpActivity"
+      method: "<com.google.android.apps.chromecast.app.feedback.HelpActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 27
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/libraries/social/licenses/LicenseMenuActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.learn.LearnTutorialCompleteActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r14.<com.google.android.apps.chromecast.app.learn.LearnTutorialCompleteActivity: void startActivity(android.content.Intent)>($r15)"
+      class_name: "com.google.android.apps.chromecast.app.learn.ac"
+      method: "<com.google.android.apps.chromecast.app.learn.ac: void onClick(android.view.View)>"
+      id: 20
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.EditDeviceNameActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.DeviceSettingsActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.util.phenotype.UpdatePhenotypeJobService"
+  kind: SERVICE
+  exported: false
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.firebase.jobdispatcher.ACTION_EXECUTE"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.web.WebViewActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.gms.analytics.AnalyticsJobService"
+  kind: SERVICE
+  exported: false
+  permission: "android.permission.BIND_JOB_SERVICE"
+}
+components {
+  name: "com.google.android.gms.cast.framework.media.MediaNotificationService"
+  kind: SERVICE
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.usersettings.ApplicationSettingsActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.usersettings.ApplicationSettingsActivity: void startActivityForResult(android.content.Intent,int)>($r3, 0)"
+      class_name: "com.google.android.apps.chromecast.app.usersettings.ApplicationSettingsActivity"
+      method: "<com.google.android.apps.chromecast.app.usersettings.ApplicationSettingsActivity: void onClick(android.content.DialogInterface,int)>"
+      id: 8
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.details.ContentDetailsPagerActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.cde.CdeLaunchService"
+  kind: SERVICE
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.util.phenotype.RegisterPhenotypeJobService"
+  kind: SERVICE
+  exported: false
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.firebase.jobdispatcher.ACTION_EXECUTE"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.stereopairing.settings.StereoPairSettingsActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.browse.ViewAllEntitiesActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.devices.DevicesActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.mediaapps.OAuthHandoffActivity"
+  kind: ACTIVITY
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.BROWSABLE"
+      value: "android.intent.category.DEFAULT"
+    }
+    attributes {
+      kind: HOST
+      value: "chromecast.auth.com"
+    }
+    attributes {
+      kind: PATH
+      value: "/done"
+    }
+    attributes {
+      kind: SCHEME
+      value: "comgooglecast"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.intent.action.VIEW"
+    }
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.BROWSABLE"
+      value: "android.intent.category.DEFAULT"
+    }
+    attributes {
+      kind: HOST
+      value: "offers"
+    }
+    attributes {
+      kind: PATH
+      value: "/end"
+    }
+    attributes {
+      kind: SCHEME
+      value: "comgooglecast"
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "$z0 = virtualinvoke $r3.<android.content.Context: boolean bindService(android.content.Intent,android.content.ServiceConnection,int)>($r2, $r1, 0)"
+      class_name: "com.google.android.apps.chromecast.app.web.a"
+      method: "<com.google.android.apps.chromecast.app.web.a: boolean a()>"
+      id: 4
+    }
+    kind: SERVICE
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.widget.handoff.ResultBroadcastHandoffActivity: void startActivityForResult(android.content.Intent,int)>(r1, 0)"
+      class_name: "com.google.android.apps.chromecast.app.widget.handoff.ResultBroadcastHandoffActivity"
+      method: "<com.google.android.apps.chromecast.app.widget.handoff.ResultBroadcastHandoffActivity: void a()>"
+      id: 17
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.cde.CdeActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.gms.common.api.GoogleApiActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.learn.LearnMediaPlayerActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.learn.LearnMediaPlayerActivity: void startActivity(android.content.Intent)>($r8)"
+      class_name: "com.google.android.apps.chromecast.app.learn.LearnMediaPlayerActivity"
+      method: "<com.google.android.apps.chromecast.app.learn.LearnMediaPlayerActivity: void w()>"
+      id: 11
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.defaultoutputdevice.summary.DefaultTvOutputSelectionActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.remotecontrol.HomeAutomationControllerActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.HomeAutomationControllerActivity: void startActivityForResult(android.content.Intent,int)>($r5, 1)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.HomeAutomationControllerActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.HomeAutomationControllerActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 8
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.remotecontrol.HomeAutomationControllerActivity: void startActivity(android.content.Intent)>($r7)"
+      class_name: "com.google.android.apps.chromecast.app.remotecontrol.HomeAutomationControllerActivity"
+      method: "<com.google.android.apps.chromecast.app.remotecontrol.HomeAutomationControllerActivity: void onCreate(android.os.Bundle)>"
+      id: 87
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.browse.recommendations.RelatedRecommendationsActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.stereopairing.creation.StereoPairCreationActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "android.arch.lifecycle.ProcessLifecycleOwnerInitializer"
+  kind: PROVIDER
+  exported: false
+  permission: ""
+}
+components {
+  name: "com.google.android.apps.chromecast.app.feedback.FeedbackActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.widget.handoff.ResultBroadcastHandoffActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "$z0 = virtualinvoke $r3.<android.content.Context: boolean bindService(android.content.Intent,android.content.ServiceConnection,int)>($r2, $r1, 0)"
+      class_name: "com.google.android.apps.chromecast.app.web.a"
+      method: "<com.google.android.apps.chromecast.app.web.a: boolean a()>"
+      id: 4
+    }
+    kind: SERVICE
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.widget.handoff.ResultBroadcastHandoffActivity: void startActivityForResult(android.content.Intent,int)>(r1, 0)"
+      class_name: "com.google.android.apps.chromecast.app.widget.handoff.ResultBroadcastHandoffActivity"
+      method: "<com.google.android.apps.chromecast.app.widget.handoff.ResultBroadcastHandoffActivity: void a()>"
+      id: 17
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.gms.analytics.AnalyticsService"
+  kind: SERVICE
+  exported: false
+}
+components {
+  name: "com.firebase.jobdispatcher.GooglePlayReceiver"
+  kind: SERVICE
+  exported: true
+  permission: "com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE"
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.gms.gcm.ACTION_TASK_READY"
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<android.content.Context: void sendBroadcast(android.content.Intent)>(r2)"
+      class_name: "com.firebase.jobdispatcher.j"
+      method: "<com.firebase.jobdispatcher.j: int a(com.firebase.jobdispatcher.u)>"
+      id: 9
+    }
+    kind: RECEIVER
+    intents {
+      attributes {
+        kind: ACTION
+        value: "com.google.android.gms.gcm.ACTION_SCHEDULE"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.gms"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "$z3 = virtualinvoke $r10.<android.content.Context: boolean bindService(android.content.Intent,android.content.ServiceConnection,int)>(r33, r31, 1)"
+      class_name: "com.firebase.jobdispatcher.e"
+      method: "<com.firebase.jobdispatcher.e: void a(com.firebase.jobdispatcher.y)>"
+      id: 68
+    }
+    kind: SERVICE
+    intents {
+      attributes {
+        kind: ACTION
+        value: "com.firebase.jobdispatcher.ACTION_EXECUTE"
+      }
+      attributes {
+        kind: CLASS
+        value: "(.*)"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.widget.activities.InterstitialActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.widget.activities.InterstitialActivity: void startActivity(android.content.Intent)>(r5)"
+      class_name: "com.google.android.apps.chromecast.app.widget.activities.InterstitialActivity"
+      method: "<com.google.android.apps.chromecast.app.widget.activities.InterstitialActivity: void onClick(android.view.View)>"
+      id: 13
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.homemanagement.settings.ManagersActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.util.phenotype.PhenotypeBroadcastReceiver"
+  kind: RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.gms.phenotype.UPDATE"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.learn.LearnNetworkErrorActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.bluetooth.BluetoothManagementActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.stereopairing.settings.StereoPairSeparateSettingsActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.gcm.CastInstanceIDService"
+  kind: SERVICE
+  exported: false
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.gms.iid.InstanceID"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.browse.BrowseCategoryActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.defaultoutputdevice.summary.DefaultSpeakerOutputSelectionActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.core.MainActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.MainActivity: void startActivity(android.content.Intent)>($r4)"
+      class_name: "com.google.android.apps.chromecast.app.core.MainActivity"
+      method: "<com.google.android.apps.chromecast.app.core.MainActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 8
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.MainActivity: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.core.MainActivity"
+      method: "<com.google.android.apps.chromecast.app.core.MainActivity: void r()>"
+      id: 16
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.libraries.social.licenses.LicenseActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.DeviceSetupActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r230.<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void startActivity(android.content.Intent)>(r232)"
+      class_name: "com.google.android.apps.chromecast.app.setup.DeviceSetupActivity"
+      method: "<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void a(com.google.android.apps.chromecast.app.setup.common.bq)>"
+      id: 544
+    }
+    kind: ACTIVITY
+    intents {
+    }
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/postsetup/cast/PostSetupWizardActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r230.<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void startActivity(android.content.Intent)>($r82)"
+      class_name: "com.google.android.apps.chromecast.app.setup.DeviceSetupActivity"
+      method: "<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void a(com.google.android.apps.chromecast.app.setup.common.bq)>"
+      id: 445
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/postsetup/gae/GAEWizardActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<com.google.android.apps.chromecast.app.setup.fa: void startActivity(android.content.Intent)>($r2)"
+      class_name: "com.google.android.apps.chromecast.app.setup.ff"
+      method: "<com.google.android.apps.chromecast.app.setup.ff: void onClick(android.content.DialogInterface,int)>"
+      id: 5
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.gae.GAEWizardActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "specialinvoke r0.<com.google.android.apps.chromecast.app.widget.f.h: void startActivity(android.content.Intent,android.os.Bundle)>(r1, r2)"
+      class_name: "com.google.android.apps.chromecast.app.postsetup.c.aq"
+      method: "<com.google.android.apps.chromecast.app.postsetup.c.aq: void startActivity(android.content.Intent,android.os.Bundle)>"
+      id: 4
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.postsetup.gae.GAEWizardActivity: void startActivity(android.content.Intent)>($r13)"
+      class_name: "com.google.android.apps.chromecast.app.postsetup.gae.GAEWizardActivity"
+      method: "<com.google.android.apps.chromecast.app.postsetup.gae.GAEWizardActivity: void finish()>"
+      id: 5
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.offers.OffersActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.nightmode.NightModeManagementActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: void startActivity(android.content.Intent)>($r4)"
+      class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+      method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: boolean onOptionsItemSelected(android.view.MenuItem)>"
+      id: 8
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: void startActivity(android.content.Intent)>($r5)"
+      class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+      method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void q()>"
+      id: 16
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.core.ShortcutProxyActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void startActivity(android.content.Intent)>($r11)"
+      class_name: "com.google.android.apps.chromecast.app.core.ShortcutProxyActivity"
+      method: "<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void onCreate(android.os.Bundle)>"
+      id: 14
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void startActivity(android.content.Intent)>($r6)"
+      class_name: "com.google.android.apps.chromecast.app.core.ShortcutProxyActivity"
+      method: "<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void onCreate(android.os.Bundle)>"
+      id: 55
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void startActivity(android.content.Intent)>(r16)"
+      class_name: "com.google.android.apps.chromecast.app.core.ShortcutProxyActivity"
+      method: "<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void onCreate(android.os.Bundle)>"
+      id: 39
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void startActivity(android.content.Intent)>($r2)"
+      class_name: "com.google.android.apps.chromecast.app.core.ShortcutProxyActivity"
+      method: "<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void onCreate(android.os.Bundle)>"
+      id: 24
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void startActivity(android.content.Intent)>($r12)"
+      class_name: "com.google.android.apps.chromecast.app.core.ShortcutProxyActivity"
+      method: "<com.google.android.apps.chromecast.app.core.ShortcutProxyActivity: void onCreate(android.os.Bundle)>"
+      id: 8
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.homemanagement.ThirdPartyDeviceEntityActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.homemanagement.ThirdPartyDeviceEntityActivity: void startActivity(android.content.Intent)>($r3)"
+      class_name: "com.google.android.apps.chromecast.app.homemanagement.ThirdPartyDeviceEntityActivity"
+      method: "<com.google.android.apps.chromecast.app.homemanagement.ThirdPartyDeviceEntityActivity: void m()>"
+      id: 4
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.settings.fdr.FDRActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.defaultoutput.ui.DefaultOutputActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.gcm.GcmRegistrationService"
+  kind: SERVICE
+  exported: true
+  permission: "com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE"
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "com.google.android.gms.gcm.ACTION_TASK_READY"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.NotificationSoundsActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity: void startActivityForResult(android.content.Intent,int)>($r19, 100)"
+      class_name: "com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity"
+      method: "<com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity: boolean i()>"
+      id: 32
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "(.*)"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "specialinvoke r0.<a.a.a.a: void startActivityFromFragment(android.app.Fragment,android.content.Intent,int,android.os.Bundle)>(r1, r2, i0, r3)"
+      class_name: "com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity"
+      method: "<com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity: void startActivityFromFragment(android.app.Fragment,android.content.Intent,int,android.os.Bundle)>"
+      id: 7
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "specialinvoke r0.<a.a.a.a: void startActivity(android.content.Intent,android.os.Bundle)>(r1, r2)"
+      class_name: "com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity"
+      method: "<com.google.android.apps.chromecast.app.learn.LearnMediaBrowserActivity: void startActivity(android.content.Intent,android.os.Bundle)>"
+      id: 5
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.firstlaunch.FirstLaunchWizardActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.room.wizardcomponents.StandaloneRoomWizardActivity"
+  kind: ACTIVITY
+  exported: false
+}
+components {
+  name: "com.google.android.apps.chromecast.app.remotecontrol.EqualizerSettingsActivity"
+  kind: ACTIVITY
+  exported: false
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r230.<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void startActivity(android.content.Intent)>(r232)"
+      class_name: "com.google.android.apps.chromecast.app.setup.DeviceSetupActivity"
+      method: "<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void a(com.google.android.apps.chromecast.app.setup.common.bq)>"
+      id: 544
+    }
+    kind: ACTIVITY
+    intents {
+    }
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/postsetup/cast/PostSetupWizardActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r2.<android.support.v4.app.v: void startActivity(android.content.Intent)>($r8)"
+      class_name: "com.google.android.apps.chromecast.app.util.am"
+      method: "<com.google.android.apps.chromecast.app.util.am: void onClick(android.content.DialogInterface,int)>"
+      id: 11
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r230.<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void startActivity(android.content.Intent)>($r82)"
+      class_name: "com.google.android.apps.chromecast.app.setup.DeviceSetupActivity"
+      method: "<com.google.android.apps.chromecast.app.setup.DeviceSetupActivity: void a(com.google.android.apps.chromecast.app.setup.common.bq)>"
+      id: 445
+    }
+    kind: ACTIVITY
+    intents {
+      attributes {
+        kind: CLASS
+        value: "com/google/android/apps/chromecast/app/postsetup/gae/GAEWizardActivity"
+      }
+      attributes {
+        kind: PACKAGE
+        value: "com.google.android.apps.chromecast.app"
+      }
+    }
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.usersettings.ApplicationSettingsActivity: void startActivityForResult(android.content.Intent,int)>($r3, 0)"
+      class_name: "com.google.android.apps.chromecast.app.usersettings.ApplicationSettingsActivity"
+      method: "<com.google.android.apps.chromecast.app.usersettings.ApplicationSettingsActivity: void onClick(android.content.DialogInterface,int)>"
+      id: 8
+    }
+    kind: ACTIVITY
+    missing: 0
+  }
+  exit_points {
+    instruction {
+      statement: "virtualinvoke $r3.<com.google.android.apps.chromecast.app.setup.fa: void startActivity(android.content.Intent)>($r2)"
+      class_name: "com.google.android.apps.chromecast.app.setup.ff"
+      method: "<com.google.android.apps.chromecast.app.setup.ff: void onClick(android.content.DialogInterface,int)>"
+      id: 5
+    }
+    kind: ACTIVITY
+    intents {
+    }
+  }
+}
+components {
+  name: "com.google.android.libraries.hats20.ShowSurveyActivity"
+  kind: ACTIVITY
+  exported: false
+  intent_filters {
+    attributes {
+      kind: CATEGORY
+      value: "android.intent.category.DEFAULT"
+    }
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.browse.recommendations.e"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.core.r"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.gms.analytics.AnalyticsReceiver"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.homemanagement.d.n"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.gae.be"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.stereopairing.settings.m"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.stereopairing.settings.i"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.core.c"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.gae.b.n"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.core.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.core.q"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.u.am"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.feedback.a.f"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.cf"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.assist.a.g"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.cg"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.devices.c"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.assist.a.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.ch"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.devices.b"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.ci"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.devices.a"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.r.b"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.contentdiscovery.browse.n"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.devices.l"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.co"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.cp"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.mediaapps.o"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.firstlaunch.a.b"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.homemanagement.settings.z"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.mediaapps.n"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.firstlaunch.a.ay"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.cde.j"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.facebook.b.h"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.orchestration.a.c"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "android.support.v7.app.af"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.orchestration.a.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.gae.dc"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.util.phenotype.PhenotypeBroadcastReceiver"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.fj"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.fk"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "android.support.v7.e.as"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.fl"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.web.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.usersettings.ae"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.bl"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.a.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.c.ao"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.a"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "a.a.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.postsetup.gae.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.drawer.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.gms.analytics.internal.ac"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.mirror.d"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.widget.f.l"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.o.ar"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.p"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.setup.iq"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.mirror.y"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.apps.chromecast.app.stereopairing.creation.e"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+components {
+  name: "com.google.android.gms.analytics.a"
+  kind: DYNAMIC_RECEIVER
+  exported: true
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.WIFI_STATE_CHANGED"
+    }
+  }
+  intent_filters {
+    attributes {
+      kind: ACTION
+      value: "android.net.wifi.STATE_CHANGE"
+    }
+  }
+  registration_instruction {
+    statement: "virtualinvoke r0.<com.google.android.apps.chromecast.app.core.NewMainActivity: android.content.Intent registerReceiver(android.content.BroadcastReceiver,android.content.IntentFilter)>($r4, $r3)"
+    class_name: "com.google.android.apps.chromecast.app.core.NewMainActivity"
+    method: "<com.google.android.apps.chromecast.app.core.NewMainActivity: void onResume()>"
+    id: 10
+  }
+}
+analysis_start: 1536503284
+analysis_end: 1536504053

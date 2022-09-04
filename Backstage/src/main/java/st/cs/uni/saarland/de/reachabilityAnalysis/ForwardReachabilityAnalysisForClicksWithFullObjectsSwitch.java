@@ -1,23 +1,41 @@
 package st.cs.uni.saarland.de.reachabilityAnalysis;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import soot.SootMethod;
 import soot.Unit;
 import soot.Value;
-import soot.jimple.EqExpr;
-import soot.jimple.IfStmt;
-import soot.jimple.LookupSwitchStmt;
-import soot.jimple.NeExpr;
+import soot.jimple.*;
 import soot.jimple.internal.JimpleLocal;
 import st.cs.uni.saarland.de.helpClasses.Helper;
 
 import java.util.Set;
 
 public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends ForwardReachabilityAnalysisForClicksSwitch {
+	private final Logger logger;
 
 	public ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(String elementId, SootMethod sootMethod, Set<CallSite> callSites){
-		super(elementId, sootMethod, callSites, "$r1", "");
+		super(elementId, sootMethod, callSites, "@parameter0", "");
+		this.logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 	}
+
+	public ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(String elementId, SootMethod sootMethod, Set<CallSite> callSites, String getIdSignature){
+		super(elementId, sootMethod, callSites, "@parameter0", getIdSignature);
+		this.logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
+	}
+
+	public ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(String elementId, String buttonRegister, SootMethod sootMethod, Set<CallSite> callSites){
+		super(elementId, sootMethod, callSites, buttonRegister, "");
+		this.logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
+	}
+
+	public ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(String elementId, String buttonRegister, SootMethod sootMethod, Set<CallSite> callSites, String getIdSignature){
+		super(elementId, sootMethod, callSites, buttonRegister, getIdSignature);
+		this.logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
+	}
+
 
 	@Override
 	public void caseLookupSwitchStmt(final LookupSwitchStmt stmt){
@@ -26,10 +44,13 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 
 	@Override
 	public void caseIfStmt(final IfStmt stmt){
+		//logger.debug("Comparing {} {} for {}", elementId, stmt, currentSootMethod);
 		boolean isBranchTaken = false;
 		Value condition = stmt.getCondition();
 		if(condition instanceof NeExpr){
 			NeExpr neExpr = (NeExpr)condition;
+			//logger.debug("Op1 {} {} and op2 {} {}", neExpr.getOp1(), neExpr.getOp1().getType().toString(),  neExpr.getOp2(), neExpr.getOp2().getType().toString());
+		
 			if(neExpr.getOp1().getType().toString().equals("android.view.View") && neExpr.getOp1().toString().equals(registerOfButtonId)){
 				isBranchTaken = true;
 				Unit target;
@@ -38,6 +59,7 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 					//search in fields
 					valueToCompare = RAHelper.getValueOfTheVariableForTheButtonsClick((JimpleLocal)neExpr.getOp2(), stmt, currentSootMethod);
 				}
+				//logger.debug("Comparing value {} with {} for {} {}", elementId, valueToCompare, stmt, currentSootMethod);
 				if(valueToCompare == null){
 					return;
 				}
@@ -56,7 +78,8 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 					}
 					visitedTargets.add(target);
 				}
-				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
+				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, registerOfButtonId, currentSootMethod, callSites, buttonClickGetId);
+				//ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
 				newSwitch.setVisitedTargets(this.visitedTargets);
 				while(target != null){
 					target.apply(newSwitch);
@@ -93,7 +116,8 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 					}
 					visitedTargets.add(target);
 				}
-				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
+				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, registerOfButtonId, currentSootMethod, callSites, buttonClickGetId);
+				//ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
 				newSwitch.setVisitedTargets(this.visitedTargets);
 				while(target != null){
 					target.apply(newSwitch);
@@ -111,7 +135,8 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 		}
 		else if(condition instanceof EqExpr){
 			EqExpr eqExpr = (EqExpr)condition;
-			if(eqExpr.getOp1().getType().toString().equals("int") && eqExpr.getOp1().toString().equals(registerOfButtonId)){
+			//logger.debug("Op1 {} {} and op2 {} {}", eqExpr.getOp1(), eqExpr.getOp1().getType().toString(),  eqExpr.getOp2(), eqExpr.getOp2().getType().toString());
+			if(eqExpr.getOp1().getType().toString().equals("android.view.View") && eqExpr.getOp1().toString().equals(registerOfButtonId)){
 				isBranchTaken = true;
 				Unit target;
 				String valueToCompare = null;
@@ -119,6 +144,7 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 					//search in fields
 					valueToCompare = RAHelper.getValueOfTheVariableForTheButtonsClick((JimpleLocal)eqExpr.getOp2(), stmt, currentSootMethod);
 				}
+				//logger.debug("Comparing value {} with {} for {} {}", elementId, valueToCompare, stmt, currentSootMethod);
 				if(valueToCompare == null){
 					return;
 				}
@@ -137,7 +163,8 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 					}
 					visitedTargets.add(target);
 				}
-				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
+				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, registerOfButtonId, currentSootMethod, callSites, buttonClickGetId);
+				//(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
 				newSwitch.setVisitedTargets(this.visitedTargets);
 				while(target != null){
 					target.apply(newSwitch);
@@ -148,7 +175,7 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 				}
 				//isReady = true;
 			}
-			else if(eqExpr.getOp2().getType().toString().equals("int") && eqExpr.getOp2().toString().equals(registerOfButtonId)){
+			else if(eqExpr.getOp2().getType().toString().equals("android.view.View") && eqExpr.getOp2().toString().equals(registerOfButtonId)){
 				isBranchTaken = true;
 				Unit target;
 				String valueToCompare = null;
@@ -177,7 +204,8 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 					}
 					visitedTargets.add(target);
 				}
-				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
+				ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, registerOfButtonId, currentSootMethod, callSites, buttonClickGetId);
+				//ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
 				newSwitch.setVisitedTargets(this.visitedTargets);
 				while(target != null){
 					target.apply(newSwitch);
@@ -193,10 +221,59 @@ public class ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch extends F
 				analyzeBothBranches(stmt);
 			}
 		}
-		if(!isBranchTaken){
+		else if(!isBranchTaken){
 			//use both branches
 			analyzeBothBranches(stmt);
 		}
 		isReady = true;
+	}
+
+	protected void analyzeBothBranches(IfStmt stmt) {
+
+		ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch newSwitch = new ForwardReachabilityAnalysisForClicksWithFullObjectsSwitch(elementId, registerOfButtonId, currentSootMethod, callSites, buttonClickGetId);
+		Unit target = stmt.getTarget();
+		if(!visitedTargets.contains(target)){
+			visitedTargets.add(target);
+			newSwitch.setVisitedTargets(this.visitedTargets);
+			while(target != null){
+				target.apply(newSwitch);
+				if(newSwitch.isReady()){
+					break;
+				}
+				target = postDominatorFinder.getImmediateDominator(target);						
+			}
+		}
+		
+		target = Helper.getSuccessorOf(currentSootMethod.getActiveBody().getUnits(), stmt);
+		if(!visitedTargets.contains(target)){
+			visitedTargets.add(target);
+			newSwitch.setVisitedTargets(this.visitedTargets);
+			while(target != null){
+				target.apply(newSwitch);
+				if(newSwitch.isReady()){
+					break;
+				}
+				target = postDominatorFinder.getImmediateDominator(target);						
+			}
+		}
+	}
+
+	@Override
+	protected void processInvokeExpr(Stmt stmt) {
+		//TODO, here need to deal with full object case as well, add a boolean false here and true in child class
+		//TODO here we assume that getId was already called and we pass an item, when technically we could still pass the full object and invoke getId afterwards
+		CallbackToApiMapper.processUnit(currentSootMethod, callSites, stmt, registerOfButtonId, buttonClickGetId, true);
+
+
+		if (RAHelper.getStaticMethodSignatures().contains(Helper.getSignatureOfSootMethod(stmt.getInvokeExpr().getMethod()))) {
+			String uri = RAHelper.analyzeInvokeExpressionToFindUris(currentSootMethod.getActiveBody(), stmt, stmt.getInvokeExpr().getMethod(), stmt.getInvokeExpr().getArg(0), true);
+			if (uri != null) {
+				uris.add(uri);
+			} else {
+				uris.add(Helper.getSignatureOfSootMethod(stmt.getInvokeExpr().getMethod()));
+			}
+		}
+
+
 	}
 }

@@ -2,6 +2,8 @@ package android.goal.explorer.model.stg.edge;
 
 import android.goal.explorer.model.stg.node.AbstractNode;
 
+import org.pmw.tinylog.Logger;
+
 public class TransitionEdge {
 
     private AbstractNode srcNode;
@@ -61,16 +63,25 @@ public class TransitionEdge {
             return true;
         if (other == null)
             return false;
-        if (!super.equals(other))
+        /*if (!super.equals(other)){
+            Logger.debug("Super issue");
             return false;
+        }*/
         if (getClass() != other.getClass())
             return false;
 
         TransitionEdge o = (TransitionEdge) other;
-        if (o.getSrcNode() != srcNode)
+        if (srcNode == null){
+            if (o.getSrcNode() != null)
+                return false;
+        } else if (!srcNode.equals(o.getSrcNode())) 
             return false;
-        if (o.getTgtNode() != tgtNode)
-            return false;
+        if (tgtNode == null){
+            if (o.getTgtNode() != null)
+                return false;
+        }
+        else if (!tgtNode.equals(o.getTgtNode()))
+            return false;  
         if (getEdgeTag() == null) {
             return o.getEdgeTag() == null;
         } else return getEdgeTag().equals(((TransitionEdge) other).getEdgeTag());

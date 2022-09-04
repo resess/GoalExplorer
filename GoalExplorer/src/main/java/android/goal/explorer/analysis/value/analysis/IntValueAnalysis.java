@@ -2,17 +2,28 @@ package android.goal.explorer.analysis.value.analysis;
 
 import android.goal.explorer.analysis.value.AnalysisParameters;
 import android.goal.explorer.analysis.value.Constants;
+
+import com.google.common.primitives.Ints;
+
+import org.pmw.tinylog.Logger;
+
+import soot.jimple.infoflow.util.SystemClassHandler;
+
 import soot.Local;
 import soot.Scene;
+import soot.SootField;
 import soot.SootMethod;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.DefinitionStmt;
+import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.IntConstant;
 import soot.jimple.InvokeExpr;
+import soot.jimple.FieldRef;
 import soot.jimple.LongConstant;
 import soot.jimple.ParameterRef;
 import soot.jimple.ReturnStmt;
+import soot.jimple.StaticFieldRef;
 import soot.jimple.Stmt;
 import soot.jimple.toolkits.callgraph.Edge;
 
@@ -42,7 +53,7 @@ public class IntValueAnalysis extends BackwardValueAnalysis {
 
     @Override
     public Set<Object> computeVariableValues(Value value, Stmt callSite) {
-        return computeVariableValues(value, callSite, null);
+        return computeVariableValues(value, callSite, new HashSet<>());
     }
 
     /**
@@ -54,15 +65,25 @@ public class IntValueAnalysis extends BackwardValueAnalysis {
      */
     @Override
     public Set<Object> computeVariableValues(Value value, Stmt start, Set<List<Edge>> edges) {
+        Logger.debug("Computing variable values for {} {}", value, start);
         if (value instanceof IntConstant) {
             return Collections.singleton((Object) ((IntConstant) value).value);
         } else if (value instanceof LongConstant) {
             return Collections.singleton((Object) ((LongConstant) value).value);
         } else if (value instanceof Local) {
             return findIntAssignmentsForLocal(start, (Local) value, new HashSet<Stmt>(), edges);
-        } else {
-            return Collections.singleton((Object) TOP_VALUE);
+        } 
+        else if(value instanceof StaticFieldRef){
+            SootField field = ((StaticFieldRef)value).getField(); //maybe check if the name is like R.id and then look up the value in ResourceValueProvider ?
+            Logger.debug("The tags, {} and declaration {}", field.getTags(), field.getDeclaration());
+            //List<DefinitionStmt> definitionStmts = findAssignmentsForFieldRef(start, (FieldRef)value, true, new HashSet<>());
+            //Logger.debug("The definitions : {}", definitionStmts);
+            if(!field.getTags().isEmpty()){
+                int finalValue = Ints.fromByteArray(field.getTags().get(0).getValue());
+                return Collections.singleton((Object)finalValue);
+            }
         }
+        return Collections.singleton((Object) TOP_VALUE);
     }
 
     /**
@@ -76,7 +97,7 @@ public class IntValueAnalysis extends BackwardValueAnalysis {
     private Set<Object> findIntAssignmentsForLocal(Stmt start, Local local, Set<Stmt> visitedStmts,
                                                    Set<List<Edge>> contextEdges) {
         List<DefinitionStmt> assignStmts =
-                findAssignmentsForLocal(start, local, true, new HashSet<>());
+                findAssignmentsForLocalOrFieldRef(start, local, true, new HashSet<>());
         Set<Object> result = new HashSet<>(assignStmts.size());
 
         for (DefinitionStmt assignStmt : assignStmts) {
@@ -106,8 +127,16 @@ public class IntValueAnalysis extends BackwardValueAnalysis {
                         result.add(TOP_VALUE);
                     }
                 }
-            } else if (rhsValue instanceof InvokeExpr) {
-                SootMethod sm = ((InvokeExpr) rhsValue).getMethod();
+            }
+           /* else if (rhsValue instanceof FieldRef){
+                Logger.debug("Found a field ref {}", rhsValue);
+                return 
+                //computeVariableValues(rhsValue, assignStmt);
+            }*/
+             else if (rhsValue instanceof InvokeExpr) {
+                SootMethod sm = ((InvokeExpr) rhsValue).getMethod(); //TO-DO: need to find the target of the method call and look its definitions
+                if (SystemClassHandler.v().isClassInSystemPackage(sm.method().getDeclaringClass().getName()))
+                    return findIntAssignmentsFromFrameworkMethod(local, assignStmt, (InvokeExpr)rhsValue, sm, contextEdges);
                 for (List<Edge> edgeList : contextEdges) {
                     Edge edge = edgeList.iterator().next();
                     // Check for method overridden
@@ -128,6 +157,20 @@ public class IntValueAnalysis extends BackwardValueAnalysis {
         }
 
         return result;
+    }
+
+    private Set<Object> findIntAssignmentsFromFrameworkMethod(Local local, Stmt stmt, InvokeExpr expr, SootMethod frameworkMethod, Set<List<Edge>> contextEdges){
+        if(frameworkMethod.getName().equals("getId")){ //TODO: refine with signature instead
+            //extract the target of the invocation
+            Value target = ((InstanceInvokeExpr)expr).getBase();
+            if(target instanceof Local)
+                return findIntAssignmentsForLocal(stmt, (Local)target, new HashSet<Stmt>(),contextEdges);
+        }
+        else if(frameworkMethod.getName().equals("findViewById")){
+            Value elementId = expr.getArg(0);
+            return computeVariableValues(elementId, stmt, contextEdges);
+        }
+        return Collections.singleton((Object) TOP_VALUE);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package android.goal.explorer.cmdline;
 
+//import android.goal.explorer.utils.FileUtil;
 import android.goal.explorer.utils.FileUtil;
 import com.beust.jcommander.IDefaultProvider;
 import com.beust.jcommander.JCommander;
@@ -21,9 +22,15 @@ import st.cs.uni.saarland.de.reachabilityAnalysis.RAHelper;
 import st.cs.uni.saarland.de.testApps.Settings;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CmdLineParser {
+    //TODO: Add a model, build (for stg construction) vs mark for target marking
+    //TODO: Add --target target --target_type type for the options also (not mandatory)
 
     private final Options options = new Options();
 
@@ -31,13 +38,17 @@ public class CmdLineParser {
     private static final String OPTION_INPUT_APK_PATH = "i";
     private static final String OPTION_OUTPUT_PATH = "o";
     private static final String OPTION_CONFIG_FILE_PATH = "p";
+    private static final String OPTION_STG_PATH = "stg";
+    private static final String OPTION_PRE_PATH = "pre";
     private static final String OPTION_ICC_MODEL = "m";
+    private static final String OPTION_IC3_RESULTS_FOLDER = "r";
 
     // Analysis Config
     private static final String OPTION_MAX_CALLBACK = "c";
     private static final String OPTION_MAX_TIMEOUT = "t";
     private static final String OPTION_NUM_THREAD = "n";
     private static final String OPTION_CONTEXT_POINTTO = "cp";
+    private static final String OPTION_TARGET = "target";
 
     // Android
     private static final String OPTION_ANDROID_SDK_PATH = "s";
@@ -58,12 +69,16 @@ public class CmdLineParser {
     private void setupCmdOptions() {
         // command line options
         Option input = Option.builder(OPTION_INPUT_APK_PATH).required(true).longOpt("input").hasArg(true).desc("input apk path (required)").build();
+        Option stg = Option.builder(OPTION_STG_PATH).required(false).longOpt("stg").hasArg(true).desc("input stg path (required for marking)").build();
+        Option pre = Option.builder(OPTION_PRE_PATH).required(false).longOpt("precomputed").hasArg(true).desc("precomputed model folder").build();
+        Option target = Option.builder(OPTION_TARGET).required(stg.getValue() != null).longOpt("target").hasArg(true).desc("target or path to list of targets").build();
         Option output = Option.builder(OPTION_OUTPUT_PATH).required(false).longOpt("output").hasArg(true).desc("output directory (default to \"sootOutput\")").build();
         Option config = Option.builder(OPTION_CONFIG_FILE_PATH).required(false).longOpt("config").hasArg(true).desc("the configuration file (optional)").build();
         Option sdkPath = Option.builder(OPTION_ANDROID_SDK_PATH).required(false).longOpt("sdk").hasArg(true).desc("path to android sdk (default value can be set in config file)").build();
         Option apiLevel = Option.builder(OPTION_ANDROID_API_LEVEL).required(false).type(Number.class).longOpt("api").hasArg(true).desc("api level (default to 23)").build();
         Option contextPointTo = new Option(OPTION_CONTEXT_POINTTO, "contextPt", false, "enable context-sensitive point-to analysis (default disabled)");
         Option iccModel = Option.builder(OPTION_ICC_MODEL).required(false).longOpt("model").hasArg(true).desc("icc model (default to match the package name").build();
+        Option ic3ResultsFolder = Option.builder(OPTION_IC3_RESULTS_FOLDER).required(false).longOpt("icc_folder").hasArg(true).desc("icc models directory (default to \"iccbot\"").build();
         Option maxCallback = Option.builder(OPTION_MAX_CALLBACK).required(false).type(Number.class).hasArg(true).desc("the maximum number of callbacks modeled for each component (default to 100)").build();
         Option timeOut = Option.builder(OPTION_MAX_TIMEOUT).required(false).hasArg(true).desc("maximum timeout analyzing each component in seconds (default: 120)").build();
         Option numThread = Option.builder(OPTION_NUM_THREAD).required(false).hasArg(true).desc("the number of threads used for multi-threading analysis. Adjust to the number of CPU cores for better performance (default: 16)").build();
@@ -72,7 +87,7 @@ public class CmdLineParser {
         Option version = new Option( OPTION_VERSION,"version", false,"print version info" );
 
         // add the options
-        options.addOption(input).addOption(output).addOption(config).addOption(sdkPath).addOption(apiLevel).addOption(iccModel);
+        options.addOption(input).addOption(output).addOption(config).addOption(sdkPath).addOption(apiLevel).addOption(iccModel).addOption(stg).addOption(target).addOption(pre);
         options.addOption(timeOut).addOption(maxCallback).addOption(numThread).addOption(contextPointTo);
         options.addOption(debug).addOption(help).addOption(version);
     }
@@ -104,10 +119,31 @@ public class CmdLineParser {
             if (outputPath != null && !outputPath.isEmpty())
                 config.getFlowdroidConfig().getAnalysisFileConfig().setOutputFile(outputPath);
         }
+        if(cmd.hasOption(OPTION_STG_PATH) || cmd.hasOption("stg")){
+            String stgFile = cmd.getOptionValue(OPTION_STG_PATH);
+            if (stgFile != null && !stgFile.isEmpty())
+                config.setPrecomputedSTG(stgFile);
+        }
+        if(cmd.hasOption(OPTION_TARGET) || cmd.hasOption("target")){
+            Set<String> targets = parseListOption(cmd, OPTION_TARGET);
+            if(targets != null && !targets.isEmpty())
+                config.setTargets(targets);
+        }
+        if(cmd.hasOption(OPTION_PRE_PATH) || cmd.hasOption("precomputed")){
+            String precomputedModel = cmd.getOptionValue(OPTION_PRE_PATH);
+            if(precomputedModel != null && !precomputedModel.isEmpty())
+                config.setPrecomputedModelFolder(precomputedModel);
+        }
         if (cmd.hasOption(OPTION_ICC_MODEL) || cmd.hasOption("model")) {
             String iccModelPath = cmd.getOptionValue(OPTION_ICC_MODEL);
             if (iccModelPath != null && !iccModelPath.isEmpty())
                 config.getFlowdroidConfig().getIccConfig().setIccModel(iccModelPath);
+        }
+
+        if (cmd.hasOption(OPTION_IC3_RESULTS_FOLDER) || cmd.hasOption("icc_folder")) {
+            String ic3ResultsFolder = cmd.getOptionValue(OPTION_IC3_RESULTS_FOLDER);
+            if (ic3ResultsFolder != null && !ic3ResultsFolder.isEmpty())
+                config.setIc3ResultsFolder(ic3ResultsFolder);
         }
 
         // Setting android SDK path and target API level
@@ -171,6 +207,9 @@ public class CmdLineParser {
                     config.getFlowdroidConfig().getAnalysisFileConfig().getAndroidPlatformDir());
             System.exit(1);
         }
+
+
+
         if (!FileUtil.validatePath(config.getFlowdroidConfig().getAnalysisFileConfig().getOutputFile())){
             File outputFile = new File(config.getFlowdroidConfig().getAnalysisFileConfig().getOutputFile());
             if (!outputFile.mkdirs()) {
@@ -191,6 +230,7 @@ public class CmdLineParser {
                     setAndroidPlatformDir(sdkPath + "/platforms/");
         }
     }
+
 
     /**
      * Configure log4j level
@@ -266,6 +306,15 @@ public class CmdLineParser {
             return null;
         else
             return Integer.parseInt(str);
+    }
+
+    private Set<String> parseListOption(CommandLine cmd, String option) {
+        String str = cmd.getOptionValue(option);
+        if(str == null || str.isEmpty())
+            return null;
+            //if it's a path, then load the content
+            //otherwise we just add it directly
+        return Arrays.stream(str.split(";")).collect(Collectors.toSet());
     }
 
     /**

@@ -4,9 +4,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import st.cs.uni.saarland.de.entities.AppsUIElement;
+import st.cs.uni.saarland.de.entities.Listener;
 import st.cs.uni.saarland.de.helpMethods.CheckIfMethodsExisting;
 import st.cs.uni.saarland.de.testApps.AppController;
 import st.cs.uni.saarland.de.testApps.Content;
+import st.cs.uni.saarland.de.helpClasses.Helper;
 
 import java.util.*;
 
@@ -17,7 +19,7 @@ public class DissolveXMLTagsMain {
 	
 	
 	// TODO RENAMING!
-	public void dissolveXMLTags(Set<FragmentDynInfo> fragments, Set<TabViewInfo> tabViews){
+	public void dissolveXMLTags(Set<FragmentDynInfo> fragments, Set<TabViewInfo> tabViews, Set<AdapterViewInfo> adapterViews){
 		// TODO move to include tag resolving
 		// resolve the static fragment tag found in xml files
 		this.dissolveFragmentTags();
@@ -25,6 +27,8 @@ public class DissolveXMLTagsMain {
 		processDynAddedOrReplacedFragments(fragments);
 		// process that data of the Transformer run from tabviews
 		processTabViews(tabViews);
+
+		processAdapterViews(adapterViews);
 	}
 
 	// process the results of the tab view analysis
@@ -79,6 +83,66 @@ public class DissolveXMLTagsMain {
 		}
 	}
 
+	public void processAdapterViews(Set<AdapterViewInfo> adapterViewInfos) {
+		//for each adapter view element
+		//TODO double check activity class name vs declaring soot class, maybe should be set in uianalysis?
+		for (AdapterViewInfo adapterViewInfo: adapterViewInfos){
+			if(Helper.isIntegerParseInt(adapterViewInfo.getEID())){
+				int adapterViewId = Integer.parseInt(adapterViewInfo.getEID());
+				appController.extendAdapterViewWithDynItems(adapterViewId, adapterViewInfo);
+				//Not needed I guess
+				boolean dynListener = false;
+				Listener listener = null;
+				if(adapterViewInfo.getAdapterViewType().equals("spinner")){
+					//TODO deal with onNothingSelected
+					//Shouldn't we search in the adapter class instead?
+					dynListener = CheckIfMethodsExisting.getInstance().isMethodExisting(adapterViewInfo.getDeclaringSootClass(),
+							"void onItemSelected(android.widget.AdapterView,android.view.View,int,long)");
+					if (dynListener) {
+						//TODO switch to activityClassName
+						listener = new Listener("onClick", false, "void onItemSelected(android.widget.AdapterView,android.view.View,int,long)", adapterViewInfo.getDeclaringSootClass());
+						listener.setListenerClass(adapterViewInfo.getDeclaringSootClass());
+					}
+				}
+				else { //Nope should be in the adapter view class
+					//No need to do this here, dealt by listener class
+					//TODO only keep the onListItemClick case
+					dynListener = CheckIfMethodsExisting.getInstance().isMethodExisting(adapterViewInfo.getDeclaringSootClass(),
+							"void onItemClick(android.widget.AdapterView,android.view.View,int,long)");
+					if (dynListener) {
+						//logger.debug("Adding listener for object onItemClick");
+						listener = new Listener("onClick", false, "void onItemClick(android.widget.AdapterView,android.view.View,int,long)", adapterViewInfo.getDeclaringSootClass());
+						listener.setListenerClass(adapterViewInfo.getDeclaringSootClass());
+					} else {
+						dynListener = CheckIfMethodsExisting.getInstance().isMethodExisting(adapterViewInfo.getDeclaringSootClass(),
+								"void onListItemClick(android.widget.ListView,android.view.View,int,long)");
+						if (dynListener) {
+							//logger.debug("Adding listener for object onListItemClick");
+							listener = new Listener("onClick", false, "void onListItemClick(android.widget.ListView,android.view.View,int,long)", adapterViewInfo.getDeclaringSootClass());
+							listener.setListenerClass(adapterViewInfo.getDeclaringSootClass());
+						}
+					}
+				}
+				//also onListItemClick
+				if(listener != null){
+					Collection<Listener> listeners = new HashSet<Listener>();
+					listeners.add(listener);
+					appController.addDataToAdapterViewObject(adapterViewId, listeners, adapterViewInfo.getDeclaringSootClass());
+				}
+			}
+			else{
+				logger.error("No AdapterView found with this id {}", adapterViewInfo.getEID());
+			}
+				
+
+		}
+		//create a AppsUIElement for every item in the listview (in text I guess) with:
+			//either the assigned layout class type for ArrayAdapter
+			// Or whatever was obtained from parsing getView
+		//add onListItemClick as a listener for each of them
+		//add it to all the children elements as well
+	}
+
 	// processes all found fragment tags
 	public void dissolveFragmentTags(){
 		Iterator iter = appController.getFragmentTagIDIterator();
@@ -109,7 +173,7 @@ public class DissolveXMLTagsMain {
 			// if the counter of that element was found where the fragment layout should be inflated
 			if ((!StringUtils.isBlank(fragInfo.getFragmentClassName())) && !StringUtils.isBlank(fragInfo.getUiElementWhereFragIsAddedID())){
 
-				logger.info(fragInfo.getFragmentClassName());
+				//logger.info(fragInfo.getFragmentClassName());
 				// get the layout of the Fragment:
 				Collection<Integer> mainLayout = CheckIfMethodsExisting.getInstance().getFragmentViews(fragInfo.getFragmentClassName());
 				

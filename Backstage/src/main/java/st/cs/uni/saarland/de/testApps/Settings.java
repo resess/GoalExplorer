@@ -80,6 +80,7 @@ public class Settings {
     @Parameter(names = MAX_DEPTH_METHOD_LEVEL, description = "Maximum depth method level until " +
             "that an Analysis will search for Ui Elements and APIs")
     public int maxDepthMethodLevel = 15;
+    public int maxDepthMethodLevelForUi = 5;
 
     @Parameter(names = PROCESS_IMAGES, description = "extract the images and icons of the application")
     public boolean process_images = false;
@@ -88,10 +89,10 @@ public class Settings {
     public Boolean noLang = false;
 
     @Parameter(names = CG_ALGO, description = "The algorithm for building a Call-Graph")
-    public CallGraphAlgorithms cgAlgo = CallGraphAlgorithms.RTA;
+    public CallGraphAlgorithms cgAlgo = CallGraphAlgorithms.SPARK;
 
     @Parameter(names = USE_LIFECYCLE, description = "Add Lifecycle methods to the Reachability Analysis")
-    public Boolean RA_LIFECYCLE = false;
+    public Boolean RA_LIFECYCLE = true;
 
     @Parameter(names = LIMIT_BY_PACKAGE_NAME, description = "Limit reachability analysis to walk through methods only inside the same package name as an app has")
     public Boolean limitByPackageName = false;

@@ -7,10 +7,11 @@ package st.cs.uni.saarland.de.entities;
  */
 
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Listener {
+public class Listener implements Serializable {
 	String declaringClass;
 	String listenerMethod;
 	String listenerClass;
@@ -42,8 +43,9 @@ public class Listener {
 	}
 	
 	public void setListenerMethod(String methodSignature){
-		if (xmlDefined)
+		if (xmlDefined){
 			this.listenerMethod = methodSignature;
+		}
 	}
 	public String getListenerClass() {
 		return listenerClass;
@@ -77,14 +79,14 @@ public class Listener {
 	public boolean isCompleted(){
 		return isListenerClass() && isListenerMethod();
 	}
-	
+
 	@Override
 	public boolean equals(Object o){
 		if (o instanceof Listener){
-			if (((Listener) o).getListenerClass().trim().equals(this.listenerClass.trim()) && 
-					(((Listener) o).getListenerMethod().trim().equals(this.listenerMethod.trim())))
+			if (((Listener) o).getListenerClass().trim().equals(this.listenerClass.trim()) &&
+					(((Listener) o).getListenerMethod().trim().equals(this.listenerMethod.trim())) && (((Listener) o).getDeclaringClass().trim().equals(this.declaringClass.trim())))
 				return true;
-			else 
+			else
 				return false;
 		}else
 			return false;
@@ -96,6 +98,8 @@ public class Listener {
 		int result = 1;
 		result = prime * result
 				+ ((this.listenerClass == null) ? 0 : this.listenerClass.hashCode());
+		result = prime * result
+				+ ((this.declaringClass == null) ? 0 : this.declaringClass.hashCode());
 		result = prime * result + ((this.listenerMethod == null) ? 0 : this.listenerMethod.hashCode());
 		return result;
 	}

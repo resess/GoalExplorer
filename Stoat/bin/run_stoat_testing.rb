@@ -15,8 +15,17 @@ def cleanup(avd_serial)
 end
 
 # install the app
-def install_app(avd_serial, apk_path)
-  res = execute_shell_cmd("adb -s #{avd_serial} install -r #{apk_path}")
+def install_app(avd_serial, apk_path, config_apk_path="")
+  #here install multiple
+  cmd = ""
+  puts "Config path: #{config_apk_path}"
+  if !config_apk_path.empty?
+    #to check, if issue add the wildcard here instead
+    cmd = "adb -s #{avd_serial} install-multiple -g -r #{apk_path} #{config_apk_path} "
+  else
+    cmd = "adb -s #{avd_serial} install -g -r -t #{apk_path} "
+  end
+  res = execute_shell_cmd(cmd)
   puts "Output: #{res}"
 
   unless res.include? 'Success'
@@ -36,13 +45,14 @@ end
 
 # construct fsm for open source app, given app's dir, emma-instrumented
 def construct_fsm(apk_path, avd_serial, stoat_port, stg_file,
-                  timeout, max_events, event_delay)
+                  timeout, max_events,event_delay,strategy)
 
   # start the stoat server
   puts "** RUNNING STOAT FOR #{apk_path} **"
   Dir.chdir(STOAT_ROOT_DIR) do
     job2 = fork do
       cmd = "bash -x ./bin/analyzeAndroidApk.sh fsm_apk #{apk_path} apk #{apk_path} &> /dev/null &"
+      #cmd = "bash -x ./bin/analyzeAndroidApk.sh fsm_apk #{apk_path} apk #{apk_path} >> /data/faridah/src_apps/adpog/server.log.new 2>&1 "
       puts "$ #{cmd}"
       exec cmd
     end
@@ -51,15 +61,16 @@ def construct_fsm(apk_path, avd_serial, stoat_port, stg_file,
 
   # start the stoat client for gui exploration
   Dir.chdir("#{STOAT_ROOT_DIR}/a3e") do
-    execute_shell_cmd_output("timeout #{timeout} ruby ./bin/rec.rb "\
-      "--app #{apk_path} --apk #{apk_path} --dev #{avd_serial} "\
+    execute_shell_cmd_output("ruby ./bin/rec.rb "\
+      "--apk #{apk_path} --dev #{avd_serial} "\
       "--port #{stoat_port} --no-rec -loop --search weighted "\
       "--events #{max_events} --event_delay #{event_delay} "\
-      "--stg #{stg_file}")
+      "--stg #{stg_file} --u "\
+      "--screen_matching_strategy #{strategy}"
+    )
   end
 
   puts '** FINISH STOAT FOR FSM BUILDING'
-  cleanup(avd_serial)
 end
 
 #### CONSTANTS FOR RUNNING OF TOOL
@@ -74,14 +85,15 @@ avd_port = 5554
 stoat_port = '2000'
 
 # the traversal configurations timeouts for running
-max_exploration_time = '90m'
-max_event_number = 10
+max_exploration_time = '60m'
+max_event_number = 50
 
 # the delay time between events (in milliseconds)
 event_delay = 300
 
 # mandatory options
 apk_path = ''
+config_apk_path = ''
 
 ### ADDITIONS FROM GOAL-EXPLORER
 # steps to retrace before testing begins
@@ -90,6 +102,9 @@ steps_list = nil
 # file to construct STG with
 stg_file = nil
 
+# screen matching strategy
+#strategy = 'shallow'
+strategy = 'deep'
 # clean up for ctrl+c
 trap('INT') do
   puts 'Shutting down.'
@@ -120,6 +135,10 @@ OptionParser.new do |opts|
   opts.on('--apk_path path', 'the path of the apk to test (relative path or absolute path) ') do |a|
     apk_path = a
   end
+  
+  opts.on('--config_apk_path path', 'the path of the additional config apks') do |a|
+    config_apk_path = a
+  end
 
   ### ADDED FROM GOAL-EXPLORER
   opts.on('--retrace_steps steps_file', 'the file with steps to run before testing begins') do |it|
@@ -129,6 +148,10 @@ OptionParser.new do |opts|
   opts.on('--stg file', 'XML file for STG') do |it|
     stg_file = it
     puts "stg_file: #{stg_file}"
+  end
+  opts.on('--screen_matching_strategy strategy', "the strategy for matching screen, i.e shallow (name only) or deep") do |m|
+    strategy = m
+    puts "screen matching strategy: #{strategy}"
   end
   opts.on_tail('-h', '--help', "show this message. Note before testing an app, please set \"hw.keyboard=yes\" in the emulator's config file \"~/.android/avd/testAVD_1.avd/config.ini\"  and open the wifi network. \n\n Examples: \n \t
 	<Ant opens-soruce projects>\n \t ruby run_stoat_testing.rb --app_dir /home/suting/proj/mobile_app_benchmarks/test_apps/caldwell.ben.bites_4_src --avd_name testAVD_1 --avd_port 5554 --stoat_port 2000 --project_type ant \n \t
@@ -144,17 +167,18 @@ end.parse!
 # app_dir should be set if a single app was specified
 if !apk_path.eql?('') && File.exist?(apk_path)
   # set up emulator
-  # create_avd(avd_name, avd_sdk_version) if force_to_create
+  #create_avd(avd_name, avd_sdk_version) if force_to_create
   start_avd(avd_name, avd_serial, avd_port)
   prepare_avd(avd_serial)
-  install_app(avd_serial, apk_path)
+  install_app(avd_serial, apk_path, config_apk_path)
 
   # actual logic of the script
   construct_fsm(apk_path, avd_serial, stoat_port, stg_file,
-                max_exploration_time, max_event_number, event_delay)
+                max_exploration_time, max_event_number, event_delay, strategy)
 
   # cleanup
   uninstall_app(avd_serial, apk_path)
+  cleanup(avd_serial)
 else
   puts 'please specify the app to test, or check the app path'
   exit

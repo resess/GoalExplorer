@@ -79,7 +79,7 @@ public class StmtSwitchForNavDropDownMenus extends MyStmtSwitch {
 					mInfo.setActivityName(rightRegType);
 				}	
 			}
-			if (leftReg.equals(mInfo.getListenerReg())){
+			if (leftReg.equals(mInfo.getListenerReg())){//TODO: Update
 				mInfo.setListenerReg("");
 				if(stmt.getRightOp() instanceof ParameterRef){
 					int paramIndex = ((ParameterRef)stmt.getRightOp()).getIndex();

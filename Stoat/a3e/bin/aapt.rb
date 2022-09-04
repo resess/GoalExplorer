@@ -29,15 +29,44 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 
+require_relative 'log'
+
 class AAPT
+  def initialize
+    @launchers = nil
+    @current_launcher = nil
+  end
+  #maybe I can store here the current launcher and launchers?
   def pkg(apk)
     pkg = badg(apk, "package", /name='(\S+)'/)
     pkg[0][0] if pkg and pkg[0]
   end
 
-  def launcher(apk)
+  def launchers(apk)
     act = badg(apk, "launchable", /name='(\S+)'\s*label=/)
-    act[0][0] if act and act[0]
+    act.flat_map {|launch| launch[0]}
+  end
+
+  def has_more_launchers
+    !@launchers.nil? && !@launchers.empty?
+  end
+
+  def launcher(apk)
+    if @current_launcher.nil?
+      if (@launchers.nil?)
+        @launchers = launchers(apk)
+        Log.print "All launchers #{@launchers}"
+      end
+      @current_launcher = @launchers.first()
+    end
+    @current_launcher
+  end
+
+  def update_launcher
+    if (!@launchers.nil? && !@launchers.empty?)
+      @launchers.shift
+    end
+      @current_launcher = nil
   end
 
   def perm(apk)

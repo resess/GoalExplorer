@@ -37,14 +37,36 @@ class LayoutHandler extends DefaultHandler {
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
         // check for the special root element menu
+        //logger.debug("Parsing the element {} {} {} {}", uri, localName, qName, attributes);
         if (qName.equals("menu")) {
             // if menu is detected then this XMLLayoutFile is not only an XML file but also a Menu
             // change the XMLLayoutFile object to a Menu object
-            xmlLayFile = new Menu();
+            //logger.debug("The current xmlLayFile {}", xmlLayFile);
+            if(xmlLayFile instanceof Menu){
+                //logger.debug("Is empty? {} {}", xmlLayFile.isEmpty(), ((XMLLayoutFile)xmlLayFile).isEmpty());
+                //TODO: A submenu
+                //we need to somehow keep the mapping from the previous parsed item to the submenu
+                //do the same for preference screen?
+            }
+            else xmlLayFile = new Menu();
+            //maybe here if xmlLayFile is already set and it's a menu, then it's included inside of it
             // check for the special root element merge
         } else if (qName.equals("merge")) {
             // remember that this layout can only be included somewhere
             xmlLayFile.setIncludedSomewhere();
+        }
+        else if(qName.equals("PreferenceScreen")){
+            //logger.debug("The current xmlLayFile {}", xmlLayFile);
+            if(xmlLayFile instanceof PreferenceScreen) {
+                //logger.debug("Found inner preference screen");
+                
+            }
+            else xmlLayFile = new PreferenceScreen();
+            //only if it's the outermost one, so xmllayout is not set yet?
+            //in anycase, get 
+           
+                    //intentAction = attributes.getValue("intent");
+
         }
         // an UI element is found
         // -------------------------------------------------------------------------------------------------------
@@ -53,6 +75,7 @@ class LayoutHandler extends DefaultHandler {
         Listener listener = null;
         if (listenerMethodName != null) {
             listener = new Listener("onClick", true, listenerMethodName, "default_value");
+            logger.debug("Parsed a listener from xml file {}", listenerMethodName);
         }
 
         // -------------------------------------------------------------------------------------------------------
@@ -78,6 +101,7 @@ class LayoutHandler extends DefaultHandler {
             // extract the attribute name
             String attrName = attrNames[1];
 
+            //TODO Add listview special tag I guess
             // -----------------------------------------------
             // extract images
             // check if the currently analysed attribute is an imageMarker that is searched
@@ -144,7 +168,7 @@ class LayoutHandler extends DefaultHandler {
 
                     }
                     // TODO remove? debug purposes, only search for textmarker?
-                } else if (value.contains("string/")) {
+                } else if (!qName.equals("PreferenceScreen") && !qName.equals("item") && value.contains("string/")) {
                     String var = value.replaceAll("@\\+?string/", "");
                     textVar = textVar + "#" + var;
                     text = text + "#" + content.getStringValueFromStringName(var);
@@ -182,7 +206,8 @@ class LayoutHandler extends DefaultHandler {
         try {
             // get the parent of this element
             parent = stack.peek();
-            parentList.add(parent.getId());
+            if(parent != null)
+                parentList.add(parent.getId());
         } catch (EmptyStackException e) {
         }
 
@@ -190,19 +215,29 @@ class LayoutHandler extends DefaultHandler {
         // if this element is an include element/tag, it is special handeled
         if (qName.equals("include")) {
             // layout could be : 1)layout="@layout/merged_layout3_merge_tag", 2) layout="@android:layout/select_dialog_singlechoice"
-            String layoutName = attributes.getValue("layout").replace("@layout/", "");
+            String layoutName = attributes.getValue("layout");
+            if(layoutName == null){
+                logger.error("No layout found for include attribute {}",attributes);
+                layoutName = "";
+            }
+            layoutName = layoutName.replace("@layout/", "");
             if (layoutName.contains("@android:layout")) {
                 layoutName = ""; // just ignore it....
             }
             uiE = new XMLIncludeTag(qName, parentList, layoutName);
             app.addIncludeTagIDs(uiE.getId());
             // drawerlayout and viewPager tag are also special handeled
-        } else if (qName.equals("android.support.v4.view.ViewPager") || qName.equals("android.support.v4.widget.DrawerLayout")) {
+        } else if (qName.equals("android.support.v4.view.ViewPager") || qName.equals("android.support.v4.widget.DrawerLayout") || qName.equals("androidx.drawerlayout.widget.DrawerLayout")) {
             Map<String, String> textMap = new HashMap<>();
             textMap.put("default_value", text);
+            if(qName.contains("DrawerLayout")){
+                //need to check for nav graph
+                //parse app:navgraph and then map
+            }
             uiE = new SpecialXMLTag(qName, parentList, attributes.getValue("android:id"), textMap, textVar, drawableVarOfImages, styles);
             // fragment tags are also handeled special
-        } else if (qName.equals("fragment")) {
+        } 
+         else if (qName.equals("fragment") || qName.equals("androidx.fragment.app.FragmentContainerView")) {
             // the class which is included/inflated here, gets extracted and saved
             // the class name could be saved in the class attribute or in the android:name attribute
             String className = attributes.getValue("class");
@@ -212,29 +247,80 @@ class LayoutHandler extends DefaultHandler {
             textMap.put("default_value", text);
             uiE = new XMLFragment(qName, parentList, attributes.getValue("android:id"), textMap, textVar, className);
             app.addFragmentTagIDs(uiE.getId());
-            // case normal ui element was found like Button, TextView, ...
-        } else {
+           
+        }
+        else if(qName.equals("PreferenceScreen")){
+            //logger.debug("The current xmlLayFile {}", xmlLayFile);
+            if(xmlLayFile instanceof PreferenceScreen) {
+                //PreferenceScreen prefScreen = (PreferenceScreen)xmlLayFile;
+                String key = attributes.getValue("android:key"),
+                title = attributes.getValue("android:title");
+                Map<String, String> textMap = new HashMap<>();
+                textMap.put("default_value", text);
+                uiE = new PreferenceElement(key, text, qName, parentList, "", textMap, textVar, drawableVarOfImages, styles);
+                //prefScreen.addPreferenceElementId(uiE.getId());
+            }
+                
+        }
+        else if(qName.equals("intent")){
+            //need to add it to the previous I guess
+            AppsUIElement prevElement = stack.peek();
+            //logger.debug("The previous element {} {}",prevElement, uiE);
+            //xmlLayFile.setIntentAction()
+            if(prevElement instanceof PreferenceElement){
+                PreferenceElement prefElement = (PreferenceElement)prevElement;
+                prefElement.setIntentAction(attributes.getValue("android:action"));
+                prefElement.setIntentTargetClass(attributes.getValue("android:targetClass"));
+            }
+        }
+        else if (qName.equals("android.support.design.widget.NavigationView") || qName.equals("com.google.android.material.navigation.NavigationView")) {
+            String menuLayout = attributes.getValue("app:menu");
+            //logger.debug("Found a navigation view with menu {}", menuLayout);
             Map<String, String> textMap = new HashMap<>();
             textMap.put("default_value", text);
+            uiE = new XMLNavigation(qName, parentList, attributes.getValue("android:id"), textMap, textVar, listener, drawableVarOfImages, styles, menuLayout);
+
+        }
+        else if (qName.contains("ListView")) {
+            Map<String, String> textMap = new HashMap<>();
+            textMap.put("default_value", text);
+            uiE = new ListView(qName, parentList, attributes.getValue("android:id"), textMap, textVar, drawableVarOfImages, styles);
+        }
+        else if (qName.contains("Spinner")) {
+            Map<String, String> textMap = new HashMap<>();
+            textMap.put("default_value", text);
+            uiE = new Spinner(qName, parentList, attributes.getValue("android:id"), textMap, textVar, drawableVarOfImages, styles);
+
+        }
+        else {  // case normal ui element was found like Button, TextView, ...
+            Map<String, String> textMap = new HashMap<>();
+            textMap.put("default_value", text);
+            //TODO maybe add the layout file as an Id?
             uiE = new AppsUIElement(qName, parentList, attributes.getValue("android:id"), textMap, textVar, listener, drawableVarOfImages, styles);
+            /*if(qName.equals("item"))
+                logger.debug("Adding the listener object {} for item {} and parentList {} and xml {}", listener, uiE.getId(), parentList, xmlLayFile.getName());
+                */
+            
         }
 
-        // add the found ui element to the XMLLayoutFile in which it is located
-        xmlLayFile.addUIElement(uiE.getId());
-        // add UI element to the Application map
-        app.addUiElementsOfApp(uiE);
+        if(uiE != null){
+            // add the found ui element to the XMLLayoutFile in which it is located
+            xmlLayFile.addUIElement(uiE.getId());
+            // add UI element to the Application map
+            app.addUiElementsOfApp(uiE);
 
-        // check if this is the root element of this XMLLayoutFile:
-        if (firstElement) {
-            xmlLayFile.setRootElementID(uiE.getId());
-            firstElement = false;
+            // check if this is the root element of this XMLLayoutFile:
+            if (firstElement) {
+                xmlLayFile.setRootElementID(uiE.getId());
+                firstElement = false;
+            }
+
+            if (parent != null)
+                // add this element as a child of the parent
+                parent.addChildID(uiE.getId());
         }
 
-        if (parent != null)
-            // add this element as a child of the parent
-            parent.addChildID(uiE.getId());
-
-        // add the element to the stack so that children of this element, get this element as parent
+            // add the element to the stack so that children of this element, get this element as parent
         stack.push(uiE);
 
 
@@ -262,7 +348,8 @@ class LayoutHandler extends DefaultHandler {
             Helper.saveToStatisticalFile("file path of xml file didn't match an existing file: " + filePath);
             return app;
         }
-
+        logger.info("Parsing layout file at {}", filePath);
+        xmlLayFile = new XMLLayoutFile();
         SAXParserFactory factory = SAXParserFactory.newInstance();
         try {
             SAXParser parser = factory.newSAXParser();
@@ -275,6 +362,7 @@ class LayoutHandler extends DefaultHandler {
         // set the name of the currently parsed xml layout file
         xmlLayFile.setName(file.getFileName().toString().split("\\.xml")[0]);
         // add the XMLLayoutFile object to the app
+        logger.info("Done parsing file at {}", filePath);
         app.addXMLLayoutFile(xmlLayFile);
 
         // return the results of the analysis

@@ -23,7 +23,7 @@ import soot.jimple.infoflow.IInfoflow;
  * 
  * @author Steven Arzt
  */
-public class TypeTests extends JUnitTests {
+public abstract class TypeTests extends JUnitTests {
 
 	@Test(timeout = 300000)
 	public void stringToObjectTest() {
@@ -98,6 +98,15 @@ public class TypeTests extends JUnitTests {
 	}
 
 	@Test(timeout = 300000)
+	public void callTargetTest1Reduced() {
+		IInfoflow infoflow = initInfoflow();
+		List<String> epoints = new ArrayList<String>();
+		epoints.add("<soot.jimple.infoflow.test.TypeTestCode: void callTargetTest1Reduced()>");
+		infoflow.computeInfoflow(appPath, libPath, epoints, sources, sinks);
+		checkInfoflow(infoflow, 1);
+	}
+
+	@Test(timeout = 300000)
 	public void arrayObjectCastTest() {
 		IInfoflow infoflow = initInfoflow();
 		List<String> epoints = new ArrayList<String>();
@@ -115,7 +124,7 @@ public class TypeTests extends JUnitTests {
 		checkInfoflow(infoflow, 1);
 	}
 
-	@Test // (timeout=300000)
+	@Test(timeout = 300000)
 	public void arrayObjectCastTest3() {
 		IInfoflow infoflow = initInfoflow();
 		List<String> epoints = new ArrayList<String>();
@@ -272,6 +281,36 @@ public class TypeTests extends JUnitTests {
 	}
 
 	@Test(timeout = 300000)
+	public void aliasTypeTestReduced() {
+		IInfoflow infoflow = initInfoflow();
+		List<String> epoints = new ArrayList<String>();
+		epoints.add("<soot.jimple.infoflow.test.TypeTestCode: void aliasTypeTestReduced()>");
+		infoflow.computeInfoflow(appPath, libPath, epoints, sources, sinks);
+		checkInfoflow(infoflow, 1);
+		Assert.assertTrue((infoflow.getResults().isPathBetweenMethods(sink, sourceDeviceId)));
+	}
+
+	@Test(timeout = 300000)
+	public void aliasTypeTest2() {
+		IInfoflow infoflow = initInfoflow();
+		List<String> epoints = new ArrayList<String>();
+		epoints.add("<soot.jimple.infoflow.test.TypeTestCode: void aliasTypeTest2()>");
+		infoflow.computeInfoflow(appPath, libPath, epoints, sources, sinks);
+		checkInfoflow(infoflow, 1);
+		Assert.assertTrue((infoflow.getResults().isPathBetweenMethods(sink, sourceDeviceId)));
+	}
+
+	@Test // (timeout = 300000)
+	public void aliasTypeTest3() {
+		IInfoflow infoflow = initInfoflow();
+		List<String> epoints = new ArrayList<String>();
+		epoints.add("<soot.jimple.infoflow.test.TypeTestCode: void aliasTypeTest3()>");
+		infoflow.computeInfoflow(appPath, libPath, epoints, sources, sinks);
+		checkInfoflow(infoflow, 1);
+		Assert.assertTrue((infoflow.getResults().isPathBetweenMethods(sink, sourceDeviceId)));
+	}
+
+	@Test(timeout = 300000)
 	public void aliasReturnTest() {
 		IInfoflow infoflow = initInfoflow();
 		List<String> epoints = new ArrayList<String>();
@@ -348,6 +387,15 @@ public class TypeTests extends JUnitTests {
 		IInfoflow infoflow = initInfoflow();
 		List<String> epoints = new ArrayList<String>();
 		epoints.add("<soot.jimple.infoflow.test.TypeTestCode: void multiDimensionalArrayTest2()>");
+		infoflow.computeInfoflow(appPath, libPath, epoints, sources, sinks);
+		checkInfoflow(infoflow, 1);
+	}
+
+	@Test(timeout = 300000)
+	public void multiDimensionalArrayTest2Reduced() {
+		IInfoflow infoflow = initInfoflow();
+		List<String> epoints = new ArrayList<String>();
+		epoints.add("<soot.jimple.infoflow.test.TypeTestCode: void multiDimensionalArrayTest2Reduced()>");
 		infoflow.computeInfoflow(appPath, libPath, epoints, sources, sinks);
 		checkInfoflow(infoflow, 1);
 	}

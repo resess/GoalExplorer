@@ -3,11 +3,25 @@ package android.goal.explorer.cmdline;
 import soot.jimple.infoflow.InfoflowConfiguration;
 import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class GlobalConfig {
 
 
     // FlowDroid configuration
     private InfoflowAndroidConfiguration flowdroidConfig;
+
+    //Precomputed STG
+    private String precomputedSTG;
+    private String precomputedModelFolder;
+
+    //Targets
+    private Set<String> targets;
+
+    //IC3 results folder
+    private String ic3ResultsFolder;
 
     // Target API level
     private Integer targetApi;
@@ -18,6 +32,7 @@ public class GlobalConfig {
     // The number of threads used in parallel analysis
     private Integer numThread;
 
+
     // The point-to analysis (callgraph algorithm)
     public enum PointToType{
         CONTEXT, DEFAULT
@@ -26,6 +41,10 @@ public class GlobalConfig {
 
     public GlobalConfig() {
         setFlowdroidConfig(new InfoflowAndroidConfiguration());
+        flowdroidConfig.setCodeEliminationMode(InfoflowConfiguration.CodeEliminationMode.NoCodeElimination);
+        flowdroidConfig.setMergeDexFiles(true);
+        ic3ResultsFolder = "./implementation/GoalExplorer/iccbot";
+        targets = new HashSet<>();
         targetApi = -1;
         timeout = 120;
         numThread = 16;
@@ -45,6 +64,50 @@ public class GlobalConfig {
      */
     public void setFlowdroidConfig(InfoflowAndroidConfiguration flowdroidConfig) {
         this.flowdroidConfig = flowdroidConfig;
+    }
+
+    public String getPrecomputedSTG() {
+        return this.precomputedSTG;
+    }
+
+    public void setPrecomputedSTG(String stgFile) {
+        this.precomputedSTG = stgFile;
+    }
+
+    public String getPrecomputedModelFolder() {
+        return precomputedModelFolder;
+    }
+
+    public void setPrecomputedModelFolder(String precomputedModelFolder) {
+        this.precomputedModelFolder = precomputedModelFolder;
+    }
+
+    public Set<String> getTargets() {
+        return targets;
+    }
+
+    public void setTargets(Set<String> targets) {
+        this.targets = targets;
+    }
+
+    public void addTarget(String target){
+        targets.add(target);
+    }
+
+    /**
+     * Gets the ic3 results folder
+     * @return The Ic3 results folder
+     */
+    public String getIc3ResultsFolder(){
+        return this.ic3ResultsFolder;
+    }
+
+    /**
+     * Sets the ic3 results folder
+     * @param ic3ResultsFolder the ic3 results folder
+     */
+    public void setIc3ResultsFolder(String ic3ResultsFolder){
+        this.ic3ResultsFolder = ic3ResultsFolder;
     }
 
     /**

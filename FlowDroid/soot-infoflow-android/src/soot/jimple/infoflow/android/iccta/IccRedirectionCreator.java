@@ -12,19 +12,19 @@ import org.slf4j.LoggerFactory;
 
 import soot.Body;
 import soot.Local;
+import soot.LocalGenerator;
 import soot.Modifier;
-import soot.NullType;
 import soot.PatchingChain;
 import soot.RefType;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
+import soot.SootMethodRef;
 import soot.Type;
 import soot.Unit;
 import soot.Value;
 import soot.ValueBox;
 import soot.VoidType;
-import soot.javaToJimple.LocalGenerator;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.IntConstant;
 import soot.jimple.InvokeExpr;
@@ -35,6 +35,8 @@ import soot.jimple.Stmt;
 import soot.jimple.infoflow.android.entryPointCreators.components.ActivityEntryPointInfo;
 import soot.jimple.infoflow.android.entryPointCreators.components.ComponentEntryPointCollection;
 import soot.jimple.infoflow.android.entryPointCreators.components.ServiceEntryPointInfo;
+import soot.jimple.infoflow.entryPointCreators.SimulatedCodeElementTag;
+import soot.jimple.infoflow.util.SystemClassHandler;
 import soot.tagkit.Tag;
 import soot.util.HashMultiMap;
 import soot.util.MultiMap;
@@ -55,12 +57,10 @@ public class IccRedirectionCreator {
 		 * Method that is called when a new invocation to a redirector statement has
 		 * been inserted
 		 * 
-		 * @param link
-		 *            The inter-component link for which a statement has been injected
-		 * @param callStmt
-		 *            The statement that has been injected
-		 * @param redirectorMethod
-		 *            The redirector method that is being called
+		 * @param link             The inter-component link for which a statement has
+		 *                         been injected
+		 * @param callStmt         The statement that has been injected
+		 * @param redirectorMethod The redirector method that is being called
 		 */
 		public void onRedirectorCallInserted(IccLink link, Stmt callStmt, SootMethod redirectorMethod);
 
@@ -73,8 +73,8 @@ public class IccRedirectionCreator {
 	private final RefType INTENT_TYPE = RefType.v("android.content.Intent");
 	private final RefType IBINDER_TYPE = RefType.v("android.os.IBinder");
 
-	private final Map<String, SootMethod> source2RedirectMethod = new HashMap<>();
-	private final MultiMap<Body, Unit> instrumentedUnits = new HashMultiMap<>();
+	protected final Map<String, SootMethod> source2RedirectMethod = new HashMap<>();
+	protected final MultiMap<Body, Unit> instrumentedUnits = new HashMultiMap<>();
 
 	protected final SootClass dummyMainClass;
 	protected final ComponentEntryPointCollection componentToEntryPoint;
@@ -94,6 +94,10 @@ public class IccRedirectionCreator {
 		if (link.getDestinationC().isPhantom())
 			return;
 
+		// Do not instrument code into system methods
+		if (SystemClassHandler.v().isClassInSystemPackage(link.getFromSM().getDeclaringClass().getName()))
+			return;
+
 		// 1) generate redirect method
 		SootMethod redirectSM = getRedirectMethod(link);
 		if (redirectSM == null)
@@ -111,7 +115,8 @@ public class IccRedirectionCreator {
 	 * @return
 	 */
 	protected SootMethod getRedirectMethod(IccLink link) {
-		// If the target component is, e.g., disabled in the manifest, we do not have an
+		// If the target component is, e.g., disabled in the manifest, we do not
+		// have an
 		// entry point for it
 		SootClass instrumentedDestinationSC = link.getDestinationC();
 		if (!componentToEntryPoint.hasEntryPointForComponent(instrumentedDestinationSC))
@@ -176,8 +181,9 @@ public class IccRedirectionCreator {
 		dummyMainClass.addMethod(newSM);
 		final JimpleBody b = Jimple.v().newBody(newSM);
 		newSM.setActiveBody(b);
+		newSM.addTag(SimulatedCodeElementTag.TAG);
 
-		LocalGenerator lg = new LocalGenerator(b);
+		LocalGenerator lg = Scene.v().createLocalGenerator(b);
 
 		Local originActivityParameterLocal = lg.generateLocal(originActivity.getType());
 		Unit originActivityParameterU = Jimple.v().newIdentityStmt(originActivityParameterLocal,
@@ -223,18 +229,19 @@ public class IccRedirectionCreator {
 	protected SootMethod generateRedirectMethod(SootClass wrapper) {
 		SootMethod targetDummyMain = componentToEntryPoint.getEntryPoint(wrapper);
 		if (targetDummyMain == null) {
-			logger.warn(String.format("Destination component %s has no dummy main method", wrapper.getName()));
+			logger.warn("Destination component {} has no dummy main method", wrapper.getName());
 			return null;
 		}
 
 		String newSM_name = "redirector" + num++;
 		SootMethod newSM = Scene.v().makeSootMethod(newSM_name, Collections.<Type>singletonList(INTENT_TYPE),
 				VoidType.v(), Modifier.STATIC | Modifier.PUBLIC);
+		newSM.addTag(SimulatedCodeElementTag.TAG);
 		dummyMainClass.addMethod(newSM);
 		JimpleBody b = Jimple.v().newBody(newSM);
 		newSM.setActiveBody(b);
 
-		LocalGenerator lg = new LocalGenerator(b);
+		LocalGenerator lg = Scene.v().createLocalGenerator(b);
 
 		// identity
 		Local intentParameterLocal = lg.generateLocal(INTENT_TYPE);
@@ -255,17 +262,18 @@ public class IccRedirectionCreator {
 	protected SootMethod generateRedirectMethodForStartActivity(SootClass wrapper) {
 		SootMethod targetDummyMain = componentToEntryPoint.getEntryPoint(wrapper);
 		if (targetDummyMain == null) {
-			logger.warn(String.format("Destination component %s has no dummy main method", wrapper.getName()));
+			logger.warn("Destination component {} has no dummy main method", wrapper.getName());
 			return null;
 		}
 		String newSM_name = "redirector" + num++;
 		SootMethod newSM = Scene.v().makeSootMethod(newSM_name, Collections.<Type>singletonList(INTENT_TYPE),
 				VoidType.v(), Modifier.STATIC | Modifier.PUBLIC);
+		newSM.addTag(SimulatedCodeElementTag.TAG);
 		dummyMainClass.addMethod(newSM);
 		JimpleBody b = Jimple.v().newBody(newSM);
 		newSM.setActiveBody(b);
 
-		LocalGenerator lg = new LocalGenerator(b);
+		LocalGenerator lg = Scene.v().createLocalGenerator(b);
 
 		// identity
 		Local intentParameterLocal = lg.generateLocal(INTENT_TYPE);
@@ -286,12 +294,12 @@ public class IccRedirectionCreator {
 	protected SootMethod generateRedirectMethodForBindService(SootClass serviceConnection, SootClass destComp) {
 		ServiceEntryPointInfo entryPointInfo = (ServiceEntryPointInfo) componentToEntryPoint.get(destComp);
 		if (entryPointInfo == null) {
-			logger.warn(String.format("Destination component %s has no dummy main method", destComp.getName()));
+			logger.warn("Destination component {} has no dummy main method", destComp.getName());
 			return null;
 		}
 		SootMethod targetDummyMain = entryPointInfo.getEntryPoint();
 		if (targetDummyMain == null) {
-			logger.warn(String.format("Destination component %s has no dummy main method", destComp.getName()));
+			logger.warn("Destination component {} has no dummy main method", destComp.getName());
 			return null;
 		}
 		String newSM_name = "redirector" + num++;
@@ -302,11 +310,12 @@ public class IccRedirectionCreator {
 
 		SootMethod newSM = Scene.v().makeSootMethod(newSM_name, newSM_parameters, VoidType.v(),
 				Modifier.STATIC | Modifier.PUBLIC);
+		newSM.addTag(SimulatedCodeElementTag.TAG);
 		dummyMainClass.addMethod(newSM);
 		JimpleBody b = Jimple.v().newBody(newSM);
 		newSM.setActiveBody(b);
 
-		LocalGenerator lg = new LocalGenerator(b);
+		LocalGenerator lg = Scene.v().createLocalGenerator(b);
 
 		Local originActivityParameterLocal = lg.generateLocal(serviceConnection.getType());
 		b.getUnits().add(Jimple.v().newIdentityStmt(originActivityParameterLocal,
@@ -334,10 +343,10 @@ public class IccRedirectionCreator {
 		paramTypes.add(RefType.v("android.os.IBinder"));
 		SootMethod method = serviceConnection.getMethod("onServiceConnected", paramTypes);
 
-		Local iLocal1 = lg.generateLocal(NullType.v());
+		Local iLocal1 = lg.generateLocal(RefType.v("android.content.ComponentName"));
 		b.getUnits().add(Jimple.v().newAssignStmt(iLocal1, NullConstant.v()));
 
-		List<Value> args = new ArrayList<Value>();
+		List<Value> args = new ArrayList<>();
 		args.add(iLocal1);
 		args.add(ibinderLocal);
 		SootClass sc = Scene.v().getSootClass(originActivityParameterLocal.getType().toString());
@@ -358,11 +367,12 @@ public class IccRedirectionCreator {
 		String newSM_name = "redirector" + num++;
 		SootMethod newSM = Scene.v().makeSootMethod(newSM_name, iccMethod.getParameterTypes(),
 				iccMethod.getReturnType(), Modifier.STATIC | Modifier.PUBLIC);
+		newSM.addTag(SimulatedCodeElementTag.TAG);
 		dummyMainClass.addMethod(newSM);
 		JimpleBody b = Jimple.v().newBody(newSM);
 		newSM.setActiveBody(b);
 
-		LocalGenerator lg = new LocalGenerator(b);
+		LocalGenerator lg = Scene.v().createLocalGenerator(b);
 
 		// all parameters
 		List<Local> locals = new ArrayList<>();
@@ -414,7 +424,7 @@ public class IccRedirectionCreator {
 
 		// specially deal with startActivityForResult since they have two
 		// parameters
-		List<Value> args = new ArrayList<Value>();
+		List<Value> args = new ArrayList<>();
 		if (callee.getNumberedSubSignature().equals(subsigStartActivityForResult)) {
 			InstanceInvokeExpr iiexpr = (InstanceInvokeExpr) fromStmt.getInvokeExpr();
 			args.add(iiexpr.getBase());
@@ -425,6 +435,10 @@ public class IccRedirectionCreator {
 			args.add(arg1);
 			args.add(arg0);
 		} else {
+			// specially deal with ICC methods with no parameter, i.e., PendingIntent.send()
+			if (fromStmt.getInvokeExpr().getArgCount() == 0) {
+				return;
+			}
 			Value arg0 = fromStmt.getInvokeExpr().getArg(0);
 			args.add(arg0);
 		}
@@ -439,28 +453,37 @@ public class IccRedirectionCreator {
 		final PatchingChain<Unit> units = body.getUnits();
 
 		copyTags(link.getFromU(), redirectCallU);
+		redirectCallU.addTag(SimulatedCodeElementTag.TAG);
 		units.insertAfter(redirectCallU, link.getFromU());
 		instrumentedUnits.put(body, redirectCallU);
-		if (instrumentationCallback != null)
+		if (instrumentationCallback != null) {
 			instrumentationCallback.onRedirectorCallInserted(link, redirectCallU, redirectMethod);
+		}
 
 		// remove the real ICC methods call stmt
 		// link.getFromSM().retrieveActiveBody().getUnits().remove(link.getFromU());
 		// Please refer to AndroidIPCManager.postProcess() for this removing
 		// process.
 
-		// especially for createChooser method
-		for (Iterator<Unit> iter = units.snapshotIterator(); iter.hasNext();) {
-			Stmt stmt = (Stmt) iter.next();
-
-			if (stmt.toString().contains(
-					"<android.content.Intent: android.content.Intent createChooser(android.content.Intent,java.lang.CharSequence)>")) {
-				List<ValueBox> vbs = stmt.getUseAndDefBoxes();
-				Unit assignU = Jimple.v().newAssignStmt(vbs.get(0).getValue(), vbs.get(1).getValue());
-				copyTags(stmt, assignU);
-				units.insertAfter(assignU, stmt);
-				instrumentedUnits.put(body, assignU);
-				// units.remove(stmt);
+		NumberedString subsig = Scene.v().getSubSigNumberer()
+				.find("android.content.Intent createChooser(android.content.Intent,java.lang.CharSequence)");
+		SootClass clazz = Scene.v().getSootClassUnsafe("android.content.Intent");
+		if (subsig != null && clazz != null) {
+			// especially for createChooser method
+			for (Iterator<Unit> iter = units.snapshotIterator(); iter.hasNext();) {
+				Stmt stmt = (Stmt) iter.next();
+				if (stmt.containsInvokeExpr()) {
+					InvokeExpr expr = stmt.getInvokeExpr();
+					SootMethodRef mr = expr.getMethodRef();
+					if (mr.getDeclaringClass().equals(clazz) && mr.getSubSignature().equals(subsig)) {
+						List<ValueBox> vbs = stmt.getUseAndDefBoxes();
+						Unit assignU = Jimple.v().newAssignStmt(vbs.get(0).getValue(), vbs.get(1).getValue());
+						copyTags(stmt, assignU);
+						assignU.addTag(SimulatedCodeElementTag.TAG);
+						units.insertAfter(assignU, stmt);
+						instrumentedUnits.put(body, assignU);
+					}
+				}
 			}
 		}
 	}
@@ -502,8 +525,8 @@ public class IccRedirectionCreator {
 	 * Sets the callback that shall be notified when a new statement has been
 	 * injected to model inter-component call relationships
 	 * 
-	 * @param instrumentationCallback
-	 *            The callback to notify of new instrumentation statements
+	 * @param instrumentationCallback The callback to notify of new instrumentation
+	 *                                statements
 	 */
 	public void setInstrumentationCallback(IRedirectorCallInserted instrumentationCallback) {
 		this.instrumentationCallback = instrumentationCallback;

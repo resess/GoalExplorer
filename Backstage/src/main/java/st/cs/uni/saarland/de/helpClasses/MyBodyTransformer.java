@@ -34,7 +34,7 @@ public class MyBodyTransformer  extends BodyTransformer {
 	
 	@Override
 	protected void internalTransform(final Body body, String phase, Map options) {
-		if(!Helper.processMethod(body.getUnits().size()) || !body.getMethod().getDeclaringClass().getName().startsWith(Helper.getPackageName())){
+		if(!Helper.processMethod(body.getUnits().size()) || !Helper.isClassInAppNameSpace(body.getMethod().getDeclaringClass().getName())){
 			return;
 		}
 

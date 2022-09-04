@@ -3,7 +3,7 @@ package st.cs.uni.saarland.de.helpClasses;
 import org.xmlpull.v1.XmlPullParserException;
 import soot.*;
 import soot.jimple.infoflow.android.axml.AXmlNode;
-import soot.jimple.infoflow.android.manifest.Manifest;
+import soot.jimple.infoflow.android.manifest.ProcessManifest;
 import st.cs.uni.saarland.de.entities.FieldInfo;
 
 import java.io.*;
@@ -22,6 +22,7 @@ public class Helper {
 	private static int LOC;
 	public static Map<String, AtomicInteger> timeoutedPhasesInUIAnalysis = new ConcurrentHashMap<>();
 
+	private static Set<String> appNameSpaces = new HashSet<>();
 	public final static Map<SootField, Set<FieldInfo>> resolvedFields = new ConcurrentHashMap<>();
 	public final static Map<SootMethod, Map<Unit, Unit>> immediateDominators = new ConcurrentHashMap<>();
 	public final static Map<SootMethod, Unit> lastUnitOfMethod = new ConcurrentHashMap<>();
@@ -32,26 +33,31 @@ public class Helper {
 	private final static Set<String> activitiesFromManifestFile = new HashSet<>();
 	private final static Set<SootClass> fragmentsLifecycleClasses = new HashSet<>();
 	private final static Set<String> asyncTasksOnMethods = new HashSet<>();
+	public static final String ASYNCTASKCLASS = "android.os.AsyncTask";
 
 	public final static Set<String> getAsyncTasksOnMethods(){
-		if(asyncTasksOnMethods.isEmpty() && !Scene.v().getSootClass("android.os.AsyncTask").isPhantom() && Scene.v().getSootClass("android.os.AsyncTask").resolvingLevel() != 0){
+		/*if(asyncTasksOnMethods.isEmpty()  && !Scene.v().getSootClass("android.os.AsyncTask").isPhantom() && Scene.v().getSootClass("android.os.AsyncTask").resolvingLevel() != 0){
 			asyncTasksOnMethods.addAll(Scene.v().getSootClass("android.os.AsyncTask").getMethods().stream().map(x->x.getSubSignature()).collect(Collectors.toSet()));
+		}*/
+		if(asyncTasksOnMethods.isEmpty()){
+			asyncTasksOnMethods.add("doInBackground");
+			asyncTasksOnMethods.add("onPostExecute");
 		}
 		return asyncTasksOnMethods;
 	}
 
 	public static Set<SootClass> getFragmentsLifecycleClasses(){
-		if(fragmentsLifecycleClasses.isEmpty() && !Scene.v().getSootClass("android.support.v4.app.Fragment").isPhantom() && Scene.v().getSootClass("android.support.v4.app.Fragment").resolvingLevel() != 0){
+		if(fragmentsLifecycleClasses.isEmpty() /*&& !Scene.v().getSootClass("android.support.v4.app.Fragment").isPhantom()*/ && Scene.v().getSootClass("android.support.v4.app.Fragment").resolvingLevel() != 0){
 			fragmentsLifecycleClasses.addAll(Scene.v().getActiveHierarchy().getSubclassesOf(Scene.v().getSootClass("android.support.v4.app.Fragment")));
 		}
-		if(fragmentsLifecycleClasses.isEmpty() && !Scene.v().getSootClass("android.app.Fragment").isPhantom() && Scene.v().getSootClass("android.app.Fragment").resolvingLevel() != 0){
+		if(/*!Scene.v().getSootClass("android.app.Fragment").isPhantom() && */Scene.v().getSootClass("android.app.Fragment").resolvingLevel() != 0){
 			fragmentsLifecycleClasses.addAll(Scene.v().getActiveHierarchy().getSubclassesOf(Scene.v().getSootClass("android.app.Fragment")));
 		}
 		return fragmentsLifecycleClasses;
 	}
 
 	public static void clearCache(){
-		resolvedFields.clear();
+		resolvedFields.clear(); //should I clear this later then?
 		immediateDominators.clear();
 		lastUnitOfMethod.clear();
 		signatureOfSootMethod.clear();
@@ -65,9 +71,9 @@ public class Helper {
 	}
 
 	public static void initializeManifestInfo(String apkPath) {
-		Manifest processMan = null;
+		ProcessManifest processMan = null;
 		try {
-			processMan = new Manifest(apkPath);
+			processMan = new ProcessManifest(apkPath);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (XmlPullParserException e) {
@@ -81,7 +87,7 @@ public class Helper {
 		else {
 			packageName = splittedPackageName[0] + "." + splittedPackageName[1];
 		}
-		List<AXmlNode> xml = processMan.getActivities();
+		List<AXmlNode> xml = processMan.getAllActivities();
 		String realPackageName = processMan.getPackageName();
 		activitiesFromManifestFile.addAll(getActivitiesFromAxml(xml, realPackageName));
 	}
@@ -108,6 +114,15 @@ public class Helper {
 	public static String getPackageName(){
 		return packageName;
 	}
+
+	public static void addNameSpace(String nameSpace){
+		appNameSpaces.add(nameSpace);
+	}
+
+	public static Set<String> getAppNameSpaces(){
+		return appNameSpaces;
+	}
+
 
 	public static void setLOC(int value){
 		LOC = value;
@@ -309,11 +324,23 @@ public class Helper {
 		}
 	}
 
-	public static boolean isClassInSystemPackage(String className) {
-		return className.startsWith("android.")
+	public static boolean isClassInSystemPackage(String className) { //plus libraries
+		return !className.startsWith(Helper.getPackageName()) && (className.startsWith("android.")
 				|| className.startsWith("java.")
-				|| className.startsWith("sun.");
+				|| className.startsWith("javax.")
+				|| className.startsWith("sun.")
+				|| className.startsWith("org.omg.")
+				|| className.startsWith("org.w3c.dom.")
+				|| className.startsWith("com.google.")
+				|| className.startsWith("com.android.")
+				|| className.startsWith("com.facebook."));
 	}
+
+	public static boolean isClassInAppNameSpace(String className) {
+		return className.startsWith(packageName) || (!Helper.isClassInSystemPackage(className) && appNameSpaces.stream().anyMatch(ns -> className.startsWith(ns)));
+	}
+
+	
 
 	public static void trackUsedMemory(){
 		Runtime runtime = Runtime.getRuntime();

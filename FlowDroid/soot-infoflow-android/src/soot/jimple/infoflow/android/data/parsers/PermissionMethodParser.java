@@ -29,10 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import soot.jimple.infoflow.android.data.AndroidMethod;
-import soot.jimple.infoflow.sourcesSinks.definitions.ISourceSinkDefinitionProvider;
-import soot.jimple.infoflow.sourcesSinks.definitions.MethodSourceSinkDefinition;
-import soot.jimple.infoflow.sourcesSinks.definitions.SourceSinkDefinition;
-import soot.jimple.infoflow.sourcesSinks.definitions.SourceSinkType;
+import soot.jimple.infoflow.data.SootFieldAndClass;
+import soot.jimple.infoflow.sourcesSinks.definitions.*;
 
 /**
  * Parser for the permissions to method map of Adrienne Porter Felt.
@@ -44,9 +42,10 @@ public class PermissionMethodParser implements ISourceSinkDefinitionProvider {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private Map<String, AndroidMethod> methods = null;
-	private Set<SourceSinkDefinition> sourceList = null;
-	private Set<SourceSinkDefinition> sinkList = null;
-	private Set<SourceSinkDefinition> neitherList = null;
+	private Map<String, SootFieldAndClass> fields = null;
+	private Set<ISourceSinkDefinition> sourceList = null;
+	private Set<ISourceSinkDefinition> sinkList = null;
+	private Set<ISourceSinkDefinition> neitherList = null;
 
 	private static final int INITIAL_SET_SIZE = 10000;
 
@@ -55,6 +54,8 @@ public class PermissionMethodParser implements ISourceSinkDefinitionProvider {
 	// private final String regexNoRet =
 	// "^<(.+):\\s(.+)\\s?(.+)\\s*\\((.*)\\)>\\s+(.*?)(\\s+->\\s+(.*))?+$";
 	private final String regexNoRet = "^<(.+):\\s*(.+)\\s*\\((.*)\\)>\\s*(.*?)?(\\s+->\\s+(.*))?$";
+
+	private final String fieldRegex = "^<(.+):\\s*(.+)\\s+([a-zA-Z_$][a-zA-Z_$0-9]*)\\s*>\\s*(.*?)(\\s+->\\s+(.*))?$";
 
 	public static PermissionMethodParser fromFile(String fileName) throws IOException {
 		PermissionMethodParser pmp = new PermissionMethodParser();
@@ -105,20 +106,21 @@ public class PermissionMethodParser implements ISourceSinkDefinitionProvider {
 	}
 
 	@Override
-	public Set<SourceSinkDefinition> getSources() {
+	public Set<ISourceSinkDefinition> getSources() {
 		if (sourceList == null || sinkList == null)
 			parse();
 		return this.sourceList;
 	}
 
 	@Override
-	public Set<SourceSinkDefinition> getSinks() {
+	public Set<ISourceSinkDefinition> getSinks() {
 		if (sourceList == null || sinkList == null)
 			parse();
 		return this.sinkList;
 	}
 
 	private void parse() {
+		fields = new HashMap<>(INITIAL_SET_SIZE);
 		methods = new HashMap<>(INITIAL_SET_SIZE);
 		sourceList = new HashSet<>(INITIAL_SET_SIZE);
 		sinkList = new HashSet<>(INITIAL_SET_SIZE);
@@ -126,25 +128,33 @@ public class PermissionMethodParser implements ISourceSinkDefinitionProvider {
 
 		Pattern p = Pattern.compile(regex);
 		Pattern pNoRet = Pattern.compile(regexNoRet);
+		Pattern fieldPattern = Pattern.compile(fieldRegex);
 
 		for (String line : this.data) {
 			if (line.isEmpty() || line.startsWith("%"))
 				continue;
-			Matcher m = p.matcher(line);
-			if (m.find()) {
-				createMethod(m);
-			} else {
-				Matcher mNoRet = pNoRet.matcher(line);
-				if (mNoRet.find()) {
-					createMethod(mNoRet);
-				} else
-					logger.warn(String.format("Line does not match: %s", line));
+			//match field regex
+			Matcher fieldMatch = fieldPattern.matcher(line);
+			if (fieldMatch.find()) {
+				createField(fieldMatch);
+			}else{
+				//match method regex
+				Matcher m = p.matcher(line);
+				if (m.find()) {
+					createMethod(m);
+				} else {
+					Matcher mNoRet = pNoRet.matcher(line);
+					if (mNoRet.find()) {
+						createMethod(mNoRet);
+					} else
+						logger.warn(String.format("Line does not match: %s", line));
+				}
 			}
 		}
 
-		// Create the source/sink definitions
+		// Create the source/sink definitions[for method]
 		for (AndroidMethod am : methods.values()) {
-			SourceSinkDefinition singleMethod = new MethodSourceSinkDefinition(am);
+			MethodSourceSinkDefinition singleMethod = new MethodSourceSinkDefinition(am);
 
 			if (am.getSourceSinkType().isSource())
 				sourceList.add(singleMethod);
@@ -152,6 +162,18 @@ public class PermissionMethodParser implements ISourceSinkDefinitionProvider {
 				sinkList.add(singleMethod);
 			if (am.getSourceSinkType() == SourceSinkType.Neither)
 				neitherList.add(singleMethod);
+		}
+
+		// Create the source/sink definitions[for field]
+		for (SootFieldAndClass sootField : fields.values()) {
+			FieldSourceSinkDefinition fieldDefinition = new FieldSourceSinkDefinition(sootField.getSignature());
+
+			if (sootField.getSourceSinkType().isSource())
+				sourceList.add(fieldDefinition);
+			if (sootField.getSourceSinkType().isSink())
+				sinkList.add(fieldDefinition);
+			if (sootField.getSourceSinkType() == SourceSinkType.Neither)
+				neitherList.add(fieldDefinition);
 		}
 	}
 
@@ -243,15 +265,52 @@ public class PermissionMethodParser implements ISourceSinkDefinitionProvider {
 	}
 
 	@Override
-	public Set<SourceSinkDefinition> getAllMethods() {
+	public Set<ISourceSinkDefinition> getAllMethods() {
 		if (sourceList == null || sinkList == null)
 			parse();
 
-		Set<SourceSinkDefinition> sourcesSinks = new HashSet<>(
+		Set<ISourceSinkDefinition> sourcesSinks = new HashSet<>(
 				sourceList.size() + sinkList.size() + neitherList.size());
 		sourcesSinks.addAll(sourceList);
 		sourcesSinks.addAll(sinkList);
 		sourcesSinks.addAll(neitherList);
 		return sourcesSinks;
 	}
+
+	private SootFieldAndClass createField(Matcher m) {
+		SootFieldAndClass sootField = parseField(m);
+		SootFieldAndClass oldField = fields.get(sootField.getSignature());
+		if (oldField != null) {
+			oldField.setSourceSinkType(oldField.getSourceSinkType().addType(sootField.getSourceSinkType()));
+			return oldField;
+		} else {
+			fields.put(sootField.getSignature(), sootField);
+			return sootField;
+		}
+	}
+
+	private SootFieldAndClass parseField(Matcher m) {
+		assert (m.group(1) != null && m.group(2) != null && m.group(3) != null && m.group(4) != null);
+		SootFieldAndClass sootFieldAndClass;
+		int groupIdx = 1;
+
+		// class name
+		String className = m.group(groupIdx++).trim();
+
+		// field type
+		String fieldType = m.group(groupIdx++).trim();
+
+		// field name
+		String fieldName = m.group(groupIdx++).trim();
+
+		// SourceSinkType
+		String sourceSinkTypeString = m.group(groupIdx).replace("->", "").replace("_","").trim();
+		SourceSinkType sourceSinkType = SourceSinkType.fromString(sourceSinkTypeString);
+
+		// create Field signature
+		sootFieldAndClass = new SootFieldAndClass(fieldName, className, fieldType, sourceSinkType);
+
+		return sootFieldAndClass;
+	}
+
 }

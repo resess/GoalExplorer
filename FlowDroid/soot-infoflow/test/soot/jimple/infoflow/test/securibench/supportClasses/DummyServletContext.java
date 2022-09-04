@@ -14,13 +14,22 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import javax.servlet.Filter;
+import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
+import javax.servlet.ServletRegistration.Dynamic;
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
+import javax.servlet.descriptor.JspConfigDescriptor;
 
 public class DummyServletContext implements ServletContext {
 
@@ -46,6 +55,141 @@ public class DummyServletContext implements ServletContext {
 	@Override
 	public String getInitParameter(String arg0) {
 		return arg0;
+	}
+
+	@Override
+	public String getContextPath() {
+		return null;
+	}
+
+	@Override
+	public int getEffectiveMajorVersion() {
+		return 0;
+	}
+
+	@Override
+	public int getEffectiveMinorVersion() {
+		return 0;
+	}
+
+	@Override
+	public boolean setInitParameter(String s, String s1) {
+		return false;
+	}
+
+	@Override
+	public ServletRegistration.Dynamic addServlet(String s, String s1) {
+		return null;
+	}
+
+	@Override
+	public ServletRegistration.Dynamic addServlet(String s, Servlet servlet) {
+		return null;
+	}
+
+	@Override
+	public ServletRegistration.Dynamic addServlet(String s, Class<? extends Servlet> aClass) {
+		return null;
+	}
+
+	@Override
+	public <T extends Servlet> T createServlet(Class<T> aClass) throws ServletException {
+		return null;
+	}
+
+	@Override
+	public ServletRegistration getServletRegistration(String s) {
+		return null;
+	}
+
+	@Override
+	public Map<String, ? extends ServletRegistration> getServletRegistrations() {
+		return null;
+	}
+
+	@Override
+	public FilterRegistration.Dynamic addFilter(String s, String s1) {
+		return null;
+	}
+
+	@Override
+	public FilterRegistration.Dynamic addFilter(String s, Filter filter) {
+		return null;
+	}
+
+	@Override
+	public FilterRegistration.Dynamic addFilter(String s, Class<? extends Filter> aClass) {
+		return null;
+	}
+
+	@Override
+	public <T extends Filter> T createFilter(Class<T> aClass) throws ServletException {
+		return null;
+	}
+
+	@Override
+	public FilterRegistration getFilterRegistration(String s) {
+		return null;
+	}
+
+	@Override
+	public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
+		return null;
+	}
+
+	@Override
+	public SessionCookieConfig getSessionCookieConfig() {
+		return null;
+	}
+
+	@Override
+	public void setSessionTrackingModes(Set<SessionTrackingMode> set) {
+
+	}
+
+	@Override
+	public Set<SessionTrackingMode> getDefaultSessionTrackingModes() {
+		return null;
+	}
+
+	@Override
+	public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
+		return null;
+	}
+
+	@Override
+	public void addListener(String s) {
+
+	}
+
+	@Override
+	public <T extends EventListener> void addListener(T t) {
+
+	}
+
+	@Override
+	public void addListener(Class<? extends EventListener> aClass) {
+
+	}
+
+	@Override
+	public <T extends EventListener> T createListener(Class<T> aClass) throws ServletException {
+		return null;
+	}
+
+	@Override
+	public JspConfigDescriptor getJspConfigDescriptor() {
+		return null;
+	}
+
+	@Override
+	public ClassLoader getClassLoader() {
+		return null;
+	}
+
+	@Override
+	public void declareRoles(String... strings) {
+
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -144,31 +288,79 @@ public class DummyServletContext implements ServletContext {
 	@Override
 	public void log(String arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void log(Exception arg0, String arg1) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void log(String arg0, Throwable arg1) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void removeAttribute(String arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void setAttribute(String arg0, Object arg1) {
 		// TODO Auto-generated method stub
-		
+
+	}
+
+	@Override
+	public String getVirtualServerName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Dynamic addJspFile(String servletName, String jspFile) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getSessionTimeout() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void setSessionTimeout(int sessionTimeout) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public String getRequestCharacterEncoding() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setRequestCharacterEncoding(String encoding) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public String getResponseCharacterEncoding() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setResponseCharacterEncoding(String encoding) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

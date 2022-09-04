@@ -163,6 +163,7 @@ public class StmtSwitchForInterProcCalls extends MyStmtSwitch {
 									}
 								}
 							}
+							//otherwise? for add for e.g
 						
 					}else{
 						String rightReg = helpMethods.getRightRegOfAssignStmt(stmt);

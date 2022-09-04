@@ -839,9 +839,9 @@ public class DexBody  {
                 if (t instanceof RefType) {
                     SootClass exception = ((RefType) t).getSootClass();
                     DexlibAbstractInstruction instruction = instructionAtAddress(handler.getHandlerCodeAddress());
-                    if (! (instruction instanceof MoveExceptionInstruction))
-                        Debug.printDbg("First instruction of trap handler unit not MoveException but " , instruction.getClass());
-                    else
+                    if ((instruction instanceof MoveExceptionInstruction))
+                        //Debug.printDbg("First instruction of trap handler unit not MoveException but " , instruction.getClass());
+                    //else
                       ((MoveExceptionInstruction) instruction).setRealType(this, exception.getType());
 
                     Trap trap = Jimple.v().newTrap(exception, beginStmt, endStmt, instruction.getUnit());

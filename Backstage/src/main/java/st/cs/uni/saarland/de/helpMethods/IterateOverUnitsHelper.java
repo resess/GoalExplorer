@@ -1,5 +1,7 @@
 package st.cs.uni.saarland.de.helpMethods;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.*;
 import soot.jimple.*;
 import soot.toolkits.graph.DominatorsFinder;
@@ -17,6 +19,7 @@ import java.util.*;
 public class IterateOverUnitsHelper {
 
 	private Set<Unit> switchesThatWereProcessed = new HashSet<>();
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());;
 
 	 public static IterateOverUnitsHelper newInstance(){
 		 return new IterateOverUnitsHelper();
@@ -46,10 +49,10 @@ public class IterateOverUnitsHelper {
 			 StmtSwitchForLayoutInflater stmtSwicthForLayouts = (StmtSwitchForLayoutInflater) stmtSwitch;
 			 callStack = stmtSwicthForLayouts.getCallStack();
 			 Map<Integer, LayoutInfo> resultLayouts = stmtSwicthForLayouts.getResultedLayouts();
-			 Set<TabViewInfo> resultedTabs = stmtSwicthForLayouts.getResultedTabs();
+			 Set<TabViewInfo> resultedTabs = stmtSwicthForLayouts.getResultedTabsViews();
 			 stmtSwicthForLayouts.init();
 			 stmtSwicthForLayouts.putAllToResultedLayouts(resultLayouts);
-			 stmtSwicthForLayouts.addAllToResultedTabs(resultedTabs);
+			 stmtSwicthForLayouts.addAllToResultedTabsViews(resultedTabs);
 		 }
 		 else {
 			 stmtSwitch.init();
@@ -198,10 +201,10 @@ public class IterateOverUnitsHelper {
 		if(stmtSwitch instanceof StmtSwitchForLayoutInflater){
 			StmtSwitchForLayoutInflater stmtSwicthForLayouts = (StmtSwitchForLayoutInflater) stmtSwitch;
 			Map<Integer, LayoutInfo> resultLayouts = stmtSwicthForLayouts.getResultedLayouts();
-			Set<TabViewInfo> resultedTabs = stmtSwicthForLayouts.getResultedTabs();
+			Set<TabViewInfo> resultedTabs = stmtSwicthForLayouts.getResultedTabsViews();
 			stmtSwicthForLayouts.init();
 			stmtSwicthForLayouts.putAllToResultedLayouts(resultLayouts);
-			stmtSwicthForLayouts.addAllToResultedTabs(resultedTabs);
+			stmtSwicthForLayouts.addAllToResultedTabsViews(resultedTabs);
 
 		}
 		else {
@@ -242,7 +245,7 @@ public class IterateOverUnitsHelper {
 		}
 	}
 	
-	private void runSwitch (Unit bufferUnit, MyStmtSwitch stmtSwitch, Unit firstBoxAfterBlock, PatchingChain<Unit> units, Set<Info> resultInfosBeforeBlockStarts, Set<SootField> previousFieldsBeforeBlock, Body body){
+	private void runSwitch(Unit bufferUnit, MyStmtSwitch stmtSwitch, Unit firstBoxAfterBlock, PatchingChain<Unit> units, Set<Info> resultInfosBeforeBlockStarts, Set<SootField> previousFieldsBeforeBlock, Body body){
 		if(Thread.currentThread().isInterrupted()){
 			return;
 		}

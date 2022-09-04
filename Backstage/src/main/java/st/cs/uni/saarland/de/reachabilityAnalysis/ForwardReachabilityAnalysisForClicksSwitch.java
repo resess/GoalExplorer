@@ -14,8 +14,12 @@ import st.cs.uni.saarland.de.helpClasses.Helper;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwitch {
-	
+	private final Logger logger;
 	protected final String buttonClickGetId;
 	protected String registerOfButtonId;
 	protected final String elementId;
@@ -27,6 +31,7 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 	protected final List<String> uris;
 
 	public ForwardReachabilityAnalysisForClicksSwitch(String elementId, SootMethod sootMethod, Set<CallSite> callSites, String butonRegister, String getIdSignature){
+		this.logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 		this.elementId = elementId;
 		this.currentSootMethod = sootMethod;
 		this.callSites = callSites;
@@ -40,6 +45,7 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 	public List<String> getUris(){
 		return uris;
 	}
+
 	
 	public void setVisitedTargets(List<Unit> targets){
 		this.visitedTargets.addAll(targets);
@@ -51,6 +57,14 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 	
 	public void caseInvokeStmt(final InvokeStmt stmt){
 		processInvokeExpr(stmt);
+	}
+
+	public void caseIdentityStmt(final IdentityStmt stmt){
+		//logger.debug("Applying identity stmt FOR {} with register {} {}",elementId, registerOfButtonId, stmt.getRightOp().toString());
+		if(!registerOfButtonId.isEmpty() && stmt.getRightOp().toString().contains(registerOfButtonId+":")){
+			registerOfButtonId = stmt.getLeftOp().toString();
+			//logger.debug("Updated register id for element {} to {}", elementId, registerOfButtonId);
+		}
 	}
 	
 	public void caseAssignStmt(final AssignStmt stmt){
@@ -70,9 +84,13 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 		}
 	}
 	
+	//TODO, ADD TO callsite, registerOfInterest (and if defined then sWITCHANALYSIS,)
 	protected void processInvokeExpr(Stmt stmt) {
-		CallbackToApiMapper.processUnit(currentSootMethod, callSites, stmt);
+		//TODO, here need to deal with full object case as well, add a boolean false here and true in child class
+		//TODO here we assume that getId was already called and we pass an item, when technically we could still pass the full object and invoke getId afterwards
+		CallbackToApiMapper.processUnit(currentSootMethod, callSites, stmt, registerOfButtonId, buttonClickGetId, false);
 
+		
 		if (RAHelper.getStaticMethodSignatures().contains(Helper.getSignatureOfSootMethod(stmt.getInvokeExpr().getMethod()))) {
 			String uri = RAHelper.analyzeInvokeExpressionToFindUris(currentSootMethod.getActiveBody(), stmt, stmt.getInvokeExpr().getMethod(), stmt.getInvokeExpr().getArg(0), true);
 			if (uri != null) {
@@ -81,11 +99,15 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 				uris.add(Helper.getSignatureOfSootMethod(stmt.getInvokeExpr().getMethod()));
 			}
 		}
+
+
 	}
 	
 	public void caseIfStmt(final IfStmt stmt){
 		boolean isBranchTaken = false;
 		Value condition = stmt.getCondition();
+		//logger.debug("Switching if case for {} {} and register {}", elementId, stmt, registerOfButtonId);
+			
 		if(condition instanceof NeExpr){
 			NeExpr neExpr = (NeExpr)condition;
 			if(neExpr.getOp1().getType().toString().equals("int") && neExpr.getOp1().toString().equals(registerOfButtonId)){
@@ -260,7 +282,7 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 				analyzeBothBranches(stmt);
 			}
 		}
-		if(!isBranchTaken){
+		else if(!isBranchTaken){ //TODO: refine (could be button_id <= xxx )
 			//use both branches
 			analyzeBothBranches(stmt);
 		}
@@ -270,7 +292,7 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 
 		ForwardReachabilityAnalysisForClicksSwitch newSwitch = new ForwardReachabilityAnalysisForClicksSwitch(elementId, currentSootMethod, callSites, registerOfButtonId, this.buttonClickGetId);
 		Unit target = stmt.getTarget();
-		if(!visitedTargets.contains(target)){
+		if(!visitedTargets.contains(target)){ //true branch
 			visitedTargets.add(target);
 			newSwitch.setVisitedTargets(this.visitedTargets);
 			while(target != null){
@@ -282,7 +304,7 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 			}
 		}
 		
-		target = Helper.getSuccessorOf(currentSootMethod.getActiveBody().getUnits(), stmt);
+		target = Helper.getSuccessorOf(currentSootMethod.getActiveBody().getUnits(), stmt); //false branch
 		if(!visitedTargets.contains(target)){
 			visitedTargets.add(target);
 			newSwitch.setVisitedTargets(this.visitedTargets);
@@ -297,6 +319,7 @@ public class ForwardReachabilityAnalysisForClicksSwitch extends AbstractStmtSwit
 	}
 	
 	public void caseLookupSwitchStmt(final LookupSwitchStmt stmt){
+		//logger.debug("Switching switch case for {} {} and register {}", elementId, stmt, registerOfButtonId);
 		if(stmt.getKey().toString().equals(registerOfButtonId)){
 			boolean isBranchTaken = false;
 			//find the case when our Id is used

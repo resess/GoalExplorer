@@ -1,5 +1,9 @@
 package st.cs.uni.saarland.de.searchDialogs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,7 +15,9 @@ import st.cs.uni.saarland.de.helpClasses.Info;
 public class DialogInfo extends Info{
 
 	// TODO change pos, neg, neu to list, and iterate over them in analysis
-	
+
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	//Here store the method where it was found
 	private String title = "";
 	private String message = "";
 	private String titleReg = "";
@@ -34,6 +40,7 @@ public class DialogInfo extends Info{
 	private String neutralTextReg = "";
 	private String activity = "";
 	private String activityReg = "";
+	private String methodSignature = "";
 	private boolean finished;
 	
 //	.setItems(R.array.colors_array, new DialogInterface.OnClickListener() {
@@ -46,12 +53,21 @@ public class DialogInfo extends Info{
 //		 <activity android:theme="@android:style/Theme.Holo.Dialog" >
 
 //	DialogFragment
+
+	public String toString(){
+		return "[DialogInfo "+ title+"   +msg: "+message+"  pos: "+posText+"   neg: "+negText+"  neutral: "+neutralText+"  activity: "+activity+" ]";
+	}
 	
 	
 	public DialogInfo(String register) {
 		super(register);
 	}
-	
+
+	public DialogInfo(String register, String methodSignature){
+		this(register);
+		this.methodSignature = methodSignature;
+	}
+
 	public boolean isFinished(){
 		return finished;
 	}
@@ -89,7 +105,15 @@ public class DialogInfo extends Info{
 	public void setActivity(String activity) {
 		this.activity = activity;
 	}
-	
+
+	public String getMethodSignature(){
+		return this.methodSignature;
+	}
+
+	public void setMethodSignature(String methodSig){
+		this.methodSignature = methodSig;
+	}
+
 	public String getPosText() {
 		return posText;
 	}
@@ -260,6 +284,7 @@ public class DialogInfo extends Info{
 		newInfo.setTextReg(textReg);
 		newInfo.addTitle(title);
 		newInfo.setTitleReg(titleReg);
+		newInfo.setMethodSignature(methodSignature);
 		return newInfo;
 	}
 

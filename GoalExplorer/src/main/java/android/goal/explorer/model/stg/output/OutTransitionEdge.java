@@ -24,6 +24,14 @@ public class OutTransitionEdge {
         return srcNode.getName() + " ==> " + tgtNode.getName() + " Tag: " + edgeTag;
     }
 
+    public OutAbstractNode getSrcNode() {
+        return srcNode;
+    }
+
+    public OutAbstractNode getTgtNode() {
+        return tgtNode;
+    }
+
     /**
      * Gets the tag assigned to this edge
      * @return The tag assigned to this edge

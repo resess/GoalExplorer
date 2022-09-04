@@ -3,10 +3,11 @@ package android.goal.explorer.model.entity;
 import soot.MethodOrMethodContext;
 import soot.SootClass;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class AbstractEntity {
+public abstract class AbstractEntity implements Serializable {
 
     public enum Type {
         MENU, DRAWER, DIALOG
@@ -15,8 +16,18 @@ public abstract class AbstractEntity {
     private Integer resId;
     private Type type;
 
+    private String openEntityContentDesc, closeEntityContentDesc;
+
     private SootClass parentClass;
     private Set<MethodOrMethodContext> callbackMethods;
+
+    AbstractEntity(Integer resId, Type type, String openEntityContentDesc, String closeEntityContentDesc) {
+        this.resId = resId;
+        this.type = type;
+        this.openEntityContentDesc = openEntityContentDesc;
+        this.closeEntityContentDesc = closeEntityContentDesc;
+        this.callbackMethods = new HashSet<>();
+    }
 
     AbstractEntity(Integer resId, Type type) {
         this.resId = resId;
@@ -44,6 +55,35 @@ public abstract class AbstractEntity {
     public void setResId(Integer resId) {
         this.resId = resId;
     }
+
+
+
+    public Type getType(){
+        return type;
+    }
+
+    public void setType(Type type){
+        this.type = type;
+    }
+
+
+    public String getOpenEntityContentDesc(){
+        return openEntityContentDesc;
+    }
+
+    public String getCloseEntityContentDesc(){
+        return closeEntityContentDesc;
+    }
+
+
+    public void setOpenEntityContentDesc(String openEntityContentDesc){
+        this.openEntityContentDesc = openEntityContentDesc;
+    }
+
+    public void setCloseEntityContentDesc(String closeEntityContentDesc){
+        this.closeEntityContentDesc = closeEntityContentDesc;
+    }
+    
 
     /**
      * Adds callback methods to this menu

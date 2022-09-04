@@ -227,31 +227,75 @@ public class MethodConstants {
 
     public static class Menu {
         public static final String OPTIONMENU_ONCREATE_FRAGMENT = "void onCreateOptionsMenu(android.view.Menu,android.view.MenuInflater)";
-        public static final String OPTIONMENU_ONCREATE_ACTIVITY = "void onCreateOptionsMenu(android.view.Menu)";
+        public static final String OPTIONMENU_ONCREATE_ACTIVITY = "boolean onCreateOptionsMenu(android.view.Menu)";
+        public static final String OPTIONMENU_ONPREPARE_ACTIVITY = "boolean onPrepareOptionsMenu(android.view.Menu)";
         public static final String PANELMENU_ONCREATE_ACTIVITY = "void onCreatePanelMenu(int,android.view.Menu)";
-        public static final String CONTEXTMENU_ONCREATE_1 = "void onCreateContextMenu(android.view.ContextMenu, " +
-                "android.view.View,android.view.ContextMenu.ContextMenuInfo)";
-        public static final String CONTEXTMENU_ONCREATE_2 = "void onCreateContextMenu(android.view.ContextMenu, " +
-                "android.view.View,android.view.ContextMenu.ContextMenuInfo),android.view.MenuInflater";
+        public static final String CONTEXTMENU_ONCREATE_1 = "void onCreateContextMenu(android.view.ContextMenu," +
+                "android.view.View,android.view.ContextMenu$ContextMenuInfo)";
+        public static final String CONTEXTMENU_ONCREATE_2 = "void onCreateContextMenu(android.view.ContextMenu," +
+                "android.view.View,android.view.ContextMenu$ContextMenuInfo,android.view.MenuInflater)";
+
 
         public static final String CLICKCALLBACK = "boolean onOptionsItemSelected(android.view.MenuItem)";
         public static final String ITEMCLICKCALLBACK = "boolean onMenuItemClick(android.view.MenuItem)";
         public static final String ITEMSELECTEDCALLBACK = "boolean onMenuItemSelected(int,android.view.MenuItem)";
-        public static final String CONTEXTCLICKCALLBACK = "boolean onActionItemClicked(android.view.ActionMode," +
+        public static final String CONTEXTCLICKCALLBACK = "boolean onContextItemSelected(android.view.MenuItem)";
+        public static final String CONTEXTACTIONCLICKCALLBACK = "boolean onActionItemClicked(android.view.ActionMode," +
                 "android.view.MenuItem)";
 
-        public static final String[] optionMenuCreate_activity = {OPTIONMENU_ONCREATE_ACTIVITY};
+        public static final String[] optionMenuCreate_activity = {OPTIONMENU_ONCREATE_ACTIVITY, OPTIONMENU_ONPREPARE_ACTIVITY};
         public static final String[] optionMenuCreate_fragment = {OPTIONMENU_ONCREATE_FRAGMENT};
+        public static final String[] contextMenuCreate = {CONTEXTMENU_ONCREATE_1, CONTEXTMENU_ONCREATE_2};
         public static final List<String> optionMenuCreateMethodList_activity = Arrays.asList(optionMenuCreate_activity);
         public static final List<String> optionMenuCreateMethodList_fragment = Arrays.asList(optionMenuCreate_fragment);
+        public static final List<String> contextMenuCreateMethodList = Arrays.asList(contextMenuCreate);
 
         public static final String[] optionMenuCallbackMethods = {CLICKCALLBACK, ITEMCLICKCALLBACK, ITEMSELECTEDCALLBACK};
+        public static final String[] contextMenuCallbackMethods = {CONTEXTCLICKCALLBACK, ITEMCLICKCALLBACK, CONTEXTACTIONCLICKCALLBACK};
         public static final List<String> optionMenuCallbackMethodList = Arrays.asList(optionMenuCallbackMethods);
+        public static final List<String> contextMenuCallbackMethodList = Arrays.asList(contextMenuCallbackMethods);
+        public static final Set<String> optionMenuCallbackMethodSet = new HashSet<>(optionMenuCallbackMethodList);
+        public static final Set<String> contextMenuCallbackMethodSet = new HashSet<>(contextMenuCallbackMethodList);
 
         // Getters
         public static List<String> getOptionMenuCreateForActivity() { return optionMenuCreateMethodList_activity; }
         public static List<String> getOptionMenuCreateForFragment() { return optionMenuCreateMethodList_fragment; }
         public static List<String> getOptionMenuCallbackMethodList() { return optionMenuCallbackMethodList; }
+        public static Set<String> getOptionMenuCallbackMethodSet() { return optionMenuCallbackMethodSet; }
+        public static List<String> getContextMenuCreateMethodList() { return contextMenuCreateMethodList;}
+        public static List<String> getContextMenuCallbackMethodList() { return contextMenuCallbackMethodList;}
+        public static Set<String> getContextMenuCallbackMethodSet() { return contextMenuCallbackMethodSet;}
+    }
+
+    public static class Drawer {
+        public static final String DRAWER_ADDLISTENER = "void addDrawerListener(DrawerLayout.DrawerListener)";
+        public static final String NAVIGATIONITEMSELECTEDCALLBACK = "boolean onNavigationItemSelected(android.view.MenuItem)";
+        public static final String DRAWER_OPENDRAWER = "";
+        public static final String DRAWER_CLOSEDRAWER = ""; //do the same for show menu
+        public static final String DRAWER_OPEN_CALLBACK = "void onDrawerOpened(android.view.View)";
+        public static final String DRAWER_CLOSE_CALLBACK = "vvoid onDrawerClosed(android.view.View) ";
+        public static final String DRAWER_STATE_CHANGED_CALLBACK = "void onDrawerStateChanged(android.view.View) ";
+
+        public static final String[] drawerCallbackMethods = {NAVIGATIONITEMSELECTEDCALLBACK};
+
+        public static final List<String> drawerCallbackMethodsList = Arrays.asList(drawerCallbackMethods);
+        public static final Set<String> drawerCallbackMethodsSet = new HashSet<>(drawerCallbackMethodsList);
+
+        //Getters
+        public static List<String> getDrawerCallbackMethods() { return drawerCallbackMethodsList; }
+        public static Set<String> getDrawerCallbackMethodsSet() { return drawerCallbackMethodsSet; }
+    }
+
+    public static class Dialog {
+        public static final String DIALOGCLICKCALLBACK = "void onClick(android.content.DialogInterface,int)";
+
+        public static final String[] dialogCallbackMethods = {DIALOGCLICKCALLBACK};
+        public static final List<String> dialogCallbackMethodsList = Arrays.asList(dialogCallbackMethods);
+        public static final Set<String> dialogCallbackMethodsSet = new HashSet<>(dialogCallbackMethodsList);
+
+        //Getters
+        public static List<String> getDialogCallbackMethods() { return dialogCallbackMethodsList; }
+        public static Set<String> getDialogCallbackMethodsSet() { return dialogCallbackMethodsSet; }
     }
 
     public static class Intent {
