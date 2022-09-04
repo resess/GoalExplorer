@@ -78,7 +78,7 @@ public class CmdLineParser {
         Option apiLevel = Option.builder(OPTION_ANDROID_API_LEVEL).required(false).type(Number.class).longOpt("api").hasArg(true).desc("api level (default to 23)").build();
         Option contextPointTo = new Option(OPTION_CONTEXT_POINTTO, "contextPt", false, "enable context-sensitive point-to analysis (default disabled)");
         Option iccModel = Option.builder(OPTION_ICC_MODEL).required(false).longOpt("model").hasArg(true).desc("icc model (default to match the package name").build();
-        Option ic3ResultsFolder = Option.builder(OPTION_IC3_RESULTS_FOLDER).required(false).longOpt("ic3_folder").hasArg(true).desc("ic3 results directory (defaylt to \"ic3\"").build();
+        Option ic3ResultsFolder = Option.builder(OPTION_IC3_RESULTS_FOLDER).required(false).longOpt("icc_folder").hasArg(true).desc("icc models directory (default to \"iccbot\"").build();
         Option maxCallback = Option.builder(OPTION_MAX_CALLBACK).required(false).type(Number.class).hasArg(true).desc("the maximum number of callbacks modeled for each component (default to 100)").build();
         Option timeOut = Option.builder(OPTION_MAX_TIMEOUT).required(false).hasArg(true).desc("maximum timeout analyzing each component in seconds (default: 120)").build();
         Option numThread = Option.builder(OPTION_NUM_THREAD).required(false).hasArg(true).desc("the number of threads used for multi-threading analysis. Adjust to the number of CPU cores for better performance (default: 16)").build();
@@ -140,7 +140,7 @@ public class CmdLineParser {
                 config.getFlowdroidConfig().getIccConfig().setIccModel(iccModelPath);
         }
 
-        if (cmd.hasOption(OPTION_IC3_RESULTS_FOLDER) || cmd.hasOption("ic3_folder")) {
+        if (cmd.hasOption(OPTION_IC3_RESULTS_FOLDER) || cmd.hasOption("icc_folder")) {
             String ic3ResultsFolder = cmd.getOptionValue(OPTION_IC3_RESULTS_FOLDER);
             if (ic3ResultsFolder != null && !ic3ResultsFolder.isEmpty())
                 config.setIc3ResultsFolder(ic3ResultsFolder);
@@ -207,8 +207,6 @@ public class CmdLineParser {
                     config.getFlowdroidConfig().getAnalysisFileConfig().getAndroidPlatformDir());
             System.exit(1);
         }
-        //-Dlog4j.configuration=file:C:\Users\Faridah\Desktop\Research\GoalExplorer\2019_android_targeted_exploration\implementation\GoalExplorer\src\main\resources\log4j.properties
-
 
 
 
