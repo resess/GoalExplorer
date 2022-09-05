@@ -8,7 +8,7 @@ This package will work on Linux system. There are many binaries that the scripts
 You will need Android SDK. This will work best if you install it through [Android Studio](https://developer.android.com/studio).
 Through either Android Studio or the [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager) binary, install the following packages.
 1. build-tools;25.0.0 (Android SDK Build-Tools 25.0.0)
-2. android-19 (Android 4.4 API level 19)
+2. android-25 (Android 7.1 API level 25)
 3. Android Emulator
 4. Android SDK platform-tools
 
