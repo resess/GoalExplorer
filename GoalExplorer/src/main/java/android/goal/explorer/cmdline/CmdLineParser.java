@@ -71,7 +71,7 @@ public class CmdLineParser {
         Option input = Option.builder(OPTION_INPUT_APK_PATH).required(true).longOpt("input").hasArg(true).desc("input apk path (required)").build();
         Option stg = Option.builder(OPTION_STG_PATH).required(false).longOpt("stg").hasArg(true).desc("input stg path (required for marking)").build();
         Option pre = Option.builder(OPTION_PRE_PATH).required(false).longOpt("precomputed").hasArg(true).desc("precomputed model folder").build();
-        Option target = Option.builder(OPTION_TARGET).required(stg.getValue() != null).longOpt("target").hasArg(true).desc("target or path to list of targets").build();
+        Option target = Option.builder(OPTION_TARGET).longOpt("target").hasArg(true).desc("target or list of targets").build();
         Option output = Option.builder(OPTION_OUTPUT_PATH).required(false).longOpt("output").hasArg(true).desc("output directory (default to \"sootOutput\")").build();
         Option config = Option.builder(OPTION_CONFIG_FILE_PATH).required(false).longOpt("config").hasArg(true).desc("the configuration file (optional)").build();
         Option sdkPath = Option.builder(OPTION_ANDROID_SDK_PATH).required(false).longOpt("sdk").hasArg(true).desc("path to android sdk (default value can be set in config file)").build();
@@ -125,9 +125,14 @@ public class CmdLineParser {
                 config.setPrecomputedSTG(stgFile);
         }
         if(cmd.hasOption(OPTION_TARGET) || cmd.hasOption("target")){
-            Set<String> targets = parseListOption(cmd, OPTION_TARGET);
-            if(targets != null && !targets.isEmpty())
-                config.setTargets(targets);
+            String[] info = parseTupleOption(cmd, OPTION_TARGET);
+            if(info != null){
+                config.setTargetType(info[0]);
+                Set<String> targets = parseListOption(info[1]);
+                if(targets != null && !targets.isEmpty()) {
+                    config.setTargets(targets);
+                }
+            }
         }
         if(cmd.hasOption(OPTION_PRE_PATH) || cmd.hasOption("precomputed")){
             String precomputedModel = cmd.getOptionValue(OPTION_PRE_PATH);
@@ -308,13 +313,20 @@ public class CmdLineParser {
             return Integer.parseInt(str);
     }
 
-    private Set<String> parseListOption(CommandLine cmd, String option) {
+    private String[] parseTupleOption(CommandLine cmd, String option) {
         String str = cmd.getOptionValue(option);
         if(str == null || str.isEmpty())
             return null;
-            //if it's a path, then load the content
-            //otherwise we just add it directly
-        return Arrays.stream(str.split(";")).collect(Collectors.toSet());
+        //TODO if it's a path, then load the content
+        String[] info = str.split(":", 2);
+        if(info.length == 2 && (info[0].equals("act") || info[0].equals("api") || info[0].equals("stmt")) && !info[1].isEmpty())
+            return info;
+        return null;
+    }
+    private Set<String> parseListOption(String option) {
+        if(option == null || option.isEmpty())
+            return null;
+        return Arrays.stream(option.split(";")).collect(Collectors.toSet());
     }
 
     /**

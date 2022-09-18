@@ -70,6 +70,21 @@ java -jar {JAR_PATH} ge [OPTIONS] [-cb <arg>] [-d] [-h] -i <arg>
           [-l <arg>] [-o <arg>] [-s <arg>] [-t <arg>] [-v]
 ```
 
+By default, there will be no node marked as a target in the STG. To mark a target in the STG, add the option `--target "X:Y"` where `X` is one of `api`, `act` or `stmt` and `Y` is a fully qualified target or a list of targets separated by a semi-colon.
+
+For example, the signature for an API:
+
+```
+    java -jar {JAR_PATH} ge [OPTIONS] --target "api:<java.<java.net.URL: java.net.URLConnection openConnection()>" 
+```
+or for multiple activities:
+```
+    java -jar {JAR_PATH} ge [OPTIONS] --target "act:com.example.app.MainActivity;com.example.app.SettingsActivity"
+```
+or a Jimple statement:
+```    
+    java -jar {JAR_PATH} ge [OPTIONS] --target "stmt:virtualinvoke $r7.<android.widget.Button: void setOnClickListener(android.view.View$OnClickListener)>($r9)"
+```
 ### Options
 ```
   usage: ge [OPTIONS] [-cb <arg>] [-cg <arg>] [-d] [-h] -i <arg> 
@@ -85,6 +100,8 @@ java -jar {JAR_PATH} ge [OPTIONS] [-cb <arg>] [-d] [-h] -i <arg>
                        config file)
    -t <arg>            maximum timeout during callback analysis in seconds
                        (default: 60)
+   --target            target or list of targets of type api, stmt or act 
+                       (e.g. "act:com.e.b.Activity1")
    -v,--version        print version info
 ```
 

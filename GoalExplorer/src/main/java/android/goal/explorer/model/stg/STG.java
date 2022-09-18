@@ -283,6 +283,10 @@ public class STG {
         return allNodes;
     }
 
+    public Set<AbstractNode> getAllBaseNodes() {
+        return getAllNodes().stream().filter(node -> !(node instanceof ScreenNode) || ((ScreenNode)node).isBaseScreenNode()).collect(Collectors.toSet());
+    }
+
     public Set<TransitionEdge> getAllEdges() {
         return transitionEdges;
     }

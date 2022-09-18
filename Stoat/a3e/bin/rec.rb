@@ -796,6 +796,7 @@ def do_main_job(package_name_under_test, stg)
     #Here we should, check if the stg is updatable, in which case we don't want to delete it, we just wanna store it away I guess?
     # unreached_targets << tgt
     Log.print("Attempting random")
+    #here if option no_path is set, yes, otherwise set default to max?
     perform_random_with_update(package_name_under_test, stg, screen_node, tgt)
     $default_iteration_per_target = $default_iteration_per_target + 1
   
@@ -870,34 +871,11 @@ def explore(screen_node, tgt, stg, package_name_under_test)
   if paths.nil? || paths.empty?
     # if we cannot find node or there are no paths to explore, we allow Stoat to try and transition to a different state
     Log.print("FAILURE: No path from #{screen_node} to #{tgt} found")
-=begin    Log.print("Attempting random")
-    perform_random_with_update(package_name_under_test, stg, screen_node, tgt)
-    $default_iteration_per_target = $default_iteration_per_target + 1
-=end
-    #Log.print("Moving on to next target")
-    #perform_random_with_update(package_name_under_test, stg, screen_node, tgt)
-
-    #Log.print("Attempting Stoat weighted exploration")
-    #actions, _, activity, login_widget_hash = get_executable_ui_events(package_name_under_test, stg, tgt) #to rewrite
-    #action = perform_random_action(activity, actions, login_widget_hash)
     #TODO only perform edge if we're not trying to login?
     #TODO store node reached after performing random action for stg updates here
-    #success = perform_edge_transition(stg, tgt, $emulator_serial, edge)
-    #IF WE RETURN nil, no action was taken, we need to update the stg
-    #sleep $g_event_delay #to do (should be abstracted away in execute action or smth)
-    #here add screen_node as the previous node? (if no edge action, good, if edge action but failure, then should be from screen_node to current_node with random action?? if success then from )
-    #success, screen_node = update_stg(stg, nil, nil, screen_node, action)
-    #if !action.nil?
-    #  current_screen_node = get_current_base_screen(stg)
-    #  if !current_screen_node.nil?
-    #    stg.add_edge_with_action_string(screen_node, current_screen_node, action) #STOPPING CONDITION,
-    #    return explore(current_screen_node, tgt, stg, package_name_under_test)
-    #  end
-    #end
     return false
     #perform_random_action()
     #recurse so explore again I guess?
-    
   else
     # otherwise we try all paths to the target until successful
     Log.print("SUCCESS: #{paths.length()} Paths from #{screen_node} to #{tgt} found")

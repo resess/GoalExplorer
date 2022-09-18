@@ -1,5 +1,4 @@
 import android.goal.explorer.cmdline.CmdLineParser
-import soot.Scene
 
 import org.slf4j.LoggerFactory
 
@@ -20,19 +19,13 @@ class Main {
 
             val preRunner = PreAnalysisRunner(config, CmdLineParser.parseArgForBackstage(config))
             preRunner.run()
-            //here should log end of stg construction for stats
 
-            //val stgAnalysis = ScreenTransitionGraphAnalysis();
+            //Get targets to mark
+            val targets = config.targets
+            val type: String? = config.targetType
 
-            // get the API to target mark
-            //val urlClass = Scene.v().getSootClass("java.net.URL")
-            val urlClasses = listOf(Scene.v().getSootClass("java.net.HttpURLConnection"), 
-            Scene.v().getSootClass("java.net.URLConnection"),
-            Scene.v().getSootClass("java.net.URL"))
-
-            val methods = urlClasses.flatMap { it.methods.filter {it.name == "openConnection"} }
-            logger.debug("Methods to check $methods")
-            val runner = AnalysisRunner(preRunner, methods)
+            logger.debug("Targets to check $targets")
+            val runner = AnalysisRunner(preRunner, targets, type)
             runner.run()
         }
     }
