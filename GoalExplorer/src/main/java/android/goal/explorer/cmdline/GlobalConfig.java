@@ -4,7 +4,6 @@ import soot.jimple.infoflow.InfoflowConfiguration;
 import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class GlobalConfig {
@@ -18,7 +17,9 @@ public class GlobalConfig {
     private String precomputedModelFolder;
 
     //Targets
+    //TODO map target types to set of targets
     private Set<String> targets;
+    private String targetType;
 
     //IC3 results folder
     private String ic3ResultsFolder;
@@ -45,6 +46,7 @@ public class GlobalConfig {
         flowdroidConfig.setMergeDexFiles(true);
         ic3ResultsFolder = "./implementation/GoalExplorer/iccbot";
         targets = new HashSet<>();
+        targetType = "";
         targetApi = -1;
         timeout = 120;
         numThread = 16;
@@ -92,6 +94,12 @@ public class GlobalConfig {
 
     public void addTarget(String target){
         targets.add(target);
+    }
+
+    public String getTargetType() { return targetType; }
+
+    public void setTargetType(String targetType) {
+        this.targetType = targetType;
     }
 
     /**

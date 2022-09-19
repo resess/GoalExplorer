@@ -7,7 +7,6 @@ import android.goal.explorer.model.stg.node.BroadcastReceiverNode
 import android.goal.explorer.model.stg.node.ScreenNode
 import android.goal.explorer.model.stg.node.ServiceNode
 import org.slf4j.LoggerFactory
-import soot.MethodOrMethodContext
 import soot.Scene
 import soot.SootMethod
 import soot.VoidType
@@ -30,68 +29,55 @@ class TargetMarker {
         private var numFoundTargets = 0
 
         /**
-         * Marks the screen nodes that contain recursive calls to any of the soot methods
+         * Marks the screen nodes that match the evaluation criteria
          */
 
-
-        fun markSrcOrDestinationScreenNodesIfRecursivelyCallsMethodName(
+        fun markNodesByCriteria(
             stg: STG,
-            methods: List<String>
+            criteriae: Set<String>,
+            targetType: String?
         ): Map<AbstractNode, Pair<Boolean,String>> {
             //Initialization for reachability analysis
             //TODO move in class construction
             val newClass = SootHelper.createSootClass("CustomIntercomponentClass")
             SootHelper.createSootMethod(newClass, "newActivity", ArrayList(), VoidType.v(), false)
 
-            return markNodesIfRecursivelyCallsMethod(
-                stg,
-                stg.allNodes,
-                methods,
-                HashMultiMap()
-            ) { method, methodsList ->
-                methodsList.contains(method.name)
-            }
+            if(targetType == null || targetType.isEmpty()) //no target
+                return stg.allNodes.associateWith { Pair(false, "") }
+            if(targetType.equals("act"))
+                return markNodesIfNameMatch(
+                    stg,
+                    stg.allBaseNodes,
+                    criteriae
+                )
+            else if(targetType.equals("api"))
+                return markNodesIfRecursivelySatisfiesCriteria(
+                    stg,
+                    stg.allNodes,
+                    criteriae,
+                    HashMultiMap()
+                ) { method, methodsList ->
+                    methodsList.contains(method.signature)
+                }
+            else //statement as target
+                return markNodesIfRecursivelySatisfiesCriteria(
+                    stg,
+                    stg.allNodes,
+                    criteriae,
+                    HashMultiMap()
+                ) { method, stmtList ->
+                    stmtList.any { method.activeBody.units.any { stmt -> stmt.toString() == it }}
+                }
         }
 
-        /**
-         * Marks nodes based on the evaluation criteria
-         * @param nodes the screen nodes of the STG to mark
-         * @param eval evaluation function that returns true if a node should be marked
-         * @return a mapping of the screen nodes to whether they are "marked"
-         */
-        fun markScreenNodes(
-            nodes: Set<ScreenNode>,
-            eval: (ScreenNode) -> Boolean
-        ): Map<ScreenNode, Boolean> {
 
-            return nodes.associateWith { eval(it) }
-        }
-
-        /**
-         * Marks nodes based on evaluation criteria
-         * @param nodes the screen nodes of the STG to mark
-         * @param criteria list of criteria to be evaluate the SootMethods on
-         * @param eval evaluation function that returns true if a node should be marked by on criteria
-         * @return a mapping of the screen nodes to whether they are "marked"
-         */
-        private fun <T : Any> markScreenNodesByCriteria(
-            nodes: Set<ScreenNode>,
-            criteria: List<T>,
-            eval: (ScreenNode, List<T>) -> Boolean
-        ): Map<ScreenNode, Boolean> {
-
-            return markScreenNodes(nodes) { eval(it, criteria) }
-        }
-
-        private fun <T : Any> markScreenNodesByCriteria(
-            nodes: Set<ScreenNode>,
-            criteria: List<T>,
-            memo: MultiMap<Activity, AndroidCallbackDefinition>,
+        private fun markNodesIfNameMatch(
             stg: STG,
-            eval: (ScreenNode, List<T>, MultiMap<Activity, AndroidCallbackDefinition>, STG) -> Boolean
-        ): Map<ScreenNode, Boolean> {
+            nodes: Set<AbstractNode>,
+            names: Set<String>
+        ): Map<AbstractNode, Pair<Boolean, String>> {
 
-            return markScreenNodes(nodes) { eval(it, criteria, memo, stg) }
+            return nodes.associateWith { Pair(names.contains(it.name),"")  }.toMutableMap()
         }
 
 
@@ -107,14 +93,15 @@ class TargetMarker {
          */
 
 
-        private fun <T : Any> markNodesIfRecursivelyCallsMethod(
+
+            private fun <T : Any> markNodesIfRecursivelySatisfiesCriteria(
             stg: STG,
             nodes: Set<AbstractNode>,
-            methods: List<T>,
+            criteriae: Set<T>,
             memo: MultiMap<Activity, AndroidCallbackDefinition>,
-            match: (SootMethod, List<T>) -> Boolean
+            match: (SootMethod, Set<T>) -> Boolean
         ): Map<AbstractNode, Pair<Boolean,String>> {
-            logger.debug("Searching for targets in stg from $methods")
+            logger.debug("Searching for targets in stg from $criteriae")
             var marks = nodes.associateWith { _ -> Pair(false, "") }.toMutableMap()
             //var marks = nodes.associateWith { _ -> false }.toMutableMap()
             for (node in nodes) {
@@ -122,7 +109,7 @@ class TargetMarker {
                 if (node is ServiceNode || node is BroadcastReceiverNode) {
                     node.component.lifecycleMethods.forEach { lifecycle ->
                         logger.debug("Checking lifecycle $lifecycle")
-                        if (recursiveCheck(lifecycle.method()) { match(it, methods) }) {
+                        if (recursiveCheck(lifecycle.method()) { match(it, criteriae) }) {
                             logger.debug("Found method of interest, marking node $node")
                             numFoundTargets += 1
                             marks[node] = Pair(true, "")
@@ -133,7 +120,7 @@ class TargetMarker {
                     node.component.callbacks.forEach {callback ->
                         //TODO check how triggered?
                         logger.debug("Checking callback $callback")
-                        if (recursiveCheck(callback.targetMethod) { match(it, methods) }) {
+                        if (recursiveCheck(callback.targetMethod) { match(it, criteriae) }) {
                             logger.debug("Found method of interest, marking node $node")
                             numFoundTargets += 1
                             marks[node] = Pair(true, "")
@@ -146,7 +133,7 @@ class TargetMarker {
                     //Parse callbacks of the current node
                     activity.getLifecycleMethodsPreRun().forEach { lifecycle ->
                         logger.debug("Checking lifecycle $lifecycle")
-                        if (recursiveCheck(lifecycle.method()) { match(it, methods) }) {
+                        if (recursiveCheck(lifecycle.method()) { match(it, criteriae) }) {
                             logger.debug("Found method of interest, marking node $node")
                             numFoundTargets += 1
                             marks[node] = Pair(true, "")
@@ -165,7 +152,7 @@ class TargetMarker {
                             if (memo.get(activity).contains(callback)) {
                                 //callback invokes method of interest
                                 logger.debug("Loading from memoized $callback ...")
-                                val uiTrigger = getTriggerOfCallbackPrecise(callback, activity) { match(it, methods) }
+                                val uiTrigger = getTriggerOfCallbackPrecise(callback, activity, criteriae) { match(it, criteriae) }
                                 if (uiTrigger != null) {
                                     logger.debug("Found ui trigger $uiTrigger for $callback")
                                     if (!foundEdgeForTarget(
@@ -181,11 +168,11 @@ class TargetMarker {
                                     }
                                 }
                                 //todo, add the action + trigger in the mark
-                            } else if (recursiveCheck(callback.targetMethod) { match(it, methods) }) {
+                            } else if (recursiveCheck(callback.targetMethod) { match(it, criteriae) }) {
                                 //TODO exclude lifecycle from callbacks?
                                 logger.debug("Found method of interest in $callback ")
                                 memo.put(activity, callback)
-                                val uiTrigger = getTriggerOfCallbackPrecise(callback, activity) { match(it, methods) }
+                                val uiTrigger = getTriggerOfCallbackPrecise(callback, activity, criteriae) { match(it, criteriae) }
                                 if (uiTrigger != null) {
                                     logger.debug("Found ui trigger $uiTrigger")
                                     if (!foundEdgeForTarget(
@@ -209,76 +196,6 @@ class TargetMarker {
             logger.debug("Done with target marking, collected {} target statements", numFoundTargets)
             return marks;
         }
-
-
-
-        //TODO services and broadcast, we could track all types of nodes for now, but eventually, we should only track activities and
-        //extend the callgraph so it can map intents?
-        /*private fun <T : Any> markScreenNodesIfRecursivelyCallsMethod(
-            stg: STG,
-            nodes: Set<ScreenNode>,
-            methods: List<T>,
-            memo: MultiMap<Activity, AndroidCallbackDefinition>,
-            match: (SootMethod, List<T>) -> Boolean
-        ): Map<ScreenNode, Pair<Boolean,String>> {
-
-            logger.debug("Searching for targets in stg from $methods")
-            var marks = nodes.associateWith { _ -> Pair(false, "") }.toMutableMap()
-            //var marks = nodes.associateWith { _ -> false }.toMutableMap()
-            for (node in nodes) {
-                logger.debug("Checking node $node")
-                val activity = (node.component as Activity)
-                //TODO deal with tabs?
-                //Parse callbacks of the current node
-                activity.getLifecycleMethodsPreRun().forEach { lifecycle ->
-                    logger.debug("Checking lifecycle $lifecycle")
-                    if (recursiveCheck(lifecycle.method()) { match(it, methods) }) {
-                        logger.debug("Found method of interest, marking node $node")
-                        numFoundTargets += 1
-                        marks[node] = Pair(true, "")
-                        //marks.put(node, true)
-                    }
-                }
-                //TODO: add some consistent filter so that only feasible callbacks are parsed for each node
-                activity.getCallbacks().filter { callback -> callback.getTargetMethod().hasActiveBody() }
-                    .forEach { callback ->
-                        logger.debug("Checking callback $callback")
-                        //Get all nodes reachables through callbacks
-                        if (memo.get(activity).contains(callback)) {
-                            //callback invokes method of interest
-                            logger.debug("Loading from memoized $callback ...")
-                            val uiTrigger = getTriggerOfCallbackPrecise(callback, activity) { match(it, methods) }
-                            if (uiTrigger != null) {
-                                logger.debug("Found ui trigger $uiTrigger for $callback")
-                                if (!foundEdgeForTarget(stg.getEdgesWithSrcNode(node), callback, uiTrigger, marks)) {
-                                    numFoundTargets += 1
-                                    //marks[node] = true //mark target node
-                                    marks[node] = Pair(true, formatTrigger(callback, uiTrigger))
-                                }
-                            }
-                            //todo, add the action + trigger in the mark
-                        } else if (recursiveCheck(callback.targetMethod) { match(it, methods) }) {
-                            //TODO exclude lifecycle from callbacks?
-                            logger.debug("Found method of interest in $callback ")
-                            memo.put(activity, callback)
-                            val uiTrigger = getTriggerOfCallbackPrecise(callback, activity) { match(it, methods) }
-                            if (uiTrigger != null) {
-                                logger.debug("Found ui trigger $uiTrigger")
-                                if (!foundEdgeForTarget(stg.getEdgesWithSrcNode(node), callback, uiTrigger, marks)) {
-                                    numFoundTargets += 1
-                                    //marks[node] = true
-                                    marks[node] = Pair(true, formatTrigger(callback, uiTrigger))
-                                    logger.debug("Adding mark in stg ${marks[node]} for $node")
-                                }
-                            }
-                            //else if it's a callback, but no edge, mark the current screen and add the action to trigger
-                        }
-                    }
-            }
-            logger.debug("Done with target marking, collected {} target statements", numFoundTargets)
-            return marks;
-        }*/
-
 
         /**
          * Checks if STG contains edge with desired action
@@ -324,9 +241,10 @@ class TargetMarker {
             return (parentMethod.equals(handlerMethod) || targetMethod.equals(handlerMethod)) && resId == uiTrigger
         }
 
-        private fun getTriggerOfCallbackPrecise(
+        private fun <T: Any> getTriggerOfCallbackPrecise(
             callback: AndroidCallbackDefinition,
             activity: Activity,
+            methods: Set<T>,
             match: (SootMethod) -> Boolean
         ): UiElement? {
             val potentialUiElements = activity.uiElements.filter { callback.targetMethod.subSignature.equals(it.handlerMethod.subSignature) }
@@ -342,10 +260,8 @@ class TargetMarker {
                     it.handlerMethod, elementId, counter.getAndIncrement(), potentialUiElements.size,
                     maxMethodDepth, true, apisFound, false
                 )
-
-                //TODO pass methods as arguments
-                val methods = setOf<String>("<java.net.URL: java.net.URLConnection openConnection()>")
-                forwardFounder.setSourcesAndSinks(methods)
+                val sourcesAndSinks: Set<String> = methods.map { it.toString() }.toSet()
+                forwardFounder.setSourcesAndSinks(sourcesAndSinks)
                 forwardFounder.call()
                 logger.debug("All apis found {}", apisFound);
                 apisFound.any { api -> api != null && match(api.api) }

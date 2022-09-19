@@ -16,9 +16,9 @@ class IntegrationTest {
 
         // get the API to target mark
         val urlClass = Scene.v().getSootClass("java.net.URL")
-        val openConnectionMethods = urlClass.methods.filter { it.name == "openConnection" }
+        val openConnectionMethods = urlClass.methods.filter { it.name == "openConnection" }.map { it.signature }.toSet()
 
-        val runner = AnalysisRunner(preRunner, openConnectionMethods)
+        val runner = AnalysisRunner(preRunner, openConnectionMethods, "api")
         runner.run()
 
         logger.info("done")

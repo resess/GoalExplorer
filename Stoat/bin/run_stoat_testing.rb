@@ -66,7 +66,7 @@ def construct_fsm(apk_path, avd_serial, stoat_port, stg_file,
       "--port #{stoat_port} --no-rec -loop --search weighted "\
       "--events #{max_events} --event_delay #{event_delay} "\
       "--stg #{stg_file} --u "\
-      "--screen_matching_strategy #{strategy}"
+      "--screen_matching_strategy #{strategy}" #@todo here add option for stg paths only or not
     )
   end
 
@@ -153,6 +153,7 @@ OptionParser.new do |opts|
     strategy = m
     puts "screen matching strategy: #{strategy}"
   end
+  #opts.on("--stg_only")
   opts.on_tail('-h', '--help', "show this message. Note before testing an app, please set \"hw.keyboard=yes\" in the emulator's config file \"~/.android/avd/testAVD_1.avd/config.ini\"  and open the wifi network. \n\n Examples: \n \t
 	<Ant opens-soruce projects>\n \t ruby run_stoat_testing.rb --app_dir /home/suting/proj/mobile_app_benchmarks/test_apps/caldwell.ben.bites_4_src --avd_name testAVD_1 --avd_port 5554 --stoat_port 2000 --project_type ant \n \t
 	<Gradle open-source projects>\n \t ruby run_stoat_testing.rb --app_dir /home/suting/proj/mobile_app_benchmarks/test_apps/tests/com.linuxcounter.lico_update_003_5_src.tar.gz --apk /home/suting/proj/mobile_app_benchmarks/test_apps/tests/com.linuxcounter.lico_update_003_5_src.tar.gz/app/build/outputs/apk/app-instrumented.apk --avd_name testAVD_1 --avd_port 5554 --stoat_port 2000 --project_type gradle \n \t
