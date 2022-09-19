@@ -69,10 +69,11 @@ To build a STG run the generated `.jar` file which should be located at
 java -jar {JAR_PATH} ge [OPTIONS] [-cb <arg>] [-d] [-h] -i <arg> 
           [-l <arg>] [-o <arg>] [-s <arg>] [-t <arg>] [-v]
 ```
+### Marking targets
+By default, there will be no node marked as a target in the STG. To mark a target in the STG, 
+add the option `--target "X:Y"` where `X` is one of `api`, `act` or `stmt` and `Y` is a fully qualified target or a list of targets separated by a semi-colon.
 
-By default, there will be no node marked as a target in the STG. To mark a target in the STG, add the option `--target "X:Y"` where `X` is one of `api`, `act` or `stmt` and `Y` is a fully qualified target or a list of targets separated by a semi-colon.
-
-For example, the signature for an API:
+For example, if the target is an API:
 
 ```
     java -jar {JAR_PATH} ge [OPTIONS] --target "api:<java.<java.net.URL: java.net.URLConnection openConnection()>" 
