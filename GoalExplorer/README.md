@@ -1,3 +1,2 @@
-# TODO 
-No inter-procedural analysis done when looking at the statements responsible for changing fragments
-    
+# Notes
+This folder contains the static model builder and the target marker code.
