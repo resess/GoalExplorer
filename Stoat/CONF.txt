@@ -37,6 +37,6 @@ PROB_MODEL_MODE = 1
 PROB_MODEL_FILE_NAME = optimal_markov_model.txt
 
 # login settings
-USERNAME = recessubc@gmail.com
-PASSWORD = Kaiser4095
+USERNAME = test@gmail.com
+PASSWORD = test
 LOGIN_TYPE = google
