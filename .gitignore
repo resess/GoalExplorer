@@ -19,10 +19,12 @@ target/
 
 # Misc.
 # generated folder from using flowdroid
-/implementation/goal-explorer/sootOutput/
+sootOutput/
 
-/implementation/Stoat/CONF.txt
+Stoat/CONF.txt
 
 /results/
+GoalExplorer/results/
 
-logs/
+/logs/
+GoalExplorer/logs

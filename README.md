@@ -8,8 +8,7 @@ This repository contains the source code for the application to produce STGs for
 used to dynamically explore to find the target of interest. 
 
 ### Compatibility
-Currently, the tool supports API levels 25 and under. The Android Applications should also not use androidx libraries. 
-This is due to a dependency on Backstage which fails to analyze components of these applications. 
+Currently, the tool supports API levels 25 and under. The Android Applications should also not use androidx libraries, due to a dependency on Backstage which fails to analyze components of these applications. 
 
 ## Table of Contents
 1. [Pre-requisites](#pre-requisites)
@@ -19,7 +18,7 @@ This is due to a dependency on Backstage which fails to analyze components of th
 
 
 ## Pre-requisites
-The tool is only support to run on a Linux environment
+The tool only supports Linux environments.
 * Install the Android SDK and build tools: https://developer.android.com/studio/intro/update
     * Make sure that `$ANDROID_HOME` is set to the SDK directory 
     * Make sure that the following directories is added to `$PATH`
@@ -61,8 +60,8 @@ mvn -DskipTests clean package
 
 
 ## Using the Static Analyzer (STG Builder)
-To build a STG run the generated `.jar` file which should be located at 
-`GoalExplorer/target/`. 
+To build a STG, run the generated `.jar` which should be located under which should be located under
+`GoalExplorer/target/`. The jar should be run from the `GoalExplorer` directory.
 
 ### Command
 ```
@@ -75,7 +74,7 @@ add the option `--target "X:Y"` where `X` is one of `api`, `act` or `stmt` and `
 
 For example, if the target is an API:
 
-```
+
     java -jar {JAR_PATH} ge [OPTIONS] --target "api:<java.<java.net.URL: java.net.URLConnection openConnection()>" 
 ```
 or for multiple activities:
@@ -113,10 +112,7 @@ The dynamic explorer is a modified version of [Stoat](https://github.com/tingsu/
 The modified source code is located in `Stoat/`
 
 ### Setup 
-Open avdmanager through Android Studios and create a new emulator.
-Note down the name of this emulator. 
-
-Then the command to start the dynamic exploration 
+To run the dynamic exploration step:
 ```
 ruby Stoat/bin/run_stoat_testing.rb \
     --avd_name={emulator name} \

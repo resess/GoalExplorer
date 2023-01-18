@@ -19,6 +19,7 @@ public class Helper {
 	private static String resultsDir;
 	private static String packageName;
 	private static String apkPath;
+	private static String apkToolPath = "backstage"+ File.separator + "res" + File.separator + "apktool_2.1.1.jar";
 	private static int LOC;
 	public static Map<String, AtomicInteger> timeoutedPhasesInUIAnalysis = new ConcurrentHashMap<>();
 
@@ -136,9 +137,15 @@ public class Helper {
 		resultsDir = dir;
 	}
 
+	public static void setApkToolPath(String path) { 
+		apkToolPath = path; 
+	}
+
 	public static void setApkPath(String path) { apkPath = path; }
 
 	public static String getApkPath() {return apkPath;}
+
+	public static String getApkToolPath() {return apkToolPath;}
 
 	public static String getResultsDir(){
 		return resultsDir;

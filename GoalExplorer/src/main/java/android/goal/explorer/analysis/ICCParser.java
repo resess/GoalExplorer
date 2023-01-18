@@ -77,7 +77,7 @@ public class ICCParser {
             Logger.error("Error parsing the transition file {} {}", path, e);
         }
         catch(IOException e){
-            Logger.error("IOException when parsing transition file {}", e);
+            Logger.error("IOException when parsing transition file, ignoring {}", e);
         }
 
     }

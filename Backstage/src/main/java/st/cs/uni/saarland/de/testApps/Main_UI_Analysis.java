@@ -101,8 +101,7 @@ public class Main_UI_Analysis {
 			// start apkTool
 			// extract xml structure of app with the help of the apkTool, for the given application
 			try {
-				String cmd = "java -jar " + appOutputDir + File.separator +
-						"apktool_2.1.1.jar -s -f d " + Helper.getApkPath() +
+				String cmd = "java -jar " + Helper.getApkToolPath() + " -s -f d " + Helper.getApkPath() +
 						" -o " + appOutputDir;
 				Process p = Runtime.getRuntime().exec(cmd);
 				InputStream is = p.getInputStream();
