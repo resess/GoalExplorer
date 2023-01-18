@@ -74,7 +74,7 @@ add the option `--target "X:Y"` where `X` is one of `api`, `act` or `stmt` and `
 
 For example, if the target is an API:
 
-
+```
     java -jar {JAR_PATH} ge [OPTIONS] --target "api:<java.<java.net.URL: java.net.URLConnection openConnection()>" 
 ```
 or for multiple activities:
@@ -113,6 +113,7 @@ The modified source code is located in `Stoat/`
 
 ### Setup 
 To run the dynamic exploration step:
+
 ```
 ruby Stoat/bin/run_stoat_testing.rb \
     --avd_name={emulator name} \
