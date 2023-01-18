@@ -4,7 +4,7 @@ This repository hosts GoalExplorer which automatically triggers the functionalit
 The core idea behind GoalExplorer is to first statically model the application UI screens and transitions between these screens, producing a Screen Transition Graph (STG). 
 Then GoalExplorer uses the STG to guide the dynamic exploration of the application to the particular target of interest: an Android activity, API call, or a program statement.
 
-This repository contains the source code for the application to produce STGs for android applications along with the tool 
+The repository contains the source code for the application to produce STGs for android applications along with the tool 
 used to dynamically explore to find the target of interest. 
 
 ### Compatibility
