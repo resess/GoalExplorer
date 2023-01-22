@@ -21,7 +21,7 @@ Currently, the tool supports API levels 25 and under. The Android Applications s
 The tool only supports Linux environments.
 * Install the Android SDK and build tools: https://developer.android.com/studio/intro/update
     * Make sure that `$ANDROID_HOME` is set to the SDK directory 
-    * Make sure that the following directories is added to `$PATH`
+    * Make sure that the following directories are added `$PATH`
         * `$ANDROID_HOME/tools`
         * `$ANDROID_HOME/tools/bin`
         * `$ANDROID_HOME/platform-tools`
