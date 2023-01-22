@@ -60,13 +60,12 @@ mvn -DskipTests clean package
 
 
 ## Using the Static Analyzer (STG Builder)
-To build a STG, run the generated `.jar` which should be located under which should be located under
+To build a STG, run the generated `.jar` which should be located under
 `GoalExplorer/target/`. The jar should be run from the `GoalExplorer` directory.
 
 ### Command
 ```
-java -jar {JAR_PATH} ge [OPTIONS] [-cb <arg>] [-d] [-h] -i <arg> 
-          [-l <arg>] [-o <arg>] [-s <arg>] [-t <arg>] [-v]
+java -jar target/GoalExplorer-1.2-SNAPSHOT-jar-with-dependencies.jar ge -i <path to apk> [OPTIONS]
 ```
 ### Marking targets
 By default, there will be no node marked as a target in the STG. To mark a target in the STG, 
@@ -75,15 +74,15 @@ add the option `--target "X:Y"` where `X` is one of `api`, `act` or `stmt` and `
 For example, if the target is an API:
 
 ```
-    java -jar {JAR_PATH} ge [OPTIONS] --target "api:<java.<java.net.URL: java.net.URLConnection openConnection()>" 
+    java -jar {JAR_PATH} ge -i <arg> [OPTIONS] --target "api:<java.<java.net.URL: java.net.URLConnection openConnection()>" 
 ```
 or for multiple activities:
 ```
-    java -jar {JAR_PATH} ge [OPTIONS] --target "act:com.example.app.MainActivity;com.example.app.SettingsActivity"
+    java -jar {JAR_PATH} ge -i <arg> [OPTIONS] --target "act:com.example.app.MainActivity;com.example.app.SettingsActivity"
 ```
 or a Jimple statement:
 ```    
-    java -jar {JAR_PATH} ge [OPTIONS] --target "stmt:virtualinvoke $r7.<android.widget.Button: void setOnClickListener(android.view.View$OnClickListener)>($r9)"
+    java -jar {JAR_PATH} ge -i <arg> [OPTIONS] --target "stmt:virtualinvoke $r7.<android.widget.Button: void setOnClickListener(android.view.View$OnClickListener)>($r9)"
 ```
 ### Options
 ```
