@@ -45,9 +45,9 @@ class TargetMarker {
             if(targetType == null || targetType.isEmpty()) //no target
                 return stg.allNodes.associateWith { Pair(false, "") }
             if(targetType.equals("act"))
-                return markNodesIfNameMatch(
+                return markNodesIfBaseAndNameMatch(
                     stg,
-                    stg.allBaseNodes,
+                    stg.allNodes,
                     criteriae
                 )
             else if(targetType.equals("api"))
@@ -71,13 +71,13 @@ class TargetMarker {
         }
 
 
-        private fun markNodesIfNameMatch(
+        private fun markNodesIfBaseAndNameMatch(
             stg: STG,
             nodes: Set<AbstractNode>,
             names: Set<String>
         ): Map<AbstractNode, Pair<Boolean, String>> {
 
-            return nodes.associateWith { Pair(names.contains(it.name),"")  }.toMutableMap()
+            return nodes.associateWith { Pair((it is ScreenNode) && it.isBaseScreenNode && names.contains(it.name) ,"")  }.toMutableMap()
         }
 
 
