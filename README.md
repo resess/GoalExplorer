@@ -74,7 +74,7 @@ add the option `--target "X:Y"` where `X` is one of `api`, `act` or `stmt` and `
 For example, if the target is an API:
 
 ```
-    java -jar {JAR_PATH} ge -i <arg> [OPTIONS] --target "api:<java.<java.net.URL: java.net.URLConnection openConnection()>" 
+    java -jar {JAR_PATH} ge -i <arg> [OPTIONS] --target "api:<java.net.URL: java.net.URLConnection openConnection()>" 
 ```
 or for multiple activities:
 ```
