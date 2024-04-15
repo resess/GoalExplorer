@@ -21,22 +21,22 @@ public class AxmlUtils {
     public static String processNodeName(AXmlNode node, String packageName){
         String className = null;
         AXmlAttribute<?> attrEnabled = node.getAttribute("enabled");
-        if (attrEnabled == null || !attrEnabled.getValue().equals(Boolean.FALSE)) {
+        //if (attrEnabled == null || !attrEnabled.getValue().equals(Boolean.FALSE)) {
             // process name
-            AXmlAttribute<?> attrName = node.getAttribute("name");
-            if (attrName != null){
-                className = expandClassName((String) attrName.getValue(), packageName);
-            } else {
-                // This component does not have a name, so this might be
-                // obfuscated malware. We apply a heuristic.
-                for (Map.Entry<String, AXmlAttribute<?>> a : node.getAttributes().entrySet())
-                    if (a.getValue().getName().isEmpty() && a.getValue().getType() == AxmlVisitor.TYPE_STRING) {
-                        String name = (String) a.getValue().getValue();
-                        if (isValidComponentName(name))
-                            className = expandClassName(name, packageName);
-                    }
-            }
+        AXmlAttribute<?> attrName = node.getAttribute("name");
+        if (attrName != null){
+            className = expandClassName((String) attrName.getValue(), packageName);
+        } else {
+            // This component does not have a name, so this might be
+            // obfuscated malware. We apply a heuristic.
+            for (Map.Entry<String, AXmlAttribute<?>> a : node.getAttributes().entrySet())
+                if (a.getValue().getName().isEmpty() && a.getValue().getType() == AxmlVisitor.TYPE_STRING) {
+                    String name = (String) a.getValue().getValue();
+                    if (isValidComponentName(name))
+                        className = expandClassName(name, packageName);
+                }
         }
+        //}
         return className;
     }
 

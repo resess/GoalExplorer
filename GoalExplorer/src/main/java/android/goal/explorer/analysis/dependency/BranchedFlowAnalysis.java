@@ -85,8 +85,13 @@ public class BranchedFlowAnalysis {
                 if(stmt.containsInvokeExpr()){
                     if (invokesMethodOfInterest(stmt.getInvokeExpr())){
                         Logger.debug("Found invocation of method of interest {} in {}", methodToSwitchOver, stmt);
-                        DefinitionStmt definitionStmt = (DefinitionStmt)stmt; //double check
-                        registerToSwitchOver = definitionStmt.getLeftOp();
+                        if(stmt instanceof DefinitionStmt){
+                            DefinitionStmt definitionStmt = (DefinitionStmt)stmt; //double check
+                            registerToSwitchOver = definitionStmt.getLeftOp();
+                        }
+                        else{
+                            Logger.debug("Issue: found method of interest but no assignment");
+                        }
                     }
                 }
             }

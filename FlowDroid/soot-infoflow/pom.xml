@@ -142,13 +142,13 @@
 	</build>
 	
 	<repositories>
-        <repository>
+        <!--repository>
             <id>Soot-Snapshots</id>
             <url>https://ssebuild.sit.fraunhofer.de/nexus/repository/Soot/</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-        </repository>
+        </repository-->
 		<repository>
 			<id>sonatype-snapshots</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>

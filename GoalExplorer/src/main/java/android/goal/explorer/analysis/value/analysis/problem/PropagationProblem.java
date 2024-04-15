@@ -63,7 +63,7 @@ public class PropagationProblem
     }
 
     @Override
-    protected MeetLattice<BasePropagationValue> createJoinLattice() {
+    protected MeetLattice<BasePropagationValue> createMeetLattice() {
         return new PropagationLattice();
     }
 

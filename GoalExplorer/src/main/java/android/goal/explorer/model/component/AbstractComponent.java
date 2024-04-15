@@ -50,7 +50,7 @@ public class AbstractComponent implements Serializable {
     }
 
     public AbstractComponent(AXmlNode node, String packageName) {
-        this.name = processNodeName(node, packageName);
+        this.name = processNodeName(node, packageName); //TODO deal with disabled components, currently included
         if(this.name.length() < packageName.length()){
             Logger.error("Issue with app name {} and package name {}", name, packageName);
             setShortName(name);
