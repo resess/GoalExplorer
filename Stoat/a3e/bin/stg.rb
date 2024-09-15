@@ -30,7 +30,7 @@ module STG
       end
 
       def ==(other) #need to differentiate between precise matching for paths, and shallow matching for marking reached targets
-        (@name == other.name) && (@menu == other.menu) && (@context_menu == other.context_menu) && (@drawer == other.drawer) && (@fragments == other.fragments) && (@dialogs == other.dialogs) && (@tab == other.tab)
+        (@name == other.name) && (@menu == other.menu) && (@context_menu == other.context_menu) && (@drawer == other.drawer) && (@fragments == other.fragments) && (@dialogs == other.dialogs) && (@tab == other.tab) && (@is_base == other.is_base)
       end
 
       def name
@@ -267,7 +267,7 @@ module STG
       else 
         @nodes[node.name] << node
       end
-
+      
     end
 
     # @param [String] name
@@ -460,6 +460,7 @@ module STG
         @last_try = new_count if @last_try < new_count
         Log.print "Updating tries count to #{new_count} for #{target}"
       else
+        Log.print("Deleting #{target}")
         @targets.delete(target)
       end
     end
@@ -500,7 +501,7 @@ module STG
       parent_id = action.at('parentId').nil? ? nil : action.at('parentId').content
       desc = action.at('contentDesc').nil? ? nil : action.at('contentDesc').content
       text = action.at('text').nil? ? nil : action.at('text').content
-      STG::StaticAction.new(type, method, id, parent_id, desc, text)
+      (type.nil? && method.nil? && id.nil? && parent_id.nil? && text.nil?) ? nil : STG::StaticAction.new(type, method, id, parent_id, desc, text)
     end
 
 
@@ -650,7 +651,7 @@ module STG
         context_menu = screen_node.at('contextMenu').nil? ? nil : screen_node.at('contextMenu').content
         drawer = screen_node.at('drawer').nil? ? nil : screen_node.at('drawer').content
         fragments = screen_node.at('fragments').nil? ? nil : screen_node.at('fragments').search('string').map(&:content).sort
-        dialogs = screen_node.at('dialogs').nil? ? nil : screen_node.at('dialogs').search('String').map(&:content).sort
+        dialogs = screen_node.at('dialogs').nil? ? nil : screen_node.at('dialogs').search('string').map(&:content).sort
         tab = screen_node.at('tab').nil? ? nil : screen_node.at('tab').content
         base = (screen_node.at('baseScreen').content == 'true') ? true : false
 
@@ -659,6 +660,7 @@ module STG
         if strategy.eql?('deep') && screen_node.at('target').content == 'true'
           Log.print "Adding target #{node}"
           action = screen_node.at('targetAction').nil? ? nil : graph.parse_action(screen_node.at('targetAction'))
+          Log.print "Adding action #{action}"
           graph.add_target(node, action)
         end
       end
